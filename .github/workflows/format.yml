@@ -11,7 +11,7 @@ on:
       - src/**.h
 
 jobs:
-  HybridMC:
+  format:
     runs-on: ubuntu-latest
 
     steps:
