@@ -69,6 +69,14 @@ struct Param {
   double del_t;
   // seeds for random number generator
   std::vector<unsigned int> seeds;
+  // number of steps for Wang-Landau trajectory
+  unsigned int nsteps_wl;
+  // increment time for Wang-Landau trajectory
+  double del_t_wl;
+  // initial gamma
+  double gamma;
+  // final gamma
+  double gamma_f;
 
   // temperature of the system
   double temp;

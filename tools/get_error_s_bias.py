@@ -14,6 +14,7 @@
 #SBATCH --mem-per-cpu=256M
 
 import argparse
+import csv
 import h5py
 import json
 import multiprocessing
@@ -48,16 +49,21 @@ def main(args):
     with multiprocessing.Pool() as pool:
         s_bias = pool.map(output_entropy, range(args.nboot))
 
-    s_bias_std = np.std(s_bias) / np.sqrt(2)
-    print('std of entropy samples:', s_bias_std)
-
     s_bias_mean = np.mean(s_bias)
     print('mean of entropy samples:', s_bias_mean)
 
-    error_bar = s_bias_std * 1.96
-    rel_e = error_bar / s_bias_mean
+    s_bias_var = np.var(s_bias)
+    print('var of entropy samples:', s_bias_var)
+
+    rel_e = s_bias_var / s_bias_mean
     percent_rel_e = rel_e * 100
     print('percent error:', percent_rel_e)
+
+    csv_name = '{}_s_bias_error.csv'.format(output_name)
+    output = [[s_bias_mean, s_bias_var, percent_rel_e]]
+    with open(csv_name, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)
 
 
 def get_s_bias(data, output_name, exe, hdf5_in, seed_increment, i):
