@@ -16,7 +16,7 @@
     "tries": 10000,
     "length": 40.0,
     "ncell": 9,
-    "nsteps": 8,
+    "nsteps": 1,
     "del_t": 15.0,
     "nsteps_wl": 1,
     "del_t_wl": 4.0,

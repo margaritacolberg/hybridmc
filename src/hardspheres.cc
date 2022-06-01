@@ -1468,8 +1468,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is formed " << update_config.config);
 
     count_bond.formed++;
-    std::cout << "number of times bond formed = " << count_bond.formed
-              << std::endl;
+    LOG_DEBUG("number of times bond formed = " << count_bond.formed);
   }
 
   if (ev.i > 1) {
@@ -1561,8 +1560,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is broken " << update_config.config);
 
     count_bond.broken++;
-    std::cout << "number of times bond broken = " << count_bond.broken
-              << std::endl;
+    LOG_DEBUG("number of times bond broken = " << count_bond.broken);
   }
 
   if (ev.i > 1) {

@@ -130,15 +130,6 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
                     CountBond &count_bond, double wall_time,
                     unsigned int iter) {
-  EventQueue event_queue;
-  Cells cells{p.ncell, p.length / p.ncell};
-
-  initialize_system(sys, mt, p, box, update_config, cells, event_queue);
-
-  // to check energy conservation
-  const double tot_E_before =
-      compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
-
   // assume that the entire time during which the beads are undergoing events
   // can be divided into intervals of length p.del_t; the total number of such
   // intervals is p.nsteps (thus, the variable called step marks the intervals
@@ -147,6 +138,15 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
   // hdf5 file
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
+      EventQueue event_queue;
+      Cells cells{p.ncell, p.length / p.ncell};
+
+      initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+
+      // to check energy conservation
+      const double tot_E_before =
+          compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t);
 
