@@ -39,9 +39,7 @@ void unit_sphere(Random &mt, double &x, double &y, double &z) {
 void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p) {
   const unsigned int nbeads = pos.size();
-  // pick a scaling factor that corresponds to the distance constraint
-  // between the nearest beads
-  std::uniform_real_distribution<> uniform_near(p.near_min, p.near_max);
+  std::uniform_real_distribution<> uniform_near(0.0, 1.0);
 
   if (pos.size() < 1)
     return;
@@ -54,6 +52,9 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
   uint64_t tries = 0;
   unsigned int i = 1;
 
+  const double near_min3 = std::pow(p.near_min, 3.0);
+  const double near_max3 = std::pow(p.near_max, 3.0);
+
   while (i < nbeads) {
     if (!(tries++ < p.tries)) {
       throw std::logic_error(
@@ -65,7 +66,10 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     double near_dx, near_dy, near_dz;
     unit_sphere(mt, near_dx, near_dy, near_dz);
 
-    double near = uniform_near(mt);
+    // pick a scaling factor that corresponds to the distance
+    // constraint between the nearest beads
+    const double val = uniform_near(mt);
+    const double near = std::cbrt(near_min3 + (val * (near_max3 - near_min3)));
 
     // center the point at the position of the previous point, and scale
     // according to the distance constraint between the nearest beads

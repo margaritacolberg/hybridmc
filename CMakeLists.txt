@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-project(hardspheres LANGUAGES CXX)
+project(hybridmc LANGUAGES CXX)
 
-find_package(Boost REQUIRED COMPONENTS program_options unit_test_framework)
+find_package(Boost REQUIRED COMPONENTS filesystem program_options unit_test_framework)
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
