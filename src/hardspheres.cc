@@ -468,8 +468,18 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated
 
+  if (stair2) {
+      std::cout << "STAIRCASED: " << "; rc2 inner = " << rc2_inner << "; rc2 outer = " << rc2_outer << std::endl;
+
+  }
+  else {
+      std::cout << "NO STAIRCASE: " << "; rc2 inner = " << rc2_inner << "; rc2 outer = " << rc2_outer << std::endl;
+  }
+
+
  // two beads in trans bond >rc then inner else outer
-  // count the number of transient bonds already present
+  // count the number of
+  // transient bonds already present
   const unsigned int nbonds = update_config.count_bonds();
   assert(nbonds <= max_nbonds);
 

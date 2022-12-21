@@ -27,11 +27,39 @@
 #include <optional>
 
 namespace po = boost::program_options;
-namespace py = pybind11;
+
+void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
+                    UpdateConfig &update_config,
+                    std::optional<std::string> input_name,
+                    std::optional<std::string> snapshot_name,
+                    const unsigned int t_bonds) {
+  if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
+    // overwrite existing entries in pos and s_bias vectors with read-in values
+    // from hdf5 file
+    read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
+  } else if (input_name && std::filesystem::exists(*input_name)) {
+    read_input(*input_name, sys.pos);
+    init_update_config(sys.pos, update_config, box, p.transient_bonds);
+    init_s(sys.s_bias, t_bonds);
+  } else {
+    init_pos(sys.pos, box, mt, p);
+    init_s(sys.s_bias, t_bonds);
+  }
+}
 
 void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, Cells &cells,
                        EventQueue &event_queue) {
+  if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                        p.nnear_max2)) {
+    throw std::runtime_error("local beads overlap");
+  }
+
+  if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
+                           p.transient_bonds, p.permanent_bonds)) {
+    throw std::runtime_error("nonlocal beads overlap");
+  }
+
   if (!(cells.ncell >= 4)) {
     throw std::invalid_argument("bead ncell must be at least 4");
   }
@@ -128,6 +156,26 @@ void run_step(System &sys, const Param &p, const Box &box,
   wall_time = step_time;
 }
 
+void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
+                       UpdateConfig &update_config, CountBond &count_bond,
+                       double wall_time, unsigned int iter) {
+  for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
+       step++) {
+    EventQueue event_queue;
+    Cells cells{p.ncell, p.length / p.ncell};
+
+    initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+
+    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+             event_queue, step, p.del_t);
+  }
+
+  assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                          p.nnear_max2));
+  assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
+                             p.transient_bonds, p.permanent_bonds));
+}
+
 void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     std::vector<double> &dist, UpdateConfig &update_config,
                     UpdateConfigWriter &update_config_writer,
@@ -136,15 +184,6 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
                     CountBond &count_bond, double wall_time,
                     unsigned int iter) {
-  EventQueue event_queue;
-  Cells cells{p.ncell, p.length / p.ncell};
-
-  initialize_system(sys, mt, p, box, update_config, cells, event_queue);
-
-  // to check energy conservation
-  const double tot_E_before =
-      compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
-
   // assume that the entire time during which the beads are undergoing events
   // can be divided into intervals of length p.del_t; the total number of such
   // intervals is p.nsteps (thus, the variable called step marks the intervals
@@ -153,6 +192,15 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
   // hdf5 file
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
+    EventQueue event_queue;
+    Cells cells{p.ncell, p.length / p.ncell};
+
+    initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+
+    // to check energy conservation
+    const double tot_E_before =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t);
 
@@ -236,72 +284,6 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
   return update_config.config;
 }
 
-
-void from_json(const nlohmann::json &json, Param &p) {
-    p.m = json["m"];
-    p.sigma = json["sigma_bb"];
-    p.sigma2 = p.sigma * p.sigma;
-    p.near_min = json["near_min"];
-    p.near_max = json["near_max"];
-    p.near_min2 = p.near_min * p.near_min;
-    p.near_max2 = p.near_max * p.near_max;
-    p.nnear_min = json["nnear_min"];
-    p.nnear_max = json["nnear_max"];
-    p.nnear_min2 = p.nnear_min * p.nnear_min;
-    p.nnear_max2 = p.nnear_max * p.nnear_max;
-    p.rh = json["rh"];
-    p.rc = json["rc"];
-    p.rh2 = p.rh * p.rh;
-    p.rc2 = p.rc * p.rc;
-
-    if (json.count("stair") != 0) {
-        p.stair = json["stair"];
-        p.stair2 = *p.stair * *p.stair;
-    }
-
-    p.nonlocal_bonds = json["nonlocal_bonds"];
-
-    //p.nonlocal_bonds.printBonds();
-
-    p.transient_bonds = json["transient_bonds"];
-    p.permanent_bonds = json["permanent_bonds"];
-
-    //p.permanent_bonds.printBonds();
-
-    if (json.count("stair_bonds") != 0) {
-        p.stair_bonds = json["stair_bonds"];
-    }
-
-    std::cout << *p.stair << std::endl;
-    if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
-        throw std::runtime_error("stair boundary is smaller than rc");
-    }
-
-    p.tries = json["tries"];
-    p.nbeads = json["nbeads"];
-    p.length = json["length"];
-    p.ncell = json["ncell"];
-    p.nsteps = json["nsteps"];
-    p.del_t = json["del_t"];
-    p.nsteps_wl = json["nsteps_wl"];
-    p.del_t_wl = json["del_t_wl"];
-    p.gamma = json["gamma"];
-    p.gamma_f = json["gamma_f"];
-    p.write_step = json["write_step"];
-    p.seeds = json["seeds"].get<std::vector<unsigned int>>();
-    p.temp = json["temp"];
-    p.mc_moves = json["mc_moves"];
-    p.mc_write = json["mc_write"];
-    p.total_iter = json["total_iter"];
-    p.pos_scale = json["pos_scale"];
-    p.neg_scale = json["neg_scale"];
-    p.sig_level = json["sig_level"];
-    p.max_nbonds = json["max_nbonds"];
-    p.max_g_test_count = json["max_g_test_count"];
-    p.flip_req = json["flip_req"];
-}
-
-
 // Wang-Landau algorithm for estimating entropy
 void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
@@ -330,7 +312,6 @@ void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
         gamma = 1.0 / double(iter_wl);
     }
 }
-
 
 // wang landau plugin for python function
 std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name) {
@@ -510,6 +491,7 @@ int main(int argc, char *argv[]) {
   input >> json;
 
   const Param p = json;
+  Param p_eq = p;
   const Box box{p.length};
   UpdateConfig update_config;
 
@@ -528,29 +510,6 @@ int main(int argc, char *argv[]) {
   std::seed_seq seq(p.seeds.begin(), p.seeds.end());
   Random mt(seq);
 
-  if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
-    // overwrite existing entries in pos and s_bias vectors with read-in values
-    // from hdf5 file
-    read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
-  } else if (input_name && std::filesystem::exists(*input_name)) {
-    read_input(*input_name, sys.pos);
-    init_update_config(sys.pos, update_config, box, p.transient_bonds);
-    init_s(sys.s_bias, t_bonds);
-  } else {
-    init_pos(sys.pos, box, mt, p);
-    init_s(sys.s_bias, t_bonds);
-  }
-
-  if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
-                        p.nnear_max2)) {
-    throw std::runtime_error("local beads overlap");
-  }
-
-  if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
-                           p.transient_bonds, p.permanent_bonds)) {
-    throw std::runtime_error("nonlocal beads overlap");
-  }
-
   // open output file
   H5::H5File file(output_name + ".tmp", H5F_ACC_TRUNC);
 
@@ -566,11 +525,6 @@ int main(int argc, char *argv[]) {
   config_count_writer.append(config_count);
   std::set<Config> store_config;
 
-  const hsize_t mem_dims[1] = {sys.s_bias.size()};
-  H5::DataSpace mem_space(1, mem_dims);
-  H5::DataSet dataset_s_bias =
-      file.createDataSet("s_bias", H5::PredType::NATIVE_FLOAT, mem_space);
-
   H5::Attribute attr_sigma =
       file.createAttribute("sigma", H5::PredType::NATIVE_DOUBLE, H5S_SCALAR);
   attr_sigma.write(H5::PredType::NATIVE_DOUBLE, &p.sigma);
@@ -585,10 +539,42 @@ int main(int argc, char *argv[]) {
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
-  // if warmup flag then stop after WL. print info to different json file or csv or hdf5
+  // equilibrate initial structure
+  //
+  // reset bead clocks, counters, and wall time
+  for (unsigned int i = 0; i < p.nbeads; i++) {
+    sys.times[i] = 0.0;
+    sys.counter[i] = 0.0;
+  }
+
+  double wall_time = 0.0;
+  UpdateConfig update_config_eq;
+
+  p_eq.nsteps = p.nsteps_eq;
+  p_eq.total_iter = p.total_iter_eq;
+
+  initialize_pos(sys, mt, p_eq, box, update_config_eq, input_name,
+                 snapshot_name, t_bonds);
+
+  for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
+    run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
+                      wall_time, iter);
+  }
+
+  // Wang-Landau
+  init_update_config(sys.pos, update_config, box, p.transient_bonds);
+
+  for (unsigned int i = 0; i < p.nbeads; i++) {
+    sys.times[i] = 0.0;
+    sys.counter[i] = 0.0;
+  }
+
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
-  //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+  const hsize_t mem_dims[1] = {sys.s_bias.size()};
+  H5::DataSpace mem_space(1, mem_dims);
+  H5::DataSet dataset_s_bias =
+      file.createDataSet("s_bias", H5::PredType::NATIVE_FLOAT, mem_space);
 
   // parameters for checking if g test is validated or not
   unsigned int g_test_count = 0;
@@ -604,7 +590,7 @@ int main(int argc, char *argv[]) {
       sys.counter[i] = 0.0;
     }
 
-    double wall_time = 0.0;
+    wall_time = 0.0;
 
     // reset configuration count
     store_config_int.clear();
@@ -666,8 +652,27 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-// create pybind11 module for wang_landau function
+void from_json(const nlohmann::json &json, Param &p) {
+  p.m = json["m"];
+  p.sigma = json["sigma_bb"];
+  p.sigma2 = p.sigma * p.sigma;
+  p.near_min = json["near_min"];
+  p.near_max = json["near_max"];
+  p.near_min2 = p.near_min * p.near_min;
+  p.near_max2 = p.near_max * p.near_max;
+  p.nnear_min = json["nnear_min"];
+  p.nnear_max = json["nnear_max"];
+  p.nnear_min2 = p.nnear_min * p.nnear_min;
+  p.nnear_max2 = p.nnear_max * p.nnear_max;
+  p.rh = json["rh"];
+  p.rc = json["rc"];
+  p.rh2 = p.rh * p.rh;
+  p.rc2 = p.rc * p.rc;
 
+
+
+
+// create pybind11 module for wang_landau function
 PYBIND11_MODULE(HMC, m) {
     m.doc() = "pybind11 hybridmc plugin for wang_landau function";
 
