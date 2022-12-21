@@ -26,9 +26,34 @@
 
 namespace po = boost::program_options;
 
+void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box, UpdateConfig &update_config, std::optional<std::string> input_name, std::optional<std::string> snapshot_name, const unsigned int t_bonds) {
+  if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
+    // overwrite existing entries in pos and s_bias vectors with read-in values
+    // from hdf5 file
+    read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
+  } else if (input_name && std::filesystem::exists(*input_name)) {
+    read_input(*input_name, sys.pos);
+    init_update_config(sys.pos, update_config, box, p.rc2, p.transient_bonds);
+    init_s(sys.s_bias, t_bonds);
+  } else {
+    init_pos(sys.pos, box, mt, p);
+    init_s(sys.s_bias, t_bonds);
+  }
+}
+
 void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, Cells &cells,
                        EventQueue &event_queue) {
+  if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                        p.nnear_max2)) {
+    throw std::runtime_error("local beads overlap");
+  }
+
+  if (!check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
+                           p.transient_bonds, p.permanent_bonds)) {
+    throw std::runtime_error("nonlocal beads overlap");
+  }
+
   if (!(cells.ncell >= 4)) {
     throw std::invalid_argument("bead ncell must be at least 4");
   }
@@ -120,6 +145,27 @@ void run_step(System &sys, const Param &p, const Box &box,
 
   // update time
   wall_time = step_time;
+}
+
+void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
+                    UpdateConfig &update_config,
+                    CountBond &count_bond, double wall_time,
+                    unsigned int iter) {
+  for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
+       step++) {
+      EventQueue event_queue;
+      Cells cells{p.ncell, p.length / p.ncell};
+
+      initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+
+      run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+              event_queue, step, p.del_t);
+  }
+
+  assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                          p.nnear_max2));
+  assert(check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
+                             p.transient_bonds, p.permanent_bonds));
 }
 
 void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
@@ -314,6 +360,7 @@ int main(int argc, char *argv[]) {
   input >> json;
 
   const Param p = json;
+  Param p_eq = p;
   const Box box{p.length};
   UpdateConfig update_config;
 
@@ -331,29 +378,6 @@ int main(int argc, char *argv[]) {
 
   std::seed_seq seq(p.seeds.begin(), p.seeds.end());
   Random mt(seq);
-
-  if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
-    // overwrite existing entries in pos and s_bias vectors with read-in values
-    // from hdf5 file
-    read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
-  } else if (input_name && std::filesystem::exists(*input_name)) {
-    read_input(*input_name, sys.pos);
-    init_update_config(sys.pos, update_config, box, p.rc2, p.transient_bonds);
-    init_s(sys.s_bias, t_bonds);
-  } else {
-    init_pos(sys.pos, box, mt, p);
-    init_s(sys.s_bias, t_bonds);
-  }
-
-  if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
-                        p.nnear_max2)) {
-    throw std::runtime_error("local beads overlap");
-  }
-
-  if (!check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
-                           p.transient_bonds, p.permanent_bonds)) {
-    throw std::runtime_error("nonlocal beads overlap");
-  }
 
   // open output file
   H5::H5File file(output_name + ".tmp", H5F_ACC_TRUNC);
@@ -389,19 +413,49 @@ int main(int argc, char *argv[]) {
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
+  // equilibrate initial structure
+  //
+  // reset bead clocks, counters, and wall time
+  for (unsigned int i = 0; i < p.nbeads; i++) {
+      sys.times[i] = 0.0;
+      sys.counter[i] = 0.0;
+  }
+
+  double wall_time = 0.0;
+  UpdateConfig update_config_eq;
+
+  p_eq.transient_bonds = p.transient_bonds_eq;
+  p_eq.nsteps = p.nsteps_eq;
+  p_eq.total_iter = p.total_iter_eq;
+
+  initialize_pos(sys, mt, p_eq, box, update_config_eq, input_name, snapshot_name, t_bonds);
+
+  for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
+    run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
+            wall_time, iter);
+  }
+
+  // Wang-Landau
+  init_update_config(sys.pos, update_config, box, p.rc2, p.transient_bonds);
+
+  for (unsigned int i = 0; i < p.nbeads; i++) {
+      sys.times[i] = 0.0;
+      sys.counter[i] = 0.0;
+  }
+
+  wall_time = 0.0;
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   unsigned int g_test_count = 0;
 
   // the BIIIIIIIG loop
   do {
-    // reset bead clocks, counters and wall time
     for (unsigned int i = 0; i < p.nbeads; i++) {
       sys.times[i] = 0.0;
       sys.counter[i] = 0.0;
     }
 
-    double wall_time = 0.0;
+    wall_time = 0.0;
 
     // reset configuration count
     store_config_int.clear();
@@ -468,6 +522,7 @@ void from_json(const nlohmann::json &json, Param &p) {
 
   p.nonlocal_bonds = json["nonlocal_bonds"];
   p.transient_bonds = json["transient_bonds"];
+  p.transient_bonds_eq = json["transient_bonds_eq"];
   p.permanent_bonds = json["permanent_bonds"];
 
   if (json.count("stair_bonds") != 0) {
@@ -489,6 +544,7 @@ void from_json(const nlohmann::json &json, Param &p) {
   p.length = json["length"];
   p.ncell = json["ncell"];
   p.nsteps = json["nsteps"];
+  p.nsteps_eq = json["nsteps_eq"];
   p.del_t = json["del_t"];
   p.nsteps_wl = json["nsteps_wl"];
   p.del_t_wl = json["del_t_wl"];
@@ -500,6 +556,7 @@ void from_json(const nlohmann::json &json, Param &p) {
   p.mc_moves = json["mc_moves"];
   p.mc_write = json["mc_write"];
   p.total_iter = json["total_iter"];
+  p.total_iter_eq = json["total_iter_eq"];
   p.pos_scale = json["pos_scale"];
   p.neg_scale = json["neg_scale"];
   p.sig_level = json["sig_level"];

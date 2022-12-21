@@ -36,7 +36,7 @@ public:
     if (it == ij_.end())
       return 0;
 
-    // check that the number of configurations do not exceed 64 bits
+    // check that the number of configurations does not exceed 64 bits
     assert(ij_.size() <= std::numeric_limits<Config>::digits);
 
     // convert 1 from 32 to 64 bits and determine position of new bond

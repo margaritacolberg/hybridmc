@@ -147,7 +147,7 @@ def run_sim(nonlocal_bonds_i, data, exe, seed_increment, input_hdf5, hdf5_name,
 
     # for layer = 1 or greater,
     command = [exe, json_name, hdf5_name]
-    if not input_hdf5 is None:
+    if input_hdf5 is not None:
         command += ['--input-file', input_hdf5]
 
     print(command)

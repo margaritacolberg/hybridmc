@@ -5,9 +5,9 @@
 // protein, and handles the initialization and processing of collision and cell
 // crossing events of the hard spheres in a priority queue
 
-#include "hardspheres.h"
 #include "config.h"
 #include "crankshaft.h"
+#include "hardspheres.h"
 #include "system.h"
 #include <algorithm>
 #include <cassert>
@@ -579,7 +579,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in x-direction,
   if (vxi > 0) {
-    // calculate the time needed reach the right wall
+    // calculate the time needed to reach the right wall
     double txr = (dx + cells.lcell) / vxi;
 
     // if a cell crossing occurs,
@@ -1109,6 +1109,8 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
                    UpdateConfig &update_config, CountBond &) {
   const unsigned int nbeads = sys.pos.size();
 
+  // if the actual (counter[ev.i, j]) and predicted (ni, nj) collision counters
+  // of the colliding beads match,
   if (sys.counter[ev.i] != ev.ni || sys.counter[ev.j] != ev.nj)
     return false;
 
