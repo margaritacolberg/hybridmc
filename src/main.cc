@@ -394,11 +394,6 @@ int main(int argc, char *argv[]) {
   config_count_writer.append(config_count);
   std::set<Config> store_config;
 
-  const hsize_t mem_dims[1] = {sys.s_bias.size()};
-  H5::DataSpace mem_space(1, mem_dims);
-  H5::DataSet dataset_s_bias =
-      file.createDataSet("s_bias", H5::PredType::NATIVE_FLOAT, mem_space);
-
   H5::Attribute attr_sigma =
       file.createAttribute("sigma", H5::PredType::NATIVE_DOUBLE, H5S_SCALAR);
   attr_sigma.write(H5::PredType::NATIVE_DOUBLE, &p.sigma);
@@ -445,6 +440,11 @@ int main(int argc, char *argv[]) {
 
   wall_time = 0.0;
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+
+  const hsize_t mem_dims[1] = {sys.s_bias.size()};
+  H5::DataSpace mem_space(1, mem_dims);
+  H5::DataSet dataset_s_bias =
+      file.createDataSet("s_bias", H5::PredType::NATIVE_FLOAT, mem_space);
 
   unsigned int g_test_count = 0;
 
@@ -534,7 +534,6 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.p_rc2 = *p.p_rc * *p.p_rc;
   }
 
-  std::cout << *p.stair << std::endl;
   if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
     throw std::runtime_error("stair boundary is smaller than rc");
   }
