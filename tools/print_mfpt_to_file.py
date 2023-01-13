@@ -19,7 +19,7 @@ def main():
             output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
 
     output.sort(key=lambda x: x[2])
-    csv_out = 'master_fpt.csv'
+    csv_out = 'mfpt.csv'
 
     output.insert(0, ['state i bits', 'state j bits', 'layer', 'inner fpt',
         'outer fpt'])
