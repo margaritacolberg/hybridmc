@@ -22,7 +22,6 @@ import h5py
 import json
 import numpy as np
 import nlopt
-
 from scipy import integrate
 from scipy import interpolate
 from scipy import optimize
@@ -60,7 +59,7 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     rc = data['rc']
     rh = data['rh']
     beta = 1.0
-    nknots = 8
+    nknots = 14
 
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']

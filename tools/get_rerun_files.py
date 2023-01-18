@@ -20,7 +20,6 @@ import csv
 import json
 import glob
 import os
-
 from shutil import copyfile
 
 
