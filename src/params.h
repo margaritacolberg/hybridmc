@@ -6,7 +6,6 @@
 
 #include "config.h"
 #include <optional>
-#include <vector>
 
 struct Param {
   // mass of each bead

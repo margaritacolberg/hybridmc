@@ -5,7 +5,7 @@
 
 HybridMC simulates the event-driven dynamics of coarse-grained protein folding.
 The entropy and mean first passage times (MFPT) of each bond forming or
-breaking event is calculated, and the Markov transition rate matrix is
+breaking event are calculated, and the Markov transition rate matrix is
 constructed. The average time needed to fold to the protein's native state,
 starting from the unfolded state, is evaluated under two conditions.
 
@@ -24,6 +24,8 @@ complicated.
     the MFPT
 
   * `tree`: C++ and Bash scripts for generating tree plots
+
+  * `crambin_s_bias_fpt`: biased entropy and MPFT results for crambin
 
 ## C++ Program Details
 

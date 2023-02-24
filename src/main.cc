@@ -8,13 +8,11 @@
 // been visited roughly equally, giving the final value of the entropy of each
 // state;
 
-#include "config.h"
 #include "crankshaft.h"
 #include "entropy.h"
 #include "hardspheres.h"
 #include "json.hpp"
 #include "snapshot.h"
-#include "system.h"
 #include "writer.h"
 #include <H5Cpp.h>
 #include <boost/program_options.hpp>
@@ -22,7 +20,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <optional>
 
 namespace po = boost::program_options;
 

@@ -5,7 +5,6 @@
 // chosen bonds to create a new configuration of the protein
 
 #include "crankshaft.h"
-#include "config.h"
 #include <algorithm>
 #include <cmath>
 

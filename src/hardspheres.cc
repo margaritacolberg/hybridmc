@@ -5,10 +5,8 @@
 // protein, and handles the initialization and processing of collision and cell
 // crossing events of the hard spheres in a priority queue
 
-#include "config.h"
 #include "crankshaft.h"
 #include "hardspheres.h"
-#include "system.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -569,7 +567,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
   double x_wall = cells.lcell * ixo;
   // position of bottom cell wall
   double y_wall = cells.lcell * iyo;
-  // position of in cell wall
+  // position of back cell wall
   double z_wall = cells.lcell * izo;
 
   double dx = x_wall - xi;
@@ -610,7 +608,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in y-direction,
   if (vyi > 0) {
-    // calculate the time needed to reach the up wall
+    // calculate the time needed to reach the top wall
     double tyr = (dy + cells.lcell) / vyi;
 
     if (!crossing || tyr < dt) {
@@ -625,7 +623,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // else if the velocity of the bead is negative in y-direction,
   else if (vyi < 0) {
-    // calculate the time needed to reach the down wall
+    // calculate the time needed to reach the bottom wall
     double tyl = dy / vyi;
 
     if (!crossing || tyl < dt) {

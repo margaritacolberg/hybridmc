@@ -4,8 +4,6 @@
 // hybridmc_test.cc contains unit tests for functions contained in
 // hardspheres.cc, entropy.cc, snapshot.cc, etc.
 
-#include "cells.h"
-#include "config.h"
 #include "crankshaft.h"
 #include "entropy.h"
 #include "hardspheres.h"
