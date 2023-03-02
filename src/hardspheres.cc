@@ -545,6 +545,7 @@ void add_events_for_all_beads(
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
     UpdateConfig &update_config, const unsigned int max_nbonds) {
+  assert(pos.size() == nbeads);
   // for a collision between two beads,
   for (unsigned int i = 0; i < nbeads; i++) {
     add_events_for_one_bead(pos, vel, rh2, rc2, stair2, p_rc2, box, counter,
