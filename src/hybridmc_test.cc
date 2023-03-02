@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE(collisions_in_one_dimension) {
       {7.0, 2.5, 6.5},
       // particles moving toward each other along the y-dimension
       {15.0, 6.0, 9.0},
-      // particles moving in the same direction along the y-dimension
+      // particles moving in the same direction along the x-dimension
       {7.0, 8.0, 1.3},
       // particles moving toward each other along the y-dimension
       {1.0, 6.0, 4.2},
