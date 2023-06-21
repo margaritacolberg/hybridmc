@@ -213,7 +213,7 @@ void init_vel(std::vector<Vec3> &vel, Random &mt, const double temp,
 // separation), the function returns true and returns the time until collision
 // in t; if a collision does not occur, the function returns false
 bool t_until_inner_coll(double xij, double yij, double zij, double vxij,
-                        double vyij, double vzij, const double sigma2,
+                        double vyij, double vzij, const double sigma2, //change
                         double &t) {
   double rvij = xij * vxij + yij * vyij + zij * vzij;
 
@@ -420,6 +420,8 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
 // collision, and add an event to the priority queue which contains the
 // absolute time of the collision, indices of the colliding particles, and
 // their current collision counters
+
+// see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
              double rh2, double rc2, std::optional<double> stair2,
              std::optional<double> p_rc2, const Box &box,
@@ -439,12 +441,19 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   delta_tpv(pos, vel, box, times, i, j, t, dx, dy, dz, dvx, dvy, dvz);
 
   // determine if a bond between i and j will form
-  const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
-  const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
+  const Config t_bond_mask = transient_bonds.get_bond_mask(i, j); // TODO: config.cc --> mod this to grab rc from tuple
+  const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j); 
+  
+  //TODO: add lines here ... rule to add rc from tuple
 
-  const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask);
-  const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask,
-                                         p_bond_mask, update_config);
+// ignore below two lines
+  const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask); //p_rc2 is for stairs
+  const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
+                                         p_bond_mask, update_config); // get position for rh associated 
+										 
+ // const double rc2_inner = rc2_outer = rc2 = index k of tuple
+ 
+ // two beads in trans bond >rc then inner else outer
 
   // count the number of transient bonds already present
   const unsigned int nbonds = update_config.count_bonds();
@@ -452,26 +461,30 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
   // if two nonlocal beads collide and form a bond (i and j must initially
   // not be bonded),
-  if (t_bond_mask && (nbonds < max_nbonds) &&
+  if (t_bond_mask && (nbonds < max_nbonds) && // if two beads form trans bond. skip if not participating
       update_config.non_bonded(t_bond_mask) &&
-      t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rc2_inner, t)) {
+      t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rc2_inner, t)) { // takes rc single value
     MaxNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
+    LOG_DEBUG("queueing " << ev); 
     event_queue.emplace(ev);
     // else if two nonlocal beads collide elastically,
-  } else if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rh2, t)) {
+  } else if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rh2, t)) { //rh2 is sigma2. Sigma2 is general variable for two beads distance
     MinNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
     LOG_DEBUG("queueing " << ev);
     event_queue.emplace(ev);
     // else if two nonlocal bonded beads reach rc,
   } else if (update_config.bonded(t_bond_mask) || p_bond_mask ||
              (stair2 && update_config.non_bonded(t_bond_mask))) {
-    t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, rc2_outer, t);
+    t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, rc2_outer, t); // if two beads exit well break bond
     MaxNonlocalOuterEvent ev{t, i, j, counter[i], counter[j]};
     LOG_DEBUG("queueing " << ev);
     event_queue.emplace(ev);
   }
 }
+
+// rc used in t_until inner and outer coll. no stairs so they are identical. 
+// TODO: have one variable. Only dealing with one pair of beads i and j. set the rc inner and outer to be the same. Then set rc2 after get bond mask
+// rc2 because it is a square 
 
 // iterate collisions over all particle pairs
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
@@ -484,7 +497,7 @@ void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                   const NonlocalBonds &permanent_bonds,
                   UpdateConfig &update_config, const unsigned int max_nbonds) {
   for (unsigned int j : cells.cells[icell]) {
-    if_coll(pos, vel, rh2, rc2, stair2, p_rc2, box, counter, event_queue, times,
+    if_coll(pos, vel, rh2, rc2, stair2, p_rc2, box, counter, event_queue, times, 
             i, j, transient_bonds, permanent_bonds, update_config, max_nbonds);
   }
 }

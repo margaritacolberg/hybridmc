@@ -18,6 +18,7 @@
 using Config = uint64_t;
 using ConfigInt = std::vector<uint64_t>;
 
+// TODO: has to change to account for rc in k index
 class NonlocalBonds {
 public:
   using Pairs = std::vector<std::tuple<unsigned int, unsigned int>>;

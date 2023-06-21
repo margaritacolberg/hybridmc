@@ -3,6 +3,7 @@
 
 #include "config.h"
 
+// TODO: add the k index for the rc value
 NonlocalBonds::NonlocalBonds(const Pairs &ij) {
   for (auto [i, j] : ij) {
     if (i > j) {
