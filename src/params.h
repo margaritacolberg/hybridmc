@@ -44,7 +44,7 @@ struct Param {
   std::optional<double> p_rc;
   std::optional<double> p_rc2;
 
-  // vector of indices of beads which form bonds
+  // vector of indices of beads which form bonds + rc
   NonlocalBonds nonlocal_bonds;
   // vector of indices of beads which form bonds that can be broken
   NonlocalBonds transient_bonds;

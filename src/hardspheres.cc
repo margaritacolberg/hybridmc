@@ -451,7 +451,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated 
 										 
- // const double rc2_inner = rc2_outer = rc2 = index k of tuple
+ //TODO: const double rc2_inner = rc2_outer = rc2 = index k of tuple
  
  // two beads in trans bond >rc then inner else outer
 
