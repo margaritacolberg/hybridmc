@@ -441,11 +441,14 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   delta_tpv(pos, vel, box, times, i, j, t, dx, dy, dz, dvx, dvy, dvz);
 
   // determine if a bond between i and j will form
-  const Config t_bond_mask = transient_bonds.get_bond_mask(i, j); // TODO: config.cc --> mod this to grab rc from tuple
-  const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j); 
+  const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j); // TODO: config.cc --> mod this to grab rc from tuple
+  const std::tuple<Config, double> p_bond_mask_tuple = permanent_bonds.get_bond_mask(i, j);
   
   //TODO: add lines here ... rule to add rc from tuple
 
+  const Config t_bond_mask = t_bond_mask_tuple<0>;
+  const Config p_bond_mask = p_bond_mask_tuple<0>;
+  const double rc2 = t_bond_mask_tuple<1>;
 // ignore below two lines
   const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask); //p_rc2 is for stairs
   const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values

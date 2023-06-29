@@ -34,13 +34,13 @@ public:
 
   // added rc2
   bool compare_indices(const tuple& t1, const tuple& t2){
-      if (t1<0> == t2<0> and t1<1> == t2<1>  ) {
+      if (t1<0> == t2<0> and t1<1> == t2<1> ) {
           return True;
       } else {
           return False;
       }
   }
-  Config get_bond_mask(unsigned int i, unsigned int j) const {
+  std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
 
     std::tuple searchObject(i,j);
@@ -49,14 +49,19 @@ public:
 
      // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
     if (it == ij_.end())
-      return 0;
+      return std::make_tuple(0, 0);
+
+    double rc2 = it<2>;
 
     // check that the number of configurations do not exceed 64 bits
     assert(ij_.size() <= std::numeric_limits<Config>::digits);
 
     // convert 1 from 32 to 64 bits and determine position of new bond
     // in bond pattern (using left shift operator)
-    return Config(1) << (it - ij_.begin());
+
+    // make first element of return tuple the config and second the rc2
+    Config returnConfig = Config(1) << (it - ij_.begin());
+    return std::make_tuple(returnConfig, rc2);
   }
 
   unsigned int get_nbonds() const;
