@@ -21,7 +21,10 @@ def main(args):
 
     nonlocal_bonds = [sorted(el) for el in nonlocal_bonds]
     nonlocal_bonds.sort()
+
+    # use make rc tuple to make each nonlocal bond to be a triplet with rc included
     data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
+    data['transient_bonds'] = data["transient_bonds"]
 
     in_queue = Queue()
     out_queue = Queue()
