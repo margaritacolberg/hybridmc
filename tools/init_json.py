@@ -171,7 +171,7 @@ def format_bits(bits):
 
 def make_rc2_tuple(nonlocal_bonds, rc):
     """
-    Function to produce nonlocal bonds list with each nonlocal bond list element containing the squared rc as the third
+    Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
     element
 
     args:
@@ -182,12 +182,9 @@ def make_rc2_tuple(nonlocal_bonds, rc):
     rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
 
     returns:
-    The same list but with each list element having the squared bond length (rc) as their third element.
+    The same list but with each list element having the bond length (rc) as their third element.
 
     """
-
-    # Find the default squared rc, def_rc2
-    def_rc2 = rc ** 2
 
     # loop through each bonded bead pair
     for el in nonlocal_bonds:
@@ -195,12 +192,8 @@ def make_rc2_tuple(nonlocal_bonds, rc):
         # check if rc for the bond is already given
         if len(el) != 3:
 
-            # if not then append def_rc2
-            el.append(def_rc2)
-
-        # if rc for bond given then square it
-        else:
-            el[-1] = el[-1] ** 2
+            # if not then append rc
+            el.append(rc)
 
     return nonlocal_bonds
 
