@@ -50,7 +50,7 @@ public:
     if (it == ij_.end())
       return 0;
 
-    rc2 = it<3>;
+    rc2 = it<2>;
     // check that the number of configurations do not exceed 64 bits
     assert(ij_.size() <= std::numeric_limits<Config>::digits);
 
