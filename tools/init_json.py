@@ -21,7 +21,7 @@ def main(args):
 
     nonlocal_bonds = [sorted(el) for el in nonlocal_bonds]
     nonlocal_bonds.sort()
-    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
+    data['nonlocal_bonds'] = make_rc2_tuple(nonlocal_bonds, data["rc"])
 
     in_queue = Queue()
     out_queue = Queue()
@@ -169,23 +169,38 @@ def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
 
-def make_rc_tuple(nonlocal_bonds, rc):
+def make_rc2_tuple(nonlocal_bonds, rc):
     """
+    Function to produce nonlocal bonds list with each nonlocal bond list element containing the squared rc as the third
+    element
+
     args:
-    nonlocal_bonds -- List of Lists containing the indices of beads bonded to eachother for example [ [1, 9], [4, 15]]
+    nonlocal_bonds -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]].
+    These elements may potentially have the bond length (rc) as the third element as well or not,
+    for example [[1, 9, 2.3], [2, 6]].
+
+    rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
 
     returns:
-    The same list but with each list element having the bond length (rc) appended to them
+    The same list but with each list element having the squared bond length (rc) as their third element.
 
     """
+
+    # Find the default squared rc, def_rc2
+    def_rc2 = rc ** 2
 
     # loop through each bonded bead pair
     for el in nonlocal_bonds:
 
         # check if rc for the bond is already given
         if len(el) != 3:
-            # if not then append given rc
-            el.append(rc)
+
+            # if not then append def_rc2
+            el.append(def_rc2)
+
+        # if rc for bond given then square it
+        else:
+            el[-1] = el[-1] ** 2
 
     return nonlocal_bonds
 
