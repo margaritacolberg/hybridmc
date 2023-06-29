@@ -21,7 +21,7 @@ def main(args):
 
     nonlocal_bonds = [sorted(el) for el in nonlocal_bonds]
     nonlocal_bonds.sort()
-    data['nonlocal_bonds'] = nonlocal_bonds
+    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
 
     in_queue = Queue()
     out_queue = Queue()
