@@ -21,7 +21,7 @@ def main(args):
 
     nonlocal_bonds = [sorted(el) for el in nonlocal_bonds]
     nonlocal_bonds.sort()
-    data['nonlocal_bonds'] = make_rc2_tuple(nonlocal_bonds, data["rc"])
+    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
 
     in_queue = Queue()
     out_queue = Queue()
@@ -169,7 +169,7 @@ def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
 
-def make_rc2_tuple(nonlocal_bonds, rc):
+def make_rc_tuple(nonlocal_bonds, rc):
     """
     Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
     element
