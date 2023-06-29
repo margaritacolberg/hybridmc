@@ -40,17 +40,17 @@ public:
           return False;
       }
   }
-  Config get_bond_mask(unsigned int i, unsigned int j, double &rc2) const {
+  Config get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
 
     std::tuple searchObject(i,j);
     // check that i and j match with i and j from the json file
     const auto it = std::find(ij_.begin(), ij_.end(), searchObject,compare_indices);
 
+     // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
     if (it == ij_.end())
       return 0;
 
-    rc2 = it<2>;
     // check that the number of configurations do not exceed 64 bits
     assert(ij_.size() <= std::numeric_limits<Config>::digits);
 
