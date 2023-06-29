@@ -31,7 +31,9 @@ public:
 
   // determines if a bond between beads i and j will form by matching the
   // i and j provided to the pairs of beads specified in the json file
-  Config get_bond_mask(unsigned int i, unsigned int j) const {
+
+  // added rc2
+  Config get_bond_mask(unsigned int i, unsigned int j, double &rc2) const {
     assert(j > i);
 
     // check that i and j match with i and j from the json file
