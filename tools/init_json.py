@@ -169,6 +169,27 @@ def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
 
+def make_rc_tuple(nonlocal_bonds, rc):
+    """
+    args:
+    nonlocal_bonds -- List of Lists containing the indices of beads bonded to eachother for example [ [1, 9], [4, 15]]
+
+    returns:
+    The same list but with each list element having the bond length (rc) appended to them
+
+    """
+
+    # loop through each bonded bead pair
+    for el in nonlocal_bonds:
+
+        # check if rc for the bond is already given
+        if len(el) != 3:
+            # if not then append given rc
+            el.append(rc)
+
+    return nonlocal_bonds
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
@@ -185,3 +206,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args)
+
+
