@@ -474,11 +474,12 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.stair_bonds = json["stair_bonds"];
   }
 
-  // TODO: change input to rc2 in python
+
+/*  // TODO: change input to rc2 within nonlocal tuple
   if (json.count("p_rc") != 0) {
     p.p_rc = json["p_rc"];
     p.p_rc2 = *p.p_rc * *p.p_rc;
-  }
+  }*/
 
   std::cout << *p.stair << std::endl;
   if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
