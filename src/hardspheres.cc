@@ -449,6 +449,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const Config t_bond_mask = t_bond_mask_tuple<0>;
   const Config p_bond_mask = p_bond_mask_tuple<0>;
   const double rc2 = t_bond_mask_tuple<1>;
+
 // ignore below two lines
   const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask); //p_rc2 is for stairs
   const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
