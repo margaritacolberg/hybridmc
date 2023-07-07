@@ -1497,7 +1497,15 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   const Config t_bond_mask = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const Config p_bond_mask = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
 
-  const double rc2 = get_rc2_inner(rc2, p.p_rc2, p_bond_mask);
+
+  const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(ev.i, ev.j);
+  const std::tuple<Config, double> p_bond_mask_tuple = permanent_bonds.get_bond_mask(ev.i, ev.j);
+
+  const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+  const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+  const double rc2val = std::get<1>(t_bond_mask_tuple);
+
+  const double rc2 = get_rc2_inner(rc2, rc2val, p_bond_mask);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
