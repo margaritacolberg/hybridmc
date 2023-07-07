@@ -2246,9 +2246,9 @@ BOOST_AUTO_TEST_CASE(struct_nonlocal_bonds) {
   {
     const unsigned int n = 59;
     const NonlocalBonds nb{
-        {{6, 18}, {18, 30}, {22, 34}, {34, 46}, {42, 54}, {46, 58}}};
-    const std::vector<std::pair<unsigned int, unsigned int>> bonds = {
-        {6, 18}, {18, 30}, {22, 34}, {34, 46}, {42, 54}, {46, 58}};
+        {{6, 18, 1.5}, {18, 30, 1.6}, {22, 34, 1.7}, {34, 46, 1.5}, {42, 54, 1.4}, {46, 58, 1.4}}};
+    const std::vector<std::pair<unsigned int, unsigned int, double>> bonds = {
+        {6, 18, 1.5}, {18, 30, 1.6}, {22, 34, 1.7}, {34, 46, 1.5}, {42, 54, 1.4}, {46, 58, 1.4}};
 
     for (unsigned int i = 0; i < n; i++) {
       for (unsigned int j = i + 1; j < n; j++) {
