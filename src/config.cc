@@ -3,24 +3,21 @@
 
 #include "config.h"
 
-
 // TODO: add the k index for the rc value
 NonlocalBonds::NonlocalBonds(const Pairs &ij) {
-    for (auto const &[i, j, k]: ij) {
+  for (auto tp: ij) {
+
 
 // as discussed on slack #hybridmc
 // type check
-        if (i > j) {
-            ij_.emplace_back(std::make_tuple(j, i, k * k));
-        }
-
-        else {
-            ij_.emplace_back(std::make_tuple(i, j, k * k));
-        }
+    if (tp<0> > tp<1>) {
+        ij_.emplace_back(std::make_tuple(tp<1>,tp<0>,tp<2>*tp<2>) );
+    } else {
+        ij_.emplace_back(std::make_tuple(tp<0>,tp<1>,tp<2>*tp<2>) );
     }
 }
 
-unsigned int NonlocalBonds::get_nbonds() const { return ij_.size();}
+unsigned int NonlocalBonds::get_nbonds() const { return ij_.size(); }
 
 // write the transient or permanent bead indices to the output file
 void NonlocalBonds::write_hdf5(H5::H5Object &obj,
