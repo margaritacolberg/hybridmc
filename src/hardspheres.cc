@@ -111,10 +111,14 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
         }
       }
 
-      const Config bond_mask = p.transient_bonds.get_bond_mask(j, i);
+
+      //const Config bond_mask = p.transient_bonds.get_bond_mask(j, i);
+      const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(i, j);
+      const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+      const double rc2 = std::get<1>(t_bond_mask_tuple);
 
       // check if there is a bond between two nonlocal beads
-      if (bond_mask && dist2 < p.rc2) {
+      if (bond_mask && dist2 < rc2) {
         // if there is a bond,
         overlap = true;
         // exit without checking the other distances
@@ -446,9 +450,9 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   
   //TODO: add lines here ... rule to add rc from tuple
 
-  const Config t_bond_mask = t_bond_mask_tuple<0>;
-  const Config p_bond_mask = p_bond_mask_tuple<0>;
-  const double rc2 = t_bond_mask_tuple<1>;
+  const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+  const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+  const double rc2 = std::get<1>(t_bond_mask_tuple);
 
 // ignore below two lines
   const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask); //p_rc2 is for stairs
@@ -1172,11 +1176,11 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
   // fill priority queue with collisions of all particle pairs involving a
   // recently-collided particle (executed many times to update the priority
   // queue and remove invalid entries)
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1239,11 +1243,11 @@ bool process_event(const MaxNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1302,11 +1306,11 @@ bool process_event(const MinNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1365,11 +1369,11 @@ bool process_event(const MaxNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1436,11 +1440,11 @@ bool process_event(const MinNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1474,7 +1478,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   const Config t_bond_mask = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const Config p_bond_mask = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
 
-  const double rc2 = get_rc2_inner(p.rc2, p.p_rc2, p_bond_mask);
+  const double rc2 = get_rc2_inner(rc2, p.p_rc2, p_bond_mask);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
@@ -1523,11 +1527,11 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1561,7 +1565,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
   const Config t_bond_mask = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const Config p_bond_mask = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
 
-  const double rc2 = get_rc2_outer(p.rc2, p.stair2, p.p_rc2, t_bond_mask,
+  const double rc2 = get_rc2_outer(rc2, p.stair2, p.p_rc2, t_bond_mask,
                                    p_bond_mask, update_config);
 
   std::optional<double> dS;
@@ -1616,11 +1620,11 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1646,7 +1650,7 @@ bool process_event(const BeadCellEvent &ev, System &sys, const Param &p,
   update_pos(sys.pos[ev.i], sys.vel[ev.i], sys.times[ev.i], ev.t);
 
   add_events_for_bead_after_crossing(
-      sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2, box, sys.counter,
+      sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2, box, sys.counter,
       event_queue, sys.times, cells, ev.i, ev.wall, p.transient_bonds,
       p.permanent_bonds, update_config, p.max_nbonds);
 

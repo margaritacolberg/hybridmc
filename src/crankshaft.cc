@@ -147,8 +147,14 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
         return false;
       }
 
-      const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
+      const std::tuple<Config, double> p_bond_mask_tuple = permanent_bonds.get_bond_mask(i, j);
+      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
+      const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+      const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+
+      //const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
       double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask);
+
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {
         LOG_DEBUG("permanent bond between beads "
@@ -157,7 +163,7 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
         return false;
       }
 
-      const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
+      //const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
 
       if (stair2 && t_bond_mask && !(dist2 < *stair2)) {
         LOG_DEBUG("transient bond between beads "
@@ -193,7 +199,11 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
       }
 
       // flip bit to form bond
-      const Config bond_mask = transient_bonds.get_bond_mask(i, j);
+
+      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
+      const Config bond_mask = std::get<0>(t_bond_mask_tuple);
+
+      //const Config bond_mask = transient_bonds.get_bond_mask(i, j);
       if (bond_mask != 0) {
         assert(update_config.non_bonded(bond_mask));
         update_config.flip_bond(bond_mask);
