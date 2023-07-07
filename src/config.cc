@@ -3,17 +3,18 @@
 
 #include "config.h"
 
+
 // TODO: add the k index for the rc value
 NonlocalBonds::NonlocalBonds(const Pairs &ij) {
-  for (auto tp: ij) {
+  for (auto const& [i, j, k]: ij) {
 
 
 // as discussed on slack #hybridmc
 // type check
-    if (tp<0> > tp<1>) {
-        ij_.emplace_back(std::make_tuple(tp<1>,tp<0>,tp<2>*tp<2>) );
+    if (i > j) {
+        ij_.emplace_back(std::make_tuple(j, i, k * k) );
     } else {
-        ij_.emplace_back(std::make_tuple(tp<0>,tp<1>,tp<2>*tp<2>) );
+        ij_.emplace_back(std::make_tuple(i, j, k * k) );
     }
 }
 

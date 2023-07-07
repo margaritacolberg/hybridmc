@@ -33,7 +33,7 @@ public:
   // i and j provided to the pairs of beads specified in the json file
 
   // added rc2
-  bool compare_indices(const tuple& t1, const tuple& t2){
+  bool compare_indices(const std::tuple& t1, const std::tuple& t2){
       if (t1<0> == t2<0> and t1<1> == t2<1> ) {
           return True;
       } else {
@@ -47,7 +47,7 @@ public:
     // check that i and j match with i and j from the json file
     const auto it = std::find(ij_.begin(), ij_.end(), searchObject,compare_indices);
 
-     // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
+     // 0 if no bonds formed. pair i and j not in one of nonlocal bonds lists
     if (it == ij_.end())
       return std::make_tuple(0, 0);
 
