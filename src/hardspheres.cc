@@ -1177,8 +1177,8 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-    const std::tuple<Config, double> bond_mask_tuple = nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    const double rc2 = std::get<1>(bond_mask_tuple);
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
 
   // fill priority queue with collisions of all particle pairs involving a
   // recently-collided particle (executed many times to update the priority
@@ -1250,6 +1250,9 @@ bool process_event(const MaxNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
+
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
@@ -1313,6 +1316,9 @@ bool process_event(const MinNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
+
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
@@ -1375,6 +1381,9 @@ bool process_event(const MaxNNearestEvent &ev, System &sys, const Param &p,
     if_nnearest_bond(sys.pos, sys.vel, box, sys.counter, event_queue, sys.times,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
+
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
@@ -1446,6 +1455,9 @@ bool process_event(const MinNonlocalInnerEvent &ev, System &sys, const Param &p,
     if_nnearest_bond(sys.pos, sys.vel, box, sys.counter, event_queue, sys.times,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
+
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
@@ -1533,6 +1545,9 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
     if_nnearest_bond(sys.pos, sys.vel, box, sys.counter, event_queue, sys.times,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
+
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
@@ -1627,6 +1642,9 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
+
   add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
@@ -1655,6 +1673,9 @@ bool process_event(const BeadCellEvent &ev, System &sys, const Param &p,
   move_to_new_cell(cells, ev.i, ev.ixn, ev.iyn, ev.izn);
 
   update_pos(sys.pos[ev.i], sys.vel[ev.i], sys.times[ev.i], ev.t);
+
+  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_bead_after_crossing(
       sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2, box, sys.counter,
