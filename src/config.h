@@ -36,9 +36,12 @@ public:
   bool compare_indices(const std::tuple& t1, const std::tuple& t2){
       if (t1<0> == t2<0> and t1<1> == t2<1> ) {
           return True;
-      } else {
+      }
+
+      else {
           return False;
       }
+
   }
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
