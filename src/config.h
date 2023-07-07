@@ -33,11 +33,11 @@ public:
   // i and j provided to the pairs of beads specified in the json file
 
   // added rc2
-  bool compare_indices(const tuple& t1, const tuple& t2){
-      if (t1<0> == t2<0> and t1<1> == t2<1> ) {
-          return True;
+  bool compare_indices(const std::tuple<int,int,double>& t1, const std::tuple<int,int,double>& t2){
+      if (std::get<0>(t1) == std::get<0>(t2) and std::get<1>(t1) == std::get<1>(t2) ) {
+          return true;
       } else {
-          return False;
+          return false;
       }
   }
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {

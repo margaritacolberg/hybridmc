@@ -17,7 +17,6 @@ NonlocalBonds::NonlocalBonds(const Pairs &ij) {
     }
 }
 
-
 unsigned int NonlocalBonds::get_nbonds() const { return ij_.size(); }
 
 // write the transient or permanent bead indices to the output file
