@@ -118,7 +118,7 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
       const double rc2 = std::get<1>(t_bond_mask_tuple);
 
       // check if there is a bond between two nonlocal beads
-      if (bond_mask && dist2 < rc2) {
+      if (t_bond_mask && dist2 < rc2) {
         // if there is a bond,
         overlap = true;
         // exit without checking the other distances
@@ -161,9 +161,13 @@ void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
       const double dist2 = dx * dx + dy * dy + dz * dz;
 
       // determine if a bond between i and j will form
-      const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
+      //const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
 
-      if (t_bond_mask && dist2 < rc2) {
+      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
+      const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+      const double rc2val = std::get<1>(t_bond_mask_tuple);
+
+      if (t_bond_mask && dist2 < rc2val) {
         assert(update_config.non_bonded(t_bond_mask));
         update_config.flip_bond(t_bond_mask);
         assert(update_config.bonded(t_bond_mask));
@@ -445,21 +449,18 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   delta_tpv(pos, vel, box, times, i, j, t, dx, dy, dz, dvx, dvy, dvz);
 
   // determine if a bond between i and j will form
-  const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j); // TODO: config.cc --> mod this to grab rc from tuple
+  const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
   const std::tuple<Config, double> p_bond_mask_tuple = permanent_bonds.get_bond_mask(i, j);
-  
-  //TODO: add lines here ... rule to add rc from tuple
 
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
-  const double rc2 = std::get<1>(t_bond_mask_tuple);
+  const double rc2val = std::get<1>(t_bond_mask_tuple);
 
 // ignore below two lines
-  const double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask); //p_rc2 is for stairs
-  const double rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
+  const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
+  const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated 
-										 
- //TODO: const double rc2_inner = rc2_outer = rc2 = index k of tuple
+
  
  // two beads in trans bond >rc then inner else outer
 
@@ -1108,7 +1109,10 @@ void dist_between_nonlocal_beads(const std::vector<Vec3> &pos, const Box &box,
 
   for (unsigned int i = 0; i < nbeads - 3; i++) {
     for (unsigned int j = i + 3; j < nbeads; j++) {
-      if (nonlocal_bonds.get_bond_mask(i, j)) {
+        const std::tuple<Config, double> bond_mask_tuple = nonlocal_bonds.get_bond_mask(i, j);
+        const Config bond_mask = std::get<0>(bond_mask_tuple);
+
+      if (bond_mask) {
         double dx = pos[i].x - pos[j].x;
         double dy = pos[i].y - pos[j].y;
         double dz = pos[i].z - pos[j].z;
@@ -1176,11 +1180,11 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
   // fill priority queue with collisions of all particle pairs involving a
   // recently-collided particle (executed many times to update the priority
   // queue and remove invalid entries)
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, rc2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.rc2, p.stair2, p.p_rc2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
