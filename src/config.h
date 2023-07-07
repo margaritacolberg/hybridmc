@@ -33,7 +33,8 @@ public:
   // i and j provided to the pairs of beads specified in the json file
 
   // added rc2
-  bool compare_indices(const std::tuple<int,int,double>& t1, const std::tuple<int,int,double>& t2){
+
+  static bool compare_indices(const std::tuple<int,int,double>& t1, const std::tuple<int,int,double>& t2){
       if (std::get<0>(t1) == std::get<0>(t2) and std::get<1>(t1) == std::get<1>(t2) ) {
           return true;
       } else {
