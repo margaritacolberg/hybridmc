@@ -24,7 +24,7 @@ def main(args):
 
     # use make rc tuple to make each nonlocal bond to be a triplet with rc included
     data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
-    data['transient_bonds'] = data["transient_bonds"]
+    data['transient_bonds'] = data["nonlocal_bonds"]
 
     in_queue = Queue()
     out_queue = Queue()
