@@ -49,15 +49,15 @@ public:
     std::tuple<int,int,double> searchObject(i,j, 1.5);
     // check that i and j match with i and j from the json file
     const auto it = std::find_if(ij_.begin(), ij_.end(),
-                                 [](const std::tuple<int,int,double>& e) {
-                                     return (std::get<0>(e) == i and std::get<1>(e) == j)
+                                 [i,j](auto& e) {
+                                     return (std::get<0>(e) == i and std::get<1>(e) == j);
                                  });
 
      // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
     if (it == ij_.end())
       return std::make_tuple(0, 0);
 
-    double rc2 = std::get<2>(it);
+    double rc2 = std::get<2>(*it);
 
     // check that the number of configurations do not exceed 64 bits
     assert(ij_.size() <= std::numeric_limits<Config>::digits);
