@@ -113,7 +113,7 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
 
 
       //const Config bond_mask = p.transient_bonds.get_bond_mask(j, i);
-      const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(i, j);
+      const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(j, i);
       const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
       const double rc2 = std::get<1>(t_bond_mask_tuple);
 

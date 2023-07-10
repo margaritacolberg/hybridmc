@@ -46,7 +46,7 @@ public:
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
 
-    std::tuple<int,int,double> searchObject(i,j, 1.5);
+    //std::tuple<int,int,double> searchObject(i,j, 1.5);
     // check that i and j match with i and j from the json file
     const auto it = std::find_if(ij_.begin(), ij_.end(),
                                  [i,j](auto& e) {
