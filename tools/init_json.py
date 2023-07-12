@@ -11,6 +11,23 @@ import sys
 from multiprocessing import Process, Queue
 
 
+def sort_triplet(bond_list):
+    """
+swap bond i and j in (i, j, rc)  triplets within bond list if i > j
+
+params:
+
+bond_list: List[List]  - bond list
+
+"""
+
+    for el in bond_list:
+        if el[0] > el[1]:
+            el[0], el[1] = el[1], el[0]
+
+    return bond_list
+
+
 def main(args):
     with open(args.json, 'r') as input_json:
         data = json.load(input_json)
@@ -19,7 +36,8 @@ def main(args):
     nbonds = len(nonlocal_bonds)
     nstates = 2**nbonds
 
-    nonlocal_bonds = [sorted(el) for el in nonlocal_bonds]
+
+    nonlocal_bonds = sort_triplet(nonlocal_bonds)
     nonlocal_bonds.sort()
 
     # use make rc tuple to make each nonlocal bond to be a triplet with rc included

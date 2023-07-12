@@ -174,7 +174,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
     if (!(E_diff < 1e-6)) {
-      std::cout << E_diff << " energy difference" << std::endl;
+      std::cout << E_diff << " energy difference " << "  tot_E_before = " << tot_E_before << " tot_E_during = " << tot_E_during << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
   }
@@ -221,7 +221,8 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
     if (!(E_diff < 1e-6)) {
-      std::cout << E_diff << " energy difference" << std::endl;
+      std::cout << E_diff << " energy difference in wl" << " tot_E_before = " << tot_E_before << " tot_E_during = " << tot_E_during << std::endl;
+      std::cout << " entropy of config " << update_config.config << " is " << sys.s_bias[update_config.config] << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
   }
@@ -389,6 +390,12 @@ int main(int argc, char *argv[]) {
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
+  //  print sbias for debugging
+  for (int i=0;i<sys.s_bias.size();i++)
+  {
+      std::cout << "  Sbias " << i << " has value " << sys.s_bias[i] << std::endl;
+  }
+
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   unsigned int g_test_count = 0;
@@ -467,8 +474,13 @@ void from_json(const nlohmann::json &json, Param &p) {
   }
 
   p.nonlocal_bonds = json["nonlocal_bonds"];
+
+  //p.nonlocal_bonds.printBonds();
+
   p.transient_bonds = json["transient_bonds"];
   p.permanent_bonds = json["permanent_bonds"];
+
+  p.permanent_bonds.printBonds();
 
   if (json.count("stair_bonds") != 0) {
     p.stair_bonds = json["stair_bonds"];

@@ -14,6 +14,7 @@
 #include <cassert>
 #include <limits>
 #include <vector>
+#include <iostream>
 
 using Config = uint64_t;
 using ConfigInt = std::vector<uint64_t>;
@@ -75,6 +76,14 @@ public:
   unsigned int count_bonds() const;
 
   void write_hdf5(H5::H5Object &obj, const std::string &name) const;
+
+  void printBonds()
+  {
+      for (int i=0;i< int(ij_.size());i++){
+          std::cout << " Bond pair " << std::get<0>(ij_[i]) << "-" << std::get<1>(ij_[i])
+                  << " has rc2 =  " << std::get<2>(ij_[i]) << std::endl;
+      }
+  }
 
 private:
   Pairs ij_;
