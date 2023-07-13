@@ -1,0 +1,51 @@
+rm -rf release
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release
+-- The CXX compiler identification is GNU 11.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /cptg/u4/jmschofi/.conda/envs/hmc/bin/x86_64-conda-linux-gnu-c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found Boost: /cptg/u4/jmschofi/.conda/envs/hmc/lib/cmake/Boost-1.73.0/BoostConfig.cmake (found version "1.73.0") found components: program_options unit_test_framework 
+-- Found HDF5: /cptg/u4/jmschofi/.conda/envs/hmc/lib/libhdf5_cpp.so;/cptg/u4/jmschofi/.conda/envs/hmc/lib/libhdf5.so;/cptg/u4/jmschofi/.conda/envs/hmc/x86_64-conda-linux-gnu/sysroot/usr/lib/libpthread.so;/cptg/u4/jmschofi/.conda/envs/hmc/lib/libz.so;/cptg/u4/jmschofi/.conda/envs/hmc/x86_64-conda-linux-gnu/sysroot/usr/lib/libdl.so;/cptg/u4/jmschofi/.conda/envs/hmc/x86_64-conda-linux-gnu/sysroot/usr/lib/libm.so (found version "1.10.6") found components: CXX 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /cptg/u4/jmschofi/students/vignesh/hybridmc/release
+cmake --build release
+[1/7] Building CXX object src/CMakeFiles/hybridmc_common.dir/snapshot.cc.o
+[2/7] Building CXX object src/CMakeFiles/hybridmc_common.dir/config.cc.o
+[3/7] Building CXX object src/CMakeFiles/hybridmc_common.dir/crankshaft.cc.o
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/crankshaft.cc: In function 'bool check_nonlocal_dist(const std::vector<Vec3>&, const Box&, double, std::optional<double>, std::optional<double>, const NonlocalBonds&, const NonlocalBonds&)':
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/crankshaft.cc:129:54: warning: unused parameter 'p_rc2' [-Wunused-parameter]
+  129 |                          const std::optional<double> p_rc2,
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/crankshaft.cc: In function 'void crankshaft(std::vector<Vec3>&, UpdateConfig&, const Box&, double, double, double, double, double, double, std::optional<double>, std::optional<double>, const NonlocalBonds&, const NonlocalBonds&, Random&, const std::vector<double>&)':
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/crankshaft.cc:242:30: warning: unused parameter 'rc2' [-Wunused-parameter]
+  242 |                 const double rc2, const double rh2,
+      |                 ~~~~~~~~~~~~~^~~
+[4/7] Building CXX object src/CMakeFiles/hybridmc_common.dir/hardspheres.cc.o
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/hardspheres.cc: In function 'void if_coll(const std::vector<Vec3>&, const std::vector<Vec3>&, double, double, std::optional<double>, std::optional<double>, const Box&, const std::vector<long unsigned int>&, EventQueue&, const std::vector<double>&, unsigned int, unsigned int, const NonlocalBonds&, const NonlocalBonds&, UpdateConfig&, unsigned int)':
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/hardspheres.cc:434:33: warning: unused parameter 'rc2' [-Wunused-parameter]
+  434 |              double rh2, double rc2, std::optional<double> stair2,
+      |                          ~~~~~~~^~~
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/hardspheres.cc:435:36: warning: unused parameter 'p_rc2' [-Wunused-parameter]
+  435 |              std::optional<double> p_rc2, const Box &box,
+      |              ~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/hardspheres.cc: In function 'bool process_event(const MaxNonlocalOuterEvent&, System&, const Param&, const Box&, EventQueue&, Cells&, UpdateConfig&, CountBond&)':
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/hardspheres.cc:1612:18: warning: unused variable 'p_bond_mask' [-Wunused-variable]
+ 1612 |     const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+      |                  ^~~~~~~~~~~
+[5/7] Building CXX object src/CMakeFiles/hybridmc_common.dir/entropy.cc.o
+[6/7] Building CXX object src/CMakeFiles/hybridmc.dir/main.cc.o
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/main.cc: In function 'int main(int, char**)':
+/cptg/u4/jmschofi/students/vignesh/hybridmc/src/main.cc:394:17: warning: comparison of integer expressions of different signedness: 'int' and 'std::vector<double>::size_type' {aka 'long unsigned int'} [-Wsign-compare]
+  394 |   for (int i=0;i<sys.s_bias.size();i++)
+      |                ~^~~~~~~~~~~~~~~~~~
+[7/7] Linking CXX executable hybridmc
+FAILED: hybridmc 
+: && /cptg/u4/jmschofi/.conda/envs/hmc/bin/x86_64-conda-linux-gnu-c++ -fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /cptg/u4/jmschofi/.conda/envs/hmc/include -Wall -Wextra -O3 -DNDEBUG -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,-rpath,/cptg/u4/jmschofi/.conda/envs/hmc/lib -Wl,-rpath-link,/cptg/u4/jmschofi/.conda/envs/hmc/lib -L/cptg/u4/jmschofi/.conda/envs/hmc/lib src/CMakeFiles/hybridmc_common.dir/hardspheres.cc.o src/CMakeFiles/hybridmc_common.dir/crankshaft.cc.o src/CMakeFiles/hybridmc_common.dir/entropy.cc.o src/CMakeFiles/hybridmc_common.dir/config.cc.o src/CMakeFiles/hybridmc_common.dir/snapshot.cc.o src/CMakeFiles/hybridmc.dir/main.cc.o -o hybridmc  /cptg/u4/jmschofi/.conda/envs/hmc/lib/libboost_program_options.so.1.73.0  /cptg/u4/jmschofi/.conda/envs/hmc/lib/libboost_unit_test_framework.so.1.73.0  /cptg/u4/jmschofi/.conda/envs/hmc/lib/libhdf5_cpp.so  /cptg/u4/jmschofi/.conda/envs/hmc/lib/libhdf5.so  -lpthread  /cptg/u4/jmschofi/.conda/envs/hmc/lib/libz.so  /cptg/u4/jmschofi/.conda/envs/hmc/x86_64-conda-linux-gnu/sysroot/usr/lib/libdl.so  /cptg/u4/jmschofi/.conda/envs/hmc/x86_64-conda-linux-gnu/sysroot/usr/lib/libm.so && :
+/nfs/cptg/u4/jmschofi/.conda/envs/hmc/bin/../lib/gcc/x86_64-conda-linux-gnu/11.2.0/../../../../x86_64-conda-linux-gnu/bin/ld: src/CMakeFiles/hybridmc.dir/main.cc.o: in function `run_trajectory(System&, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, Param const&, Box const&, std::vector<double, std::allocator<double> >&, UpdateConfig&, UpdateConfigWriter&, PosWriter&, VelWriter&, ConfigWriter&, DistWriter&, std::set<unsigned long, std::less<unsigned long>, std::allocator<unsigned long> >&, std::vector<unsigned long, std::allocator<unsigned long> >&, CountBond&, double, unsigned int)':
+main.cc:(.text._Z14run_trajectoryR6SystemRSt23mersenne_twister_engineImLm32ELm624ELm397ELm31ELm2567483615ELm11ELm4294967295ELm7ELm2636928640ELm15ELm4022730752ELm18ELm1812433253EERK5ParamRK3BoxRSt6vectorIdSaIdEER12UpdateConfigR18UpdateConfigWriterR9PosWriterR9VelWriterR12ConfigWriterR10DistWriterRSt3setImSt4lessImESaImEERSA_ImST_ER9CountBonddj+0x93f): undefined reference to `crankshaft(std::vector<Vec3, std::allocator<Vec3> >&, UpdateConfig&, Box const&, double, double, double, double, double, std::optional<double>, std::optional<double>, NonlocalBonds const&, NonlocalBonds const&, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::vector<double, std::allocator<double> > const&)'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+make: *** [Makefile:15: release] Error 1
