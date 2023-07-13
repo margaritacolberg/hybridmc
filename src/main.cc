@@ -339,7 +339,7 @@ int main(int argc, char *argv[]) {
     read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
   } else if (input_name && std::filesystem::exists(*input_name)) {
     read_input(*input_name, sys.pos);
-    init_update_config(sys.pos, update_config, box, p.rc2, p.transient_bonds);
+    init_update_config(sys.pos, update_config, box, p.transient_bonds);
     init_s(sys.s_bias, t_bonds);
   } else {
     init_pos(sys.pos, box, mt, p);

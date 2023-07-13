@@ -13,7 +13,7 @@ from multiprocessing import Process, Queue
 
 def sort_triplet(bond_list):
     """
-swap bond i and j in (i, j, rc)  triplets within bond list if i > j
+swap bond i and j in (i, j, rc) triplets within bond list if i > j
 
 params:
 
@@ -51,7 +51,7 @@ def main(args):
     layer_args = (nonlocal_bonds, data, in_queue, out_queue, args.exe,
             args.seed_increment, args.rc, args.bp)
 
-    for i in range(args.nproc):
+    for _ in range(args.nproc):
         p = Process(target=run_layer, args=layer_args)
         p.start()
         worker.append(p)
@@ -88,7 +88,7 @@ def main(args):
 
     # signal to run_layer that no more items are left to be added to queue
     # (native state has been reached)
-    for i in range(len(worker)):
+    for _ in range(len(worker)):
         in_queue.put(None)
 
     for p in worker:

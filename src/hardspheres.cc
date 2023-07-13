@@ -144,8 +144,8 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
 // configuration at the end of this simulation is being used as input to the
 // current layer, turn on the transient bond
 void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
-                        const Box &box, const double rc2,
-                        const NonlocalBonds &transient_bonds) {
+                        const Box &box, const NonlocalBonds &transient_bonds) {
+
   const unsigned int nbeads = pos.size();
 
   // reset bonds
@@ -462,6 +462,8 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
   } else if (t_bond_mask) {
       rc2val = std::get<1>(t_bond_mask_tuple);
+  } else {
+
   }
 
 // ignore below two lines

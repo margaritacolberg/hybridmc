@@ -30,8 +30,7 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p);
 
 void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
-                        const Box &box, const double rc2,
-                        const NonlocalBonds &transient_bonds);
+                        const Box &box, const NonlocalBonds &transient_bonds);
 
 void shift_vel_CM_to_0(std::vector<Vec3> &vel);
 
