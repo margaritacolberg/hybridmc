@@ -390,12 +390,6 @@ int main(int argc, char *argv[]) {
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
-  //  print sbias for debugging
-  for (int i=0;i<sys.s_bias.size();i++)
-  {
-      std::cout << "  Sbias " << i << " has value " << sys.s_bias[i] << std::endl;
-  }
-
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   unsigned int g_test_count = 0;
