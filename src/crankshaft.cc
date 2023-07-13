@@ -191,7 +191,7 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
 
       const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
       const Config bond_mask = std::get<0>(t_bond_mask_tuple);
-      double rc2 = std::get<1>(t_bond_mask_tuple);
+      double rc2 = std::get<1>(t_bond_mask_tuple); // use correct distance
 
       double dx = pos_trial[i].x - pos_trial[j].x;
       double dy = pos_trial[i].y - pos_trial[j].y;
@@ -201,7 +201,7 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
       const double dist2 = dx * dx + dy * dy + dz * dz;
 
       if (dist2 > rc2) {
-        continue;
+        continue; 
       }
 
       // flip bit to form bond
