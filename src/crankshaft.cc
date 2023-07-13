@@ -124,7 +124,7 @@ bool check_local_dist_if_crankshaft(const std::vector<Vec3> &pos_trial,
 }
 
 bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
-                         const double rc2, const double rh2,
+                         const double rh2,
                          const std::optional<double> stair2,
                          const std::optional<double> p_rc2,
                          const NonlocalBonds &transient_bonds,
@@ -181,13 +181,18 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
 // calculate the integer of the trial configuration from the post-rotation
 // positions of the beads
 UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
-                        const NonlocalBonds &transient_bonds,
-                        const double rc2) {
+                        const NonlocalBonds &transient_bonds) {
   const unsigned int nbeads = pos_trial.size();
   UpdateConfig update_config;
 
   for (unsigned int i = 0; i < nbeads; i++) {
     for (unsigned int j = i + 1; j < nbeads; j++) {
+
+
+      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
+      const Config bond_mask = std::get<0>(t_bond_mask_tuple);
+      double rc2 = std::get<1>(t_bond_mask_tuple);
+
       double dx = pos_trial[i].x - pos_trial[j].x;
       double dy = pos_trial[i].y - pos_trial[j].y;
       double dz = pos_trial[i].z - pos_trial[j].z;
@@ -201,8 +206,6 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
 
       // flip bit to form bond
 
-      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
-      const Config bond_mask = std::get<0>(t_bond_mask_tuple);
 
       //const Config bond_mask = transient_bonds.get_bond_mask(i, j);
       if (bond_mask != 0) {
