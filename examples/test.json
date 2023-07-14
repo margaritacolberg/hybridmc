@@ -25,7 +25,7 @@
     "write_step": 10,
     "seeds": [3, 1],
     "temp": 1.0,
-    "mc_moves": 0,
+    "mc_moves": 20,
     "mc_write": 5,
     "total_iter": 200,
     "pos_scale": 0.5,
