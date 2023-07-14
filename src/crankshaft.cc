@@ -124,7 +124,7 @@ bool check_local_dist_if_crankshaft(const std::vector<Vec3> &pos_trial,
 }
 
 bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
-                         const double rc2, const double rh2,
+                         const double rh2,
                          const std::optional<double> stair2,
                          const std::optional<double> p_rc2,
                          const NonlocalBonds &transient_bonds,
@@ -181,13 +181,18 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
 // calculate the integer of the trial configuration from the post-rotation
 // positions of the beads
 UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
-                        const NonlocalBonds &transient_bonds,
-                        const double rc2) {
+                        const NonlocalBonds &transient_bonds) {
   const unsigned int nbeads = pos_trial.size();
   UpdateConfig update_config;
 
   for (unsigned int i = 0; i < nbeads; i++) {
     for (unsigned int j = i + 1; j < nbeads; j++) {
+
+
+      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
+      const Config bond_mask = std::get<0>(t_bond_mask_tuple);
+      double rc2 = std::get<1>(t_bond_mask_tuple); // use correct distance
+
       double dx = pos_trial[i].x - pos_trial[j].x;
       double dy = pos_trial[i].y - pos_trial[j].y;
       double dz = pos_trial[i].z - pos_trial[j].z;
@@ -196,13 +201,11 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
       const double dist2 = dx * dx + dy * dy + dz * dz;
 
       if (dist2 > rc2) {
-        continue;
+        continue; 
       }
 
       // flip bit to form bond
 
-      const std::tuple<Config, double> t_bond_mask_tuple = transient_bonds.get_bond_mask(i, j);
-      const Config bond_mask = std::get<0>(t_bond_mask_tuple);
 
       //const Config bond_mask = transient_bonds.get_bond_mask(i, j);
       if (bond_mask != 0) {
@@ -236,7 +239,7 @@ bool accept_move(const std::vector<double> &s_bias, UpdateConfig &orig_config,
 void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
                 const Box &box, const double near_min2, const double near_max2,
                 const double nnear_min2, const double nnear_max2,
-                const double rc2, const double rh2,
+                const double rh2,
                 const std::optional<double> stair2,
                 const std::optional<double> p_rc2,
                 const NonlocalBonds &transient_bonds,
@@ -261,10 +264,10 @@ void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
   } while (
       !(check_local_dist_if_crankshaft(pos_trial, box, near_min2, near_max2,
                                        nnear_min2, nnear_max2) &&
-        check_nonlocal_dist(pos_trial, box, rc2, rh2, stair2, p_rc2,
+        check_nonlocal_dist(pos_trial, box, rh2, stair2, p_rc2,
                             transient_bonds, permanent_bonds)));
 
-  UpdateConfig trial_config = config_int(pos_trial, box, transient_bonds, rc2);
+  UpdateConfig trial_config = config_int(pos_trial, box, transient_bonds);
 
   if (accept_move(s_bias, update_config, trial_config, mt)) {
     LOG_DEBUG("accept move");

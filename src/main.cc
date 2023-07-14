@@ -115,7 +115,7 @@ void run_step(System &sys, const Param &p, const Box &box,
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2));
   // check bond distances of nonlocal beads
-  assert(check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
+  assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
                              p.transient_bonds, p.permanent_bonds));
 
   // update time
@@ -181,7 +181,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
   for (unsigned int i = 0; i < p.mc_moves; i++) {
     crankshaft(sys.pos, update_config, box, p.near_min2, p.near_max2,
-               p.nnear_min2, p.nnear_max2, p.rc2, p.rh2, p.stair2, p.p_rc2,
+               p.nnear_min2, p.nnear_max2, p.rh2, p.stair2, p.p_rc2,
                p.transient_bonds, p.permanent_bonds, mt, sys.s_bias);
     for (unsigned int j = 1; j < p.mc_write; j++) {
       if (i == ((j * p.mc_moves) / p.mc_write)) {
@@ -192,7 +192,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2));
-  assert(check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
+  assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
                              p.transient_bonds, p.permanent_bonds));
 
   // store the configurations in the hdf5 file
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
     throw std::runtime_error("local beads overlap");
   }
 
-  if (!check_nonlocal_dist(sys.pos, box, p.rc2, p.rh2, p.stair2, p.p_rc2,
+  if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
                            p.transient_bonds, p.permanent_bonds)) {
     throw std::runtime_error("nonlocal beads overlap");
   }
@@ -389,12 +389,6 @@ int main(int argc, char *argv[]) {
   p.nonlocal_bonds.write_hdf5(file, "nonlocal_bonds");
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
-
-  //  print sbias for debugging
-  for (int i=0;i<sys.s_bias.size();i++)
-  {
-      std::cout << "  Sbias " << i << " has value " << sys.s_bias[i] << std::endl;
-  }
 
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
