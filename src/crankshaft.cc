@@ -154,7 +154,9 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
 
       //const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
       //double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask);
-      double rc2_inner = std::get<1>(p_bond_mask_tuple);
+      //double rc2 = std::get<1>(p_bond_mask_tuple);
+
+      double rc2_inner = get_rc2_inner(std::get<1>(p_bond_mask_tuple), p_rc2, p_bond_mask);
 
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {

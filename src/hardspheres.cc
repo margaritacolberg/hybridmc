@@ -467,11 +467,11 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   }
 
 // ignore below two lines
-  //const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
-  //const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
-            //                             p_bond_mask, update_config); // get position for rh associated
-  const double rc2_inner = rc2val;
-  const double rc2_outer = rc2val;
+  const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
+  const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
+                                         p_bond_mask, update_config); // get position for rh associated
+  //const double rc2_inner = rc2val;
+  //const double rc2_outer = rc2val;
  
  // two beads in trans bond >rc then inner else outer
 
@@ -1510,15 +1510,15 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
 
 
   const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(ev.i, ev.j);
-  //const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
+  const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
   const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
-  //const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+  const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  const double rc2 = std::get<1>(bond_mask_tuple);
+  //const double rc2 = std::get<1>(bond_mask_tuple);
 
-  //const double rc2 = get_rc2_inner(rc2, rc2val, p_bond_mask);
+  const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p.p_rc2, p_bond_mask);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
@@ -1611,10 +1611,10 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
     const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  //const double rc2 = get_rc2_outer(rc2, p.stair2, p.p_rc2, t_bond_mask, p_bond_mask, update_config);
 
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    const double rc2 = std::get<1>(bond_mask_tuple);
+    //const double rc2 = std::get<1>(bond_mask_tuple);
+    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, p.p_rc2, t_bond_mask, p_bond_mask, update_config);
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,
