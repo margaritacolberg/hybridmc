@@ -27,7 +27,7 @@ jobs:
 
       - run: sudo apt-get -y -qq update
 
-      - run: sudo apt-get -y -qq install build-essential cmake ninja-build libhdf5-dev libboost-program-options-dev libboost-test-dev
+      - run: sudo apt-get -y -qq install build-essential cmake ninja-build libhdf5-dev libboost-program-options-dev libboost-test-dev libboost-filesystem-dev
 
       - run: make ${{ matrix.config }}
         env:
