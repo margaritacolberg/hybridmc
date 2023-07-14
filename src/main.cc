@@ -23,7 +23,11 @@
 
 namespace po = boost::program_options;
 
-void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box, UpdateConfig &update_config, std::optional<std::string> input_name, std::optional<std::string> snapshot_name, const unsigned int t_bonds) {
+void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
+                    UpdateConfig &update_config,
+                    std::optional<std::string> input_name,
+                    std::optional<std::string> snapshot_name,
+                    const unsigned int t_bonds) {
   if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
     // overwrite existing entries in pos and s_bias vectors with read-in values
     // from hdf5 file
@@ -145,18 +149,17 @@ void run_step(System &sys, const Param &p, const Box &box,
 }
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
-                    UpdateConfig &update_config,
-                    CountBond &count_bond, double wall_time,
-                    unsigned int iter) {
+                       UpdateConfig &update_config, CountBond &count_bond,
+                       double wall_time, unsigned int iter) {
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
-      EventQueue event_queue;
-      Cells cells{p.ncell, p.length / p.ncell};
+    EventQueue event_queue;
+    Cells cells{p.ncell, p.length / p.ncell};
 
-      initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+    initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
-      run_step(sys, p, box, update_config, count_bond, wall_time, cells,
-              event_queue, step, p.del_t);
+    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+             event_queue, step, p.del_t);
   }
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
@@ -181,14 +184,14 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
   // hdf5 file
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
-      EventQueue event_queue;
-      Cells cells{p.ncell, p.length / p.ncell};
+    EventQueue event_queue;
+    Cells cells{p.ncell, p.length / p.ncell};
 
-      initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+    initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
-      // to check energy conservation
-      const double tot_E_before =
-          compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+    // to check energy conservation
+    const double tot_E_before =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t);
@@ -409,8 +412,8 @@ int main(int argc, char *argv[]) {
   //
   // reset bead clocks, counters, and wall time
   for (unsigned int i = 0; i < p.nbeads; i++) {
-      sys.times[i] = 0.0;
-      sys.counter[i] = 0.0;
+    sys.times[i] = 0.0;
+    sys.counter[i] = 0.0;
   }
 
   double wall_time = 0.0;
@@ -420,19 +423,20 @@ int main(int argc, char *argv[]) {
   p_eq.nsteps = p.nsteps_eq;
   p_eq.total_iter = p.total_iter_eq;
 
-  initialize_pos(sys, mt, p_eq, box, update_config_eq, input_name, snapshot_name, t_bonds);
+  initialize_pos(sys, mt, p_eq, box, update_config_eq, input_name,
+                 snapshot_name, t_bonds);
 
   for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
     run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
-            wall_time, iter);
+                      wall_time, iter);
   }
 
   // Wang-Landau
   init_update_config(sys.pos, update_config, box, p.rc2, p.transient_bonds);
 
   for (unsigned int i = 0; i < p.nbeads; i++) {
-      sys.times[i] = 0.0;
-      sys.counter[i] = 0.0;
+    sys.times[i] = 0.0;
+    sys.counter[i] = 0.0;
   }
 
   wall_time = 0.0;

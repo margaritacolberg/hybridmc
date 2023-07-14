@@ -5,8 +5,8 @@
 // protein, and handles the initialization and processing of collision and cell
 // crossing events of the hard spheres in a priority queue
 
-#include "crankshaft.h"
 #include "hardspheres.h"
+#include "crankshaft.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
