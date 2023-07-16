@@ -407,12 +407,12 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
                      const Config p_bond_mask, UpdateConfig &update_config) {
   double rc2_outer = rc2;
 
-  if (stair2) {
-    if (p_bond_mask) {
-      rc2_outer = *p_rc2;
-    } else if (update_config.non_bonded(t_bond_mask)) {
-      rc2_outer = *stair2;
-    }
+  if (p_bond_mask && p_rc2) {
+    rc2_outer = *p_rc2;
+  }
+
+  if (stair2 && update_config.non_bonded(t_bond_mask)) {
+    rc2_outer = *stair2;
   }
 
   return rc2_outer;

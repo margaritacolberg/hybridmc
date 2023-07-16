@@ -2755,3 +2755,35 @@ BOOST_AUTO_TEST_CASE(check_dist_between_nonlocal_beads) {
   BOOST_CHECK_CLOSE_FRACTION(dist[0], 1.0, 1e-10);
   BOOST_CHECK_CLOSE_FRACTION(dist[1], 1.0, 1e-10);
 }
+
+BOOST_AUTO_TEST_CASE(check_rc2_outer) {
+  UpdateConfig update_config;
+
+  // no staircase potential
+  double rc2 = 2.25;
+  double t_rc2_outer = get_rc2_outer(rc2, {}, {}, 1, 0, update_config);
+  BOOST_CHECK_EQUAL(t_rc2_outer, 2.25);
+  double p_rc2_outer = get_rc2_outer(rc2, {}, {}, 0, 1, update_config);
+  BOOST_CHECK_EQUAL(p_rc2_outer, 2.25);
+
+  // first step of staircase potential
+  rc2 = 9.0;
+  double p_rc2 = 2.25;
+  t_rc2_outer = get_rc2_outer(rc2, {}, p_rc2, 1, 0, update_config);
+  BOOST_CHECK_EQUAL(t_rc2_outer, 9.0);
+  p_rc2_outer = get_rc2_outer(rc2, {}, p_rc2, 0, 1, update_config);
+  BOOST_CHECK_EQUAL(p_rc2_outer, 2.25);
+
+  // second step of staircase potential
+  rc2 = 4.84;
+  p_rc2 = 2.25;
+  double stair2 = 9.0;
+  t_rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, 1, 0, update_config);
+  BOOST_CHECK_EQUAL(t_rc2_outer, 9.0);
+  double t_rc2_inner = get_rc2_inner(rc2, p_rc2, 0);
+  BOOST_CHECK_EQUAL(t_rc2_inner, 4.84);
+  p_rc2_outer = get_rc2_outer(rc2, stair2, p_rc2, 0, 1, update_config);
+  BOOST_CHECK_EQUAL(p_rc2_outer, 2.25);
+  double p_rc2_inner = get_rc2_inner(rc2, p_rc2, 1);
+  BOOST_CHECK_EQUAL(p_rc2_inner, 2.25);
+}
