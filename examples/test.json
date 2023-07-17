@@ -9,7 +9,6 @@
     "rc": 1.5,
     "nonlocal_bonds": [[2, 6], [6, 10], [10, 14]],
     "transient_bonds": [[2, 6], [6, 10], [10, 14]],
-    "transient_bonds_eq": [],
     "permanent_bonds": [],
     "config_in": 0,
     "config_out": 7,

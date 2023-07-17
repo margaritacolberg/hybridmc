@@ -419,7 +419,6 @@ int main(int argc, char *argv[]) {
   double wall_time = 0.0;
   UpdateConfig update_config_eq;
 
-  p_eq.transient_bonds = p.transient_bonds_eq;
   p_eq.nsteps = p.nsteps_eq;
   p_eq.total_iter = p.total_iter_eq;
 
@@ -523,7 +522,6 @@ void from_json(const nlohmann::json &json, Param &p) {
 
   p.nonlocal_bonds = json["nonlocal_bonds"];
   p.transient_bonds = json["transient_bonds"];
-  p.transient_bonds_eq = json["transient_bonds_eq"];
   p.permanent_bonds = json["permanent_bonds"];
 
   if (json.count("stair_bonds") != 0) {

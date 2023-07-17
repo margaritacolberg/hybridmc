@@ -47,8 +47,6 @@ struct Param {
   NonlocalBonds nonlocal_bonds;
   // vector of indices of beads which form bonds that can be broken
   NonlocalBonds transient_bonds;
-  // transient_bonds placeholder for equilibrium run
-  NonlocalBonds transient_bonds_eq;
   // vector of indices of beads which form bonds that cannot be broken
   NonlocalBonds permanent_bonds;
   // vector of indices of beads whose potential is a staircase

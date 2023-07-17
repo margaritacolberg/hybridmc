@@ -27,7 +27,7 @@ complicated.
 
   * `tree`: C++ and Bash scripts for generating tree plots
 
-  * `crambin_s_bias_fpt`: biased entropy and MPFT results for crambin
+  * `crambin_s_bias_mfpt`: biased entropy and MPFT results for crambin
 
 ## C++ Program Details
 
