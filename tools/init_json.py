@@ -36,12 +36,14 @@ def main(args):
     nbonds = len(nonlocal_bonds)
     nstates = 2**nbonds
 
+    # use make rc tuple to make each nonlocal bond to be a triplet with rc included
+    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
 
+    # sort the nonlocal_bonds list
     nonlocal_bonds = sort_triplet(nonlocal_bonds)
     nonlocal_bonds.sort()
 
-    # use make rc tuple to make each nonlocal bond to be a triplet with rc included
-    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
+    # set the transient bonds list to be the nonlocal bonds list initially
     data['transient_bonds'] = data["nonlocal_bonds"]
 
     in_queue = Queue()
@@ -114,13 +116,17 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, exe,
         layer = len(bonds_in)
 
         # optional staircase potential
-        if bp is not None and nonlocal_bonds[i] == bp:
+        # seperate bond pair from rc in the nonlocal_bonds list
+        rc_i = nonlocal_bonds[i][-1] # rc is always the last element
+        nonlocal_bonds_i = nonlocal_bonds[i][:-1] # so exclude last element to get the nonlocal bonds pair
+
+        if bp is not None and nonlocal_bonds_i == bp:
             for j in range(len(rc)):
                 data = copy.deepcopy(common_data)
 
                 # if there is at least one permanent bond,
                 if layer > 0:
-                    data['p_rc'] = common_data['rc']
+                    data['p_rc'] = rc_i
 
                 if j > 0:
                     data['stair_bonds'] = [nonlocal_bonds[i]]
@@ -135,7 +141,14 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, exe,
                             format_bits(bits_in), format_bits(bits_out))
                     hdf5_name = '{}.h5'.format(output_name)
 
-                data['rc'] = rc[j]
+                #data['rc'] = rc[j]
+                # Change bond pair's corresponding rc to staircased rc
+                # modify the nonlocal_bond list to match this as well
+                for num, el in enumerate(data['nonlocal_bonds']):
+                    if el == nonlocal_bonds[i]:
+                        nonlocal_bonds[i][-1] = rc[j]
+                        data['nonlocal_bonds'][num] = nonlocal_bonds[i]
+
                 run_sim(nonlocal_bonds[i], data, exe, seed_increment,
                         input_hdf5, hdf5_name, output_name, bits_in, bits_out,
                         bonds_in, count)
