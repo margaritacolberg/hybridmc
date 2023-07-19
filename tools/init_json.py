@@ -10,6 +10,34 @@ import subprocess
 import sys
 from multiprocessing import Process, Queue
 
+def make_rc_tuple(nonlocal_bonds, rc):
+    """
+    Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
+    element
+
+    args:
+    nonlocal_bonds -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]].
+    These elements may potentially have the bond length (rc) as the third element as well or not,
+    for example [[1, 9, 2.3], [2, 6]].
+
+    rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
+
+    returns:
+    The same list but with each list element having the bond length (rc) as their third element.
+
+    """
+
+    # loop through each bonded bead pair
+    for el in nonlocal_bonds:
+
+        # check if rc for the bond is already given
+        if len(el) != 3:
+
+            # if not then append rc
+            el.append(rc)
+
+    return nonlocal_bonds
+
 
 def sort_triplet(bond_list):
     """
@@ -52,6 +80,20 @@ def main(args):
     worker = []
     layer_args = (nonlocal_bonds, data, in_queue, out_queue, args.exe,
             args.seed_increment, args.rc, args.bp)
+
+    # check if all staircase rc values are proper
+    if args.bp:
+        rc_check = 0
+        for el in nonlocal_bonds:
+            if el[:-1] == args.bp:
+                rc_check = el[-1]
+
+        problem_rc = []
+        for el in args.rc:
+            if el < rc_check:
+                problem_rc.append(el)
+        if problem_rc:
+            sys.exit((f"Value error: rc values given ({problem_rc}) are too small, no rc can be less than smallest allowed ({rc_check})"))
 
     for _ in range(args.nproc):
         p = Process(target=run_layer, args=layer_args)
@@ -121,7 +163,9 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, exe,
         nonlocal_bonds_i = nonlocal_bonds[i][:-1] # so exclude last element to get the nonlocal bonds pair
 
         if bp is not None and nonlocal_bonds_i == bp:
+
             for j in range(len(rc)):
+
                 data = copy.deepcopy(common_data)
 
                 # if there is at least one permanent bond,
@@ -133,6 +177,7 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, exe,
                     data['stair'] = rc[j-1]
 
                 if j < len(rc)-1:
+
                     output_name = 'hybridmc_{}_{}_{}_{}'.format(layer,
                             format_bits(bits_in), format_bits(bits_out), rc[j])
                     hdf5_name = '{}.h5'.format(output_name)
@@ -201,35 +246,6 @@ def bits_to_bonds(bits, nonlocal_bonds):
 
 def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
-
-
-def make_rc_tuple(nonlocal_bonds, rc):
-    """
-    Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
-    element
-
-    args:
-    nonlocal_bonds -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]].
-    These elements may potentially have the bond length (rc) as the third element as well or not,
-    for example [[1, 9, 2.3], [2, 6]].
-
-    rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
-
-    returns:
-    The same list but with each list element having the bond length (rc) as their third element.
-
-    """
-
-    # loop through each bonded bead pair
-    for el in nonlocal_bonds:
-
-        # check if rc for the bond is already given
-        if len(el) != 3:
-
-            # if not then append rc
-            el.append(rc)
-
-    return nonlocal_bonds
 
 
 if __name__ == '__main__':
