@@ -393,7 +393,9 @@ int main(int argc, char *argv[]) {
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   unsigned int g_test_count = 0;
-
+  double flipping_rate = 0;
+  bool done_flip = false;
+  bool done_g_test = false;
   // the BIIIIIIIG loop
   do {
     // reset bead clocks, counters and wall time
@@ -407,6 +409,10 @@ int main(int argc, char *argv[]) {
     // reset configuration count
     store_config_int.clear();
     std::fill(config_count.begin(), config_count.end(), 0);
+
+    // add this to see to only count bond events in each iteration
+    count_bond.formed = 0;
+    count_bond.broken = 0;
 
     for (unsigned int iter = 0; iter < p.total_iter; iter++) {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
@@ -435,8 +441,22 @@ int main(int argc, char *argv[]) {
 
     config_count_writer.append(config_count);
 
-  } while (++g_test_count < p.max_g_test_count &&
-           !g_test(config_count, nstates, p.sig_level));
+    double flips = double(count_bond.formed + count_bond.broken);
+    auto  stateCount = std::reduce(config_count.begin(), config_count.end());
+    flipping_rate = flips / stateCount;
+
+    done_g_test = g_test(config_count,nstates, p.sig_level);
+    if (flipping_rate > p.flip_req) done_flip = true;
+
+    std::cout << " In iteration " << g_test_count << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
+              << " must be greater than " << p.flip_req << " done_flip = " << done_flip << " done_g = " << done_g_test << std::endl;
+    g_test_count++;
+    if (g_test_count >= p.max_g_test_count)
+    {
+	    std::cout << "  Done the maximum number of iterations: " << g_test_count <<  " without convergence." << std::endl;
+	    break;
+    }
+  } while (!done_g_test or !done_flip);
 
   file.close();
 
@@ -474,7 +494,7 @@ void from_json(const nlohmann::json &json, Param &p) {
   p.transient_bonds = json["transient_bonds"];
   p.permanent_bonds = json["permanent_bonds"];
 
-  p.permanent_bonds.printBonds();
+  //p.permanent_bonds.printBonds();
 
   if (json.count("stair_bonds") != 0) {
     p.stair_bonds = json["stair_bonds"];
@@ -513,4 +533,5 @@ void from_json(const nlohmann::json &json, Param &p) {
   p.sig_level = json["sig_level"];
   p.max_nbonds = json["max_nbonds"];
   p.max_g_test_count = json["max_g_test_count"];
+  p.flip_req = json["flip_req"];
 }

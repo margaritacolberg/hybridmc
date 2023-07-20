@@ -24,6 +24,8 @@ import subprocess
 
 
 def main(args):
+
+
     file_name = os.path.basename(args.json)
     dir_name = os.path.splitext(file_name)[0]
 
@@ -44,7 +46,7 @@ def main(args):
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
 
-    subprocess.run(init_json_args_list, cwd=tmp_dir_name)
+    subprocess.run(init_json_args_list, cwd=tmp_dir_name, check=True)
 
     os.rename(src=tmp_dir_name, dst=dir_name)
 

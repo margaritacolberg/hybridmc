@@ -97,6 +97,8 @@ struct Param {
   unsigned int max_g_test_count;
   // max number of nonlocal bonds that can form
   unsigned int max_nbonds;
+  // flipping rate per trajectory requirement
+  double flip_req;
 };
 
 #endif
