@@ -259,6 +259,126 @@ void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
   }
 }
 
+std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name) {
+
+    std::ifstream input(json_name);
+    nlohmann::json json;
+    input >> json;
+
+    const Param p = json;
+    const Box box{p.length};
+    UpdateConfig update_config;
+
+    const unsigned int t_bonds = p.transient_bonds.get_nbonds();
+    const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
+    const unsigned int nstates = std::pow(2, t_bonds);
+    ConfigInt store_config_int;
+    std::vector<uint64_t> config_count(nstates);
+    std::vector<double> dist(nbonds);
+
+    // initialize both members of CountBond struct to 0
+    CountBond count_bond = {};
+
+    System sys(p.nbeads);
+
+    std::seed_seq seq(p.seeds.begin(), p.seeds.end());
+    Random mt(seq);
+
+    if (input_name && std::filesystem::exists(*input_name)) {
+        read_input(*input_name, sys.pos);
+        init_update_config(sys.pos, update_config, box, p.transient_bonds);
+        init_s(sys.s_bias, t_bonds);
+    } else {
+        init_pos(sys.pos, box, mt, p);
+        init_s(sys.s_bias, t_bonds);
+    }
+
+    if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                          p.nnear_max2)) {
+        throw std::runtime_error("local beads overlap");
+    }
+
+    if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2, p.p_rc2,
+                             p.transient_bonds, p.permanent_bonds)) {
+        throw std::runtime_error("nonlocal beads overlap");
+    }
+
+    // if warmup flag then stop after WL. print info to different json file or csv or hdf5
+    //wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+    double gamma = p.gamma;
+
+    //get bead index for transient pair and rc value for it
+    std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBonds(0);
+    int bead1 = std::get<0>(transient_pair);
+    int bead2 = std::get<1>(transient_pair);
+    std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
+    double rc_min2 = std::get<2>(transient_pair);
+    double rc_min = std::sqrt(rc_min2);
+
+    unsigned int iter_wl = 0;
+    unsigned int native_ind = nstates - 1;
+    double wall_time = 0.0;
+    std::vector<double> distance_values;
+
+    while (gamma > p.gamma_f) {
+        // iterate over the 2 states
+        for (unsigned int i = 0; i < nstates; i++) {
+            // run trajectory to get final state
+            Config state = run_trajectory_wl(sys, mt, p, box, update_config,
+                                             count_bond, wall_time, iter_wl);
+
+            if (state == 0) {
+                sys.s_bias[native_ind] -= gamma;
+            } else {
+                sys.s_bias[native_ind] += gamma;
+            }
+
+            double dx = sys.pos[bead2].x - sys.pos[bead1].x;
+            double dy = sys.pos[bead2].y - sys.pos[bead1].y;
+            double dz = sys.pos[bead2].z - sys.pos[bead1].z;
+            box.mindist(dx, dy, dz);
+
+            const double dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (dist > rc_min){
+                std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
+                distance_values.push_back(dist);
+            }
+        }
+
+        iter_wl += 1;
+        gamma = 1.0 / double(iter_wl);
+    }
+
+    //sort distance vector
+    std::sort(distance_values.begin(), distance_values.end());
+
+    //TODO: introduce lines to check if simulation needs stairs; return s-bias; capture rc info
+    std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+
+    // create return vector
+    std::vector<double> return_info;
+    // get s bias values
+    return_info.push_back(sys.s_bias[0] - sys.s_bias[1]);
+    // get rc_min
+    return_info.push_back(rc_min);
+    // get size of distance value array
+    int n_rcs = distance_values.size();
+    // want integer index of n_rcs of 0.10 (10%), 0.30 (30%) etc
+    double rc1 = distance_values[int(n_rcs * 0.01)];
+    double rc2 = distance_values[int(n_rcs * 0.1)];
+
+    std::cout << "n_rcs: " << n_rcs << " rc1: " << rc1 << " rc2 " << rc2 << std::endl;
+    std::cout << "True rc " << rc_min << " rc_min: " << distance_values[0] << " rc_max: " << distance_values[n_rcs - 1] << std::endl;
+
+    return_info.push_back(rc1);
+    return_info.push_back(rc2);
+
+
+  return return_info;
+}
+
+
 int main(int argc, char *argv[]) {
   // restart program from point of interruption
   // see Prus, 2002, Boost.Program_options doc
@@ -390,7 +510,10 @@ int main(int argc, char *argv[]) {
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
+    // if warmup flag then stop after WL. print info to different json file or csv or hdf5
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+
+  std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
   unsigned int g_test_count = 0;
   double flipping_rate = 0;
