@@ -9,7 +9,8 @@ breaking event are calculated, and the Markov transition rate matrix is
 constructed. The average time needed to fold to the protein's native state,
 starting from the unfolded state, is evaluated under two conditions.
 
-For more information, see [preprint](https://arxiv.org/abs/2205.05799).
+For more information, see the [publication](https://doi.org/10.1063/5.0098612)
+or the [preprint](https://arxiv.org/abs/2205.05799).
 
 ## Directories
 
