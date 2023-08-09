@@ -16,6 +16,8 @@
 #include "snapshot.h"
 #include "system.h"
 #include "writer.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <H5Cpp.h>
 #include <boost/program_options.hpp>
 #include <cassert>
@@ -25,6 +27,7 @@
 #include <optional>
 
 namespace po = boost::program_options;
+namespace py = pybind11;
 
 void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, Cells &cells,
@@ -284,7 +287,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     std::seed_seq seq(p.seeds.begin(), p.seeds.end());
     Random mt(seq);
 
-    if (input_name && std::filesystem::exists(*input_name)) {
+    if (input_name.has_value() && std::filesystem::exists(*input_name)) {
         read_input(*input_name, sys.pos);
         init_update_config(sys.pos, update_config, box, p.transient_bonds);
         init_s(sys.s_bias, t_bonds);
@@ -305,8 +308,8 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     // if warmup flag then stop after WL. print info to different json file or csv or hdf5
     //wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
-    double gamma = p.gamma;
 
+    double gamma = p.gamma;
     //get bead index for transient pair and rc value for it
     std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBonds(0);
     int bead1 = std::get<0>(transient_pair);
@@ -314,7 +317,6 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
     double rc_min2 = std::get<2>(transient_pair);
     double rc_min = std::sqrt(rc_min2);
-
     unsigned int iter_wl = 0;
     unsigned int native_ind = nstates - 1;
     double wall_time = 0.0;
@@ -353,7 +355,6 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     //sort distance vector
     std::sort(distance_values.begin(), distance_values.end());
 
-    //TODO: introduce lines to check if simulation needs stairs; return s-bias; capture rc info
     std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
     // create return vector
@@ -376,6 +377,19 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
 
   return return_info;
+}
+
+// create pybind11 module for wang_landau function
+
+std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name)
+
+PYBIND11_MODULE(wang_landau, m) {
+    m.doc() = "pybind11 wang_landau plugin";
+
+    using namespace pybind11:literals;
+    m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
+    "json_name"_a, "input_name"_b=py::none());
+
 }
 
 
@@ -624,7 +638,7 @@ void from_json(const nlohmann::json &json, Param &p) {
   }
 
 
-/*  // TODO: change input to rc2 within nonlocal tuple
+/*
   if (json.count("p_rc") != 0) {
     p.p_rc = json["p_rc"];
     p.p_rc2 = *p.p_rc * *p.p_rc;
