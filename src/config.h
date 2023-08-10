@@ -32,9 +32,6 @@ public:
 
   // determines if a bond between beads i and j will form by matching the
   // i and j provided to the pairs of beads specified in the json file
-
-  // added rc2
-
   static bool compare_indices(const std::tuple<int,int,double>& t1, const std::tuple<int,int,double>& t2){
       if (std::get<0>(t1) == std::get<0>(t2) and std::get<1>(t1) == std::get<1>(t2) ) {
           return true;
@@ -43,7 +40,7 @@ public:
       }
   }
 
-
+  // bond mask is obtained -- a configuration and the rc value packaged in a tuple
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
 
@@ -71,9 +68,17 @@ public:
     return std::make_tuple(returnConfig, rc2);
   }
 
-  unsigned int get_nbonds() const;
+  // obtain the number of bonds in the given list of bonds
+  unsigned int get_nbonds() const {
+      return ij_.size();
+  }
 
-  unsigned int count_bonds() const;
+  // obtain the bond_index'th bond in the master bonds list
+  std::tuple<unsigned int, unsigned int, double> getBond(unsigned int bond_index) const {
+      std::cout << " Bond pair " << std::get<0>(ij_[bond_index]) << std::endl;
+
+      return ij_[bond_index];
+  }
 
   void write_hdf5(H5::H5Object &obj, const std::string &name) const;
 

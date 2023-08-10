@@ -311,7 +311,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     double gamma = p.gamma;
     //get bead index for transient pair and rc value for it
-    std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBonds(0);
+    std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBond(0);
     int bead1 = std::get<0>(transient_pair);
     int bead2 = std::get<1>(transient_pair);
     std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
@@ -381,19 +381,17 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
 // create pybind11 module for wang_landau function
 
-std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name)
-
 PYBIND11_MODULE(wang_landau, m) {
     m.doc() = "pybind11 wang_landau plugin";
 
-    using namespace pybind11:literals;
+    using namespace pybind11::literals;
     m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
-    "json_name"_a, "input_name"_b=py::none());
+          "json_name"_a, "input_name"_a=py::none());
 
 }
 
-
 int main(int argc, char *argv[]) {
+
   // restart program from point of interruption
   // see Prus, 2002, Boost.Program_options doc
   //
