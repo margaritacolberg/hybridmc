@@ -427,7 +427,7 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
 // absolute time of the collision, indices of the colliding particles, and
 // their current collision counters
 
-// see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
+// (DONE) see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
              double rh2, std::optional<double> stair2,
              std::optional<double> p_rc2, const Box &box,
@@ -453,26 +453,22 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
+  // initialize variable to find appropriate rc value
   double rc2val = 0;
-
+  // find rc value for given p or t bond
   if (p_bond_mask) {
       rc2val = std::get<1>(p_bond_mask_tuple);
-
   } else if (t_bond_mask) {
       rc2val = std::get<1>(t_bond_mask_tuple);
   } else {
-
+      // TODO: Add some error message
   }
 
-// ignore below two lines
   const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
   const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated
-  //const double rc2_inner = rc2val;
-  //const double rc2_outer = rc2val;
- 
- // two beads in trans bond >rc then inner else outer
 
+ // two beads in trans bond >rc then inner else outer
   // count the number of transient bonds already present
   const unsigned int nbonds = update_config.count_bonds();
   assert(nbonds <= max_nbonds);
@@ -499,10 +495,6 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
     event_queue.emplace(ev);
   }
 }
-
-// rc used in t_until inner and outer coll. no stairs so they are identical. 
-// TODO: have one variable. Only dealing with one pair of beads i and j. set the rc inner and outer to be the same. Then set rc2 after get bond mask
-// rc2 because it is a square 
 
 // iterate collisions over all particle pairs
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,

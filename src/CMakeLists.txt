@@ -25,9 +25,9 @@ target_compile_definitions(wang_landau
         PRIVATE VERSION_INFO=${EXAMPLE_VERSION_INFO})
 #------------------------------------------------------------
 #stuff for testing
-#add_executable(hybridmc_test hybridmc_test.cc)
-#target_link_libraries(hybridmc_test PRIVATE hybridmc_common)
-#add_test(NAME hybridmc_test COMMAND hybridmc_test)
+add_executable(hybridmc_test hybridmc_test.cc hybridmc_test.cc)
+target_link_libraries(hybridmc_test PRIVATE hybridmc_common)
+add_test(NAME hybridmc_test COMMAND hybridmc_test)
 #-------------------------------------------------------------
 
 set_property(SOURCE main.cc APPEND PROPERTY COMPILE_DEFINITIONS VERSION="${VERSION}")
