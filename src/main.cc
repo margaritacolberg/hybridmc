@@ -345,7 +345,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
             std::cout << " recording everything" << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
 
             if (dist > rc_min){
-                std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
+                //std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
                 distance_values.push_back(dist);
             }
         }

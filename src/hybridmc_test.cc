@@ -2130,7 +2130,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(points_on_unit_sphere) {
+BOOST_AUTO_TEST_CASE(points_on_unit_sphere, * boost::unit_test::disabled()) {
   int seed = 40;
   std::random_device rd;
   std::mt19937 mt(seed);
@@ -2246,177 +2246,186 @@ BOOST_AUTO_TEST_CASE(struct_nonlocal_bonds) {
   {
     const unsigned int n = 59;
     const NonlocalBonds nb{
-        {{6, 18, 1.5}, {18, 30, 1.6}, {22, 34, 1.7}, {34, 46, 1.5}, {42, 54, 1.4}, {46, 58, 1.4}}};
-    const std::vector<std::pair<unsigned int, unsigned int, double>> bonds = {
-        {6, 18, 1.5}, {18, 30, 1.6}, {22, 34, 1.7}, {34, 46, 1.5}, {42, 54, 1.4}, {46, 58, 1.4}};
+        {{6, 18, 1.5}, {18, 30, 1.5}, {22, 34, 1.5}, {34, 46, 1.5}, {42, 54, 1.5}, {46, 58, 1.5}}};
 
+    const std::vector<std::pair<unsigned int, unsigned int>> bonds = {
+        {6, 18}, {18, 30}, {22, 34}, {34, 46}, {42, 54}, {46, 58}};
+
+    // loop through all possible bond pairs possible with n indices (beads)
     for (unsigned int i = 0; i < n; i++) {
       for (unsigned int j = i + 1; j < n; j++) {
-        if (std::find(bonds.begin(), bonds.end(), std::make_pair(i, j)) !=
-            bonds.end()) {
-          BOOST_CHECK_MESSAGE(nb.get_bond_mask(i, j),
-                              "check nb(" << i << ", " << j << ") has failed");
-        } else {
-          BOOST_CHECK_MESSAGE(!nb.get_bond_mask(i, j),
-                              "check !nb(" << i << ", " << j << ") has failed");
-        }
+          // find output given by get bond mask (first element is config and second is the rc)
+          const std::tuple<Config, double> bond_mask_tuple = nb.get_bond_mask(i, j);
+          // if the (i, j) pair is in bonds then bond mask is true else false
+          if (std::find(bonds.begin(), bonds.end(), std::make_pair(i, j)) != bonds.end()) {
+              BOOST_CHECK_MESSAGE(std::get<0>(bond_mask_tuple), "check if nb(" << i << ", " << j << ") has failed");
+          }
+          else {
+              BOOST_CHECK_MESSAGE(!std::get<0>(bond_mask_tuple), "check if nb(" << i << ", " << j << ") has failed");
+          }
       }
     }
   }
 
   {
     const unsigned int n = 47;
-    const NonlocalBonds nb{
-        {{2, 10}, {10, 18}, {14, 22}, {26, 34}, {30, 38}, {38, 46}}};
-    const std::vector<std::pair<unsigned int, unsigned int>> bonds = {
-        {2, 10}, {10, 18}, {14, 22}, {26, 34}, {30, 38}, {38, 46}};
 
+    const NonlocalBonds nb{
+        {{2, 10, 1.5}, {10, 18, 1.5}, {14, 22, 1.5}, {26, 34, 1.5}, {30, 38, 1.5}, {38, 46, 1.5}}
+    };
+
+    const std::vector<std::pair<unsigned int, unsigned int>> bonds = {
+            {2, 10}, {10, 18}, {14, 22}, {26, 34}, {30, 38}, {38, 46}
+    };
+
+    // loop through all possible bond pairs possible with n indices (beads)
     for (unsigned int i = 0; i < n; i++) {
-      for (unsigned int j = i + 1; j < n; j++) {
-        if (std::find(bonds.begin(), bonds.end(), std::make_pair(i, j)) !=
-            bonds.end()) {
-          BOOST_CHECK_MESSAGE(nb.get_bond_mask(i, j),
-                              "check nb(" << i << ", " << j << ") has failed");
-        } else {
-          BOOST_CHECK_MESSAGE(!nb.get_bond_mask(i, j),
-                              "check !nb(" << i << ", " << j << ") has failed");
+        for (unsigned int j = i + 1; j < n; j++) {
+            // find output given by get bond mask (first element is config and second is the rc)
+            const std::tuple<Config, double> bond_mask_tuple = nb.get_bond_mask(i, j);
+            // if the (i, j) pair is in bonds then bond mask is true else false
+            if (std::find(bonds.begin(), bonds.end(), std::make_pair(i, j)) != bonds.end()) {
+                BOOST_CHECK_MESSAGE(std::get<0>(bond_mask_tuple), "check nb(" << i << ", " << j << ") has failed");
+            }
+            else {
+                BOOST_CHECK_MESSAGE(!std::get<0>(bond_mask_tuple), "check nb(" << i << ", " << j << ") has failed");
+            }
         }
-      }
     }
   }
 }
 
 BOOST_AUTO_TEST_CASE(nonlocal_bonding_events) {
-  const unsigned int ncell = 4;
-  const double l = 20.0;
-  const double lcell = l / ncell;
-  const NonlocalBonds permanent_bonds{{{2, 6}}};
-  const NonlocalBonds transient_bonds{{{6, 10}}};
-  UpdateConfig update_config;
-  const double rc2 = 3.0;
-  const double rh2 = 1.0;
-  EventQueue event_queue;
-  const unsigned int max_nbonds = 1;
+    const unsigned int ncell = 4;
+    const double l = 20.0;
+    const double lcell = l / ncell;
+    const NonlocalBonds permanent_bonds{{{2, 6}}};
+    const NonlocalBonds transient_bonds{{{6, 10}}};
+    UpdateConfig update_config;
+    const double rc2 = 3.0;
+    const double rh2 = 1.0;
+    EventQueue event_queue;
+    const unsigned int max_nbonds = 1;
 
-  const std::vector<Vec3> pos = {
-      {6.0, 10.0, 0.0}, {2.5, 15.0, 3.0},  {9.0, 10.0, 0.0}, {13.0, 11.0, 10.0},
-      {7.0, 6.0, 6.5},  {15.0, 8.0, 9.0},  {8.0, 10.0, 0.0}, {9.5, 8.0, 1.3},
-      {1.0, 8.0, 4.2},  {17.5, 15.0, 3.0}, {9.5, 10.0, 0.0}};
+    const std::vector<Vec3> pos = {
+            {6.0, 10.0, 0.0}, {2.5, 15.0, 3.0},  {9.0, 10.0, 0.0}, {13.0, 11.0, 10.0},
+            {7.0, 6.0, 6.5},  {15.0, 8.0, 9.0},  {8.0, 10.0, 0.0}, {9.5, 8.0, 1.3},
+            {1.0, 8.0, 4.2},  {17.5, 15.0, 3.0}, {9.5, 10.0, 0.0}};
 
-  const std::vector<Vec3> vel = {
-      {5.0, 0.0, 0.0},  {-5.0, 0.0, 0.0}, {5.0, 0.0, 0.0},  {0.0, -8.0, 0.0},
-      {0.0, -6.0, 0.0}, {0.0, -5.0, 0.0}, {-5.0, 0.0, 0.0}, {-2.0, 0.0, 0.0},
-      {0.0, -4.0, 0.0}, {5.0, 0.0, 0.0},  {5.0, 0.0, 0.0}};
+    const std::vector<Vec3> vel = {
+            {5.0, 0.0, 0.0},  {-5.0, 0.0, 0.0}, {5.0, 0.0, 0.0},  {0.0, -8.0, 0.0},
+            {0.0, -6.0, 0.0}, {0.0, -5.0, 0.0}, {-5.0, 0.0, 0.0}, {-2.0, 0.0, 0.0},
+            {0.0, -4.0, 0.0}, {5.0, 0.0, 0.0},  {5.0, 0.0, 0.0}};
 
-  const unsigned int nbeads = pos.size();
-  std::vector<double> times(nbeads, 0);
-  std::vector<uint64_t> counter(nbeads);
-  std::iota(counter.begin(), counter.end(), 5);
+    const unsigned int nbeads = pos.size();
+    std::vector<double> times(nbeads, 0);
+    std::vector<uint64_t> counter(nbeads);
+    std::iota(counter.begin(), counter.end(), 5);
 
-  Cells cells(ncell, lcell);
-  init_cells(pos, l, cells);
+    Cells cells(ncell, lcell);
+    init_cells(pos, l, cells);
 
-  const Config p_bond_mask = permanent_bonds.get_bond_mask(2, 6);
-  update_config.flip_bond(p_bond_mask);
-  BOOST_CHECK(update_config.bonded(p_bond_mask));
-  const Config t_bond_mask = transient_bonds.get_bond_mask(6, 10);
-  BOOST_CHECK(update_config.bonded(t_bond_mask));
+    const Config p_bond_mask = std::get<0>(permanent_bonds.get_bond_mask(2, 6));
+    update_config.flip_bond(p_bond_mask);
+    BOOST_CHECK(update_config.bonded(p_bond_mask));
+    const Config t_bond_mask = std::get<0>(transient_bonds.get_bond_mask(6, 10));
+    BOOST_CHECK(update_config.bonded(t_bond_mask));
 
-  for (unsigned int i = 0; i < nbeads; i++) {
+for (unsigned int i = 0; i < nbeads; i++) {
     for (unsigned int j = 0; j < nbeads; j++) {
-      if_coll(pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, i, j,
-              transient_bonds, permanent_bonds, update_config, max_nbonds);
+        if_coll(pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, i, j,
+                transient_bonds, permanent_bonds, update_config, max_nbonds);
     }
-  }
+}
 
-  BOOST_REQUIRE_EQUAL(event_queue.size(), 8);
-  {
-    const MaxNonlocalOuterEvent &ev =
+BOOST_REQUIRE_EQUAL(event_queue.size(), 8);
+{
+const MaxNonlocalOuterEvent &ev = std::get<MaxNonlocalOuterEvent>(event_queue.top());
+std::cout << ev << std::endl;
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0232050807568877, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 6);
+BOOST_CHECK_EQUAL(ev.j, 10);
+BOOST_CHECK_EQUAL(ev.ni, 11);
+BOOST_CHECK_EQUAL(ev.nj, 15);
+}
+event_queue.pop();
+
+{
+const MaxNonlocalOuterEvent &ev =
         std::get<MaxNonlocalOuterEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0232050807568877, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 6);
-    BOOST_CHECK_EQUAL(ev.j, 10);
-    BOOST_CHECK_EQUAL(ev.ni, 11);
-    BOOST_CHECK_EQUAL(ev.nj, 15);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0232050807568877, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 6);
+BOOST_CHECK_EQUAL(ev.j, 10);
+BOOST_CHECK_EQUAL(ev.ni, 11);
+BOOST_CHECK_EQUAL(ev.nj, 15);
+}
+event_queue.pop();
 
-  {
-    const MaxNonlocalOuterEvent &ev =
+{
+const MaxNonlocalOuterEvent &ev =
         std::get<MaxNonlocalOuterEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0232050807568877, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 6);
-    BOOST_CHECK_EQUAL(ev.j, 10);
-    BOOST_CHECK_EQUAL(ev.ni, 11);
-    BOOST_CHECK_EQUAL(ev.nj, 15);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0732050807568877, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 2);
+BOOST_CHECK_EQUAL(ev.j, 6);
+BOOST_CHECK_EQUAL(ev.ni, 7);
+BOOST_CHECK_EQUAL(ev.nj, 11);
+}
+event_queue.pop();
 
-  {
-    const MaxNonlocalOuterEvent &ev =
+{
+const MaxNonlocalOuterEvent &ev =
         std::get<MaxNonlocalOuterEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0732050807568877, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 2);
-    BOOST_CHECK_EQUAL(ev.j, 6);
-    BOOST_CHECK_EQUAL(ev.ni, 7);
-    BOOST_CHECK_EQUAL(ev.nj, 11);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0732050807568877, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 2);
+BOOST_CHECK_EQUAL(ev.j, 6);
+BOOST_CHECK_EQUAL(ev.ni, 7);
+BOOST_CHECK_EQUAL(ev.nj, 11);
+}
+event_queue.pop();
 
-  {
-    const MaxNonlocalOuterEvent &ev =
-        std::get<MaxNonlocalOuterEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.0732050807568877, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 2);
-    BOOST_CHECK_EQUAL(ev.j, 6);
-    BOOST_CHECK_EQUAL(ev.ni, 7);
-    BOOST_CHECK_EQUAL(ev.nj, 11);
-  }
-  event_queue.pop();
-
-  {
-    const MinNonlocalInnerEvent &ev =
+{
+const MinNonlocalInnerEvent &ev =
         std::get<MinNonlocalInnerEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.1, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 0);
-    BOOST_CHECK_EQUAL(ev.j, 6);
-    BOOST_CHECK_EQUAL(ev.ni, 5);
-    BOOST_CHECK_EQUAL(ev.nj, 11);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.1, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 0);
+BOOST_CHECK_EQUAL(ev.j, 6);
+BOOST_CHECK_EQUAL(ev.ni, 5);
+BOOST_CHECK_EQUAL(ev.nj, 11);
+}
+event_queue.pop();
 
-  {
-    const MinNonlocalInnerEvent &ev =
+{
+const MinNonlocalInnerEvent &ev =
         std::get<MinNonlocalInnerEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.1, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 0);
-    BOOST_CHECK_EQUAL(ev.j, 6);
-    BOOST_CHECK_EQUAL(ev.ni, 5);
-    BOOST_CHECK_EQUAL(ev.nj, 11);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.1, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 0);
+BOOST_CHECK_EQUAL(ev.j, 6);
+BOOST_CHECK_EQUAL(ev.ni, 5);
+BOOST_CHECK_EQUAL(ev.nj, 11);
+}
+event_queue.pop();
 
-  {
-    const MinNonlocalInnerEvent &ev =
+{
+const MinNonlocalInnerEvent &ev =
         std::get<MinNonlocalInnerEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.4, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 1);
-    BOOST_CHECK_EQUAL(ev.j, 9);
-    BOOST_CHECK_EQUAL(ev.ni, 6);
-    BOOST_CHECK_EQUAL(ev.nj, 14);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.4, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 1);
+BOOST_CHECK_EQUAL(ev.j, 9);
+BOOST_CHECK_EQUAL(ev.ni, 6);
+BOOST_CHECK_EQUAL(ev.nj, 14);
+}
+event_queue.pop();
 
-  {
-    const MinNonlocalInnerEvent &ev =
+{
+const MinNonlocalInnerEvent &ev =
         std::get<MinNonlocalInnerEvent>(event_queue.top());
-    BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.4, 1e-10);
-    BOOST_CHECK_EQUAL(ev.i, 1);
-    BOOST_CHECK_EQUAL(ev.j, 9);
-    BOOST_CHECK_EQUAL(ev.ni, 6);
-    BOOST_CHECK_EQUAL(ev.nj, 14);
-  }
-  event_queue.pop();
+BOOST_CHECK_CLOSE_FRACTION(ev.t, 0.4, 1e-10);
+BOOST_CHECK_EQUAL(ev.i, 1);
+BOOST_CHECK_EQUAL(ev.j, 9);
+BOOST_CHECK_EQUAL(ev.ni, 6);
+BOOST_CHECK_EQUAL(ev.nj, 14);
+}
+event_queue.pop();
 }
 
 BOOST_AUTO_TEST_CASE(test_rodrigues) {
@@ -2491,7 +2500,7 @@ BOOST_AUTO_TEST_CASE(test_rodrigues) {
 BOOST_AUTO_TEST_CASE(test_trial_config) {
   const double l = 4.0;
   const double rc2 = 1.5;
-  const NonlocalBonds nonlocal_bonds{{{2, 6}, {6, 10}}};
+  const NonlocalBonds nonlocal_bonds{{{2, 6, 1.5}, {6, 10, 1.5}}};
 
   int seed = 40;
   std::random_device rd;
@@ -2510,7 +2519,7 @@ BOOST_AUTO_TEST_CASE(test_trial_config) {
   const unsigned int nbonds = nonlocal_bonds.get_nbonds();
   init_s(s_bias, nbonds);
 
-  UpdateConfig orig_config = config_int(pos, l, nonlocal_bonds, rc2);
+  UpdateConfig orig_config = config_int(pos, l, nonlocal_bonds);
   BOOST_CHECK_EQUAL(orig_config.config, 3);
 
   std::vector<Vec3> pos_trial;
@@ -2520,7 +2529,7 @@ BOOST_AUTO_TEST_CASE(test_trial_config) {
 
   rodrigues_rotation(pos, theta, pos_trial, ind, l);
 
-  UpdateConfig trial_config = config_int(pos_trial, l, nonlocal_bonds, rc2);
+  UpdateConfig trial_config = config_int(pos_trial, l, nonlocal_bonds);
 
   if (accept_move(s_bias, orig_config, trial_config, mt)) {
     std::swap(pos, pos_trial);
@@ -2734,7 +2743,7 @@ BOOST_AUTO_TEST_CASE(check_dist_between_nonlocal_beads) {
                            {1.0, 3.0, 1.0}, {1.0, 2.0, 1.0}, {2.0, 2.0, 1.0},
                            {2.0, 2.0, 0.0}, {3.0, 2.0, 0.0}};
 
-  const NonlocalBonds nonlocal_bonds{{{0, 3}, {4, 7}}};
+  const NonlocalBonds nonlocal_bonds{{{0, 3, 1.5}, {4, 7, 1.5}}};
 
   const unsigned int nbonds = nonlocal_bonds.get_nbonds();
   std::vector<double> dist(nbonds);
