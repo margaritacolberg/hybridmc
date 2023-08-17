@@ -65,7 +65,7 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
 
   // fill priority queue with collisions of all particle pairs (executed once,
   // with an initial prediction that fills the entire priority queue)
-  add_events_for_all_beads(sys.pos, sys.vel, p.nbeads, p.rh2, p.rc2, p.stair2,
+  add_events_for_all_beads(sys.pos, sys.vel, p.nbeads, p.rh2, p.stair2,
                            p.p_rc2, box, sys.counter, event_queue, sys.times,
                            cells, p.transient_bonds, p.permanent_bonds,
                            update_config, p.max_nbonds);
@@ -529,10 +529,12 @@ int main(int argc, char *argv[]) {
 
   std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
+  // parameters for checking if g test is validated or not
   unsigned int g_test_count = 0;
   double flipping_rate = 0;
   bool done_flip = false;
   bool done_g_test = false;
+
   // the BIIIIIIIG loop
   do {
     // reset bead clocks, counters and wall time

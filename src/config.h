@@ -30,65 +30,19 @@ public:
   NonlocalBonds() = default;
   NonlocalBonds(const Pairs &ij);
 
-  // determines if a bond between beads i and j will form by matching the
-  // i and j provided to the pairs of beads specified in the json file
-  static bool compare_indices(const std::tuple<int,int,double>& t1, const std::tuple<int,int,double>& t2){
-      if (std::get<0>(t1) == std::get<0>(t2) and std::get<1>(t1) == std::get<1>(t2) ) {
-          return true;
-      } else {
-          return false;
-      }
-  }
-
-  // bond mask is obtained -- a configuration and the rc value packaged in a tuple
-  std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const {
-    assert(j > i);
-
-    //std::tuple<int,int,double> searchObject(i,j, 1.5);
-    // check that i and j match with i and j from the json file
-    const auto it = std::find_if(ij_.begin(), ij_.end(),
-                                 [i,j](auto& e) {
-                                     return (std::get<0>(e) == i and std::get<1>(e) == j);
-                                 });
-
-     // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
-    if (it == ij_.end())
-      return std::make_tuple(0, 0);
-
-    double rc2 = std::get<2>(*it);
-
-    // check that the number of configurations do not exceed 64 bits
-    assert(ij_.size() <= std::numeric_limits<Config>::digits);
-
-    // convert 1 from 32 to 64 bits and determine position of new bond
-    // in bond pattern (using left shift operator)
-
-    // make first element of return tuple the config and second the rc2
-    Config returnConfig = Config(1) << (it - ij_.begin());
-    return std::make_tuple(returnConfig, rc2);
-  }
-
   // obtain the number of bonds in the given list of bonds
-  unsigned int get_nbonds() const {
-      return ij_.size();
-  }
+  unsigned int get_nbonds() const;
 
   // obtain the bond_index'th bond in the master bonds list
-  std::tuple<unsigned int, unsigned int, double> getBond(unsigned int bond_index) const {
-      std::cout << " Bond pair " << std::get<0>(ij_[bond_index]) << std::endl;
+  std::tuple<unsigned int, unsigned int, double> getBond(unsigned int bond_index) const;
 
-      return ij_[bond_index];
-  }
+  // bond mask is obtained -- a configuration and the rc value packaged in a tuple
+  std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const;
 
   void write_hdf5(H5::H5Object &obj, const std::string &name) const;
 
-  void printBonds()
-  {
-      for (int i=0;i< int(ij_.size());i++){
-          std::cout << " Bond pair " << std::get<0>(ij_[i]) << "-" << std::get<1>(ij_[i])
-                  << " has rc2 =  " << std::get<2>(ij_[i]) << std::endl;
-      }
-  }
+  // print out bonds list
+  void printBonds();
 
 private:
   Pairs ij_;

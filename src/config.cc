@@ -19,6 +19,51 @@ NonlocalBonds::NonlocalBonds(const Pairs &ij) {
     }
 }
 
+// obtain the number of bonds in the given list of bonds
+unsigned int NonlocalBonds::get_nbonds() const {return ij_.size();}
+
+// obtain the bond_index'th bond in the master bonds list
+std::tuple<unsigned int, unsigned int, double> NonlocalBonds::getBond(unsigned int bond_index) const {
+    //std::cout << " Bond pair " << std::get<0>(ij_[bond_index]) << std::endl;
+    return ij_[bond_index];
+}
+
+std::tuple<Config, double> NonlocalBonds::get_bond_mask(unsigned int i, unsigned int j) const {
+    assert(j > i);
+
+    //std::tuple<int,int,double> searchObject(i,j, 1.5);
+    // check that i and j match with i and j from the json file
+    const auto it = std::find_if(ij_.begin(), ij_.end(),
+                                 [i,j](auto& e) {
+                                     return (std::get<0>(e) == i and std::get<1>(e) == j);
+                                 });
+
+    // 0 if no bonds formed. pair i and j not in one of nonlcoal bonds lists
+    if (it == ij_.end())
+        return std::make_tuple(0, 0);
+
+    double rc2 = std::get<2>(*it);
+
+    // check that the number of configurations do not exceed 64 bits
+    assert(ij_.size() <= std::numeric_limits<Config>::digits);
+
+    // convert 1 from 32 to 64 bits and determine position of new bond
+    // in bond pattern (using left shift operator)
+
+    // make first element of return tuple the config and second the rc2
+    Config returnConfig = Config(1) << (it - ij_.begin());
+    return std::make_tuple(returnConfig, rc2);
+}
+
+// print out bonds list
+void NonlocalBonds::printBonds()
+{
+    for (int i=0;i< int(ij_.size());i++){
+        std::cout << " Bond pair " << std::get<0>(ij_[i]) << "-" << std::get<1>(ij_[i])
+                  << " has rc2 =  " << std::get<2>(ij_[i]) << std::endl;
+    }
+}
+
 // write the transient or permanent bead indices to the output file
 void NonlocalBonds::write_hdf5(H5::H5Object &obj,
                                const std::string &name) const {
