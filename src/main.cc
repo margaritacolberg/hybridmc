@@ -438,7 +438,6 @@ int main(int argc, char *argv[]) {
     sys.counter[i] = 0.0;
   }
 
-  wall_time = 0.0;
   wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   const hsize_t mem_dims[1] = {sys.s_bias.size()};
