@@ -11,7 +11,7 @@ on:
       - Makefile
       - cmake/**
       - src/**
-  workflow_dispach:
+  workflow_dispatch:
 
 jobs:
   build:
