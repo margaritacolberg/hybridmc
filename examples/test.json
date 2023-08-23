@@ -32,6 +32,5 @@
     "neg_scale": 0.1,
     "sig_level": 0.05,
     "max_nbonds": 3,
-    "max_g_test_count": 10000,
-    "flip_req": 1.0
+    "max_g_test_count": 10000
 }
