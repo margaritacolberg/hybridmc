@@ -479,7 +479,6 @@ BOOST_AUTO_TEST_CASE(collisions_in_one_dimension) {
   const unsigned int ncell = 4;
   const double l = 20.0;
   const double lcell = l / ncell;
-  const double rc2 = 1.5;
   const double rh2 = 1.25;
   const double rh = std::sqrt(rh2);
   NonlocalBonds nonlocal_bonds;
@@ -586,7 +585,7 @@ BOOST_AUTO_TEST_CASE(collisions_in_one_dimension) {
     }
   }
 
-  add_events_for_all_beads(pos, vel, nbeads, rh2, rc2, {}, {}, l, counter,
+  add_events_for_all_beads(pos, vel, nbeads, rh2, {}, {}, l, counter,
                            event_queue, times, cells, nonlocal_bonds, {},
                            update_config, max_nbonds);
 
@@ -1344,7 +1343,6 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   const unsigned int ncell = 3;
   const double l = 6.0;
   const double lcell = l / ncell;
-  const double rc2 = 1.5;
   const double rh2 = 1.0;
   NonlocalBonds nonlocal_bonds;
   UpdateConfig update_config;
@@ -1481,7 +1479,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::xneg, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -1593,7 +1591,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::xpos, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -1701,7 +1699,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::yneg, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -1809,7 +1807,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::ypos, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -1917,7 +1915,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::zneg, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -2025,7 +2023,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   {
     EventQueue event_queue;
     add_events_for_bead_after_crossing(
-        pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, cells, 0,
+        pos, vel, rh2, {}, {}, l, counter, event_queue, times, cells, 0,
         BeadCellEvent::zpos, nonlocal_bonds, {}, update_config, max_nbonds);
     BOOST_REQUIRE_EQUAL(event_queue.size(), 9);
 
@@ -2299,10 +2297,10 @@ BOOST_AUTO_TEST_CASE(nonlocal_bonding_events) {
     const unsigned int ncell = 4;
     const double l = 20.0;
     const double lcell = l / ncell;
-    const NonlocalBonds permanent_bonds{{{2, 6}}};
-    const NonlocalBonds transient_bonds{{{6, 10}}};
+    const double rc = std::sqrt(3.0);
+    const NonlocalBonds permanent_bonds{{{2, 6, rc}}};
+    const NonlocalBonds transient_bonds{{{6, 10, rc}}};
     UpdateConfig update_config;
-    const double rc2 = 3.0;
     const double rh2 = 1.0;
     EventQueue event_queue;
     const unsigned int max_nbonds = 1;
@@ -2333,7 +2331,7 @@ BOOST_AUTO_TEST_CASE(nonlocal_bonding_events) {
 
 for (unsigned int i = 0; i < nbeads; i++) {
     for (unsigned int j = 0; j < nbeads; j++) {
-        if_coll(pos, vel, rh2, rc2, {}, {}, l, counter, event_queue, times, i, j,
+        if_coll(pos, vel, rh2, {}, {}, l, counter, event_queue, times, i, j,
                 transient_bonds, permanent_bonds, update_config, max_nbonds);
     }
 }
@@ -2499,7 +2497,6 @@ BOOST_AUTO_TEST_CASE(test_rodrigues) {
 
 BOOST_AUTO_TEST_CASE(test_trial_config) {
   const double l = 4.0;
-  const double rc2 = 1.5;
   const NonlocalBonds nonlocal_bonds{{{2, 6, 1.5}, {6, 10, 1.5}}};
 
   int seed = 40;
