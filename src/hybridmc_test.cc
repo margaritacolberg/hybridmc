@@ -2128,7 +2128,7 @@ BOOST_AUTO_TEST_CASE(test_add_events_for_bead_after_crossing) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(points_on_unit_sphere, * boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(points_on_unit_sphere) {
   int seed = 40;
   std::random_device rd;
   std::mt19937 mt(seed);
