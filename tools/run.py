@@ -20,12 +20,10 @@
 
 import argparse
 import os
-import subprocess
+from helpers.run_helpers import init_json
 
 
 def main(args):
-
-
     file_name = os.path.basename(args.json)
     dir_name = os.path.splitext(file_name)[0]
 
@@ -35,18 +33,21 @@ def main(args):
 
     tmp_dir_name = '{}.tmp'.format(dir_name)
 
-    init_json_args_list = ['python', args.py_file, args.json, args.exe, '1']
+    init_json_args = {"json": args.json, "seed_increment": 1}
 
-    nproc = os.getenv('SLURM_CPUS_PER_TASK')
-    if nproc is not None:
-        init_json_args_list.append('--nproc={}'.format(nproc))
+    nproc = os.cpu_count()
+    if os.getenv('SLURM_CPUS_PER_TASK'):
+        nproc = os.getenv('SLURM_CPUS_PER_TASK')
 
-    init_json_args_list += args.init_json_args
+    init_json_args["nproc"] = nproc
+
+    init_json_args["WL_sbias"] = args.WL_sbias
 
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
+    os.chdir(tmp_dir_name)
 
-    subprocess.run(init_json_args_list, cwd=tmp_dir_name, check=True)
+    init_json(init_json_args)
 
     os.rename(src=tmp_dir_name, dst=dir_name)
 
@@ -54,10 +55,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
-    parser.add_argument('exe', help='hybridmc executable')
     parser.add_argument('py_file', help='init_json.py file name')
-    parser.add_argument('init_json_args', nargs='*',
-            help='additional arguments for init_json.py')
+    parser.add_argument('--WL_sbias', type=float,
+                        help='s_bias from wang landau test threshold after which bond potential is staircased')
 
     args = parser.parse_args()
 
