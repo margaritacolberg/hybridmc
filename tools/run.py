@@ -55,7 +55,6 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
-    parser.add_argument('py_file', help='init_json.py file name')
     parser.add_argument('--WL_sbias', type=float,
                         help='s_bias from wang landau test threshold after which bond potential is staircased')
 

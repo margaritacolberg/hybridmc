@@ -1,8 +1,9 @@
 import copy
 import json
 import os
-from HMC import WL_process, run_simulation
+import HMC
 from .data_processing_helpers import *
+
 
 def wang_landau(nonlocal_bonds_i, data, seed_increment, input_hdf5,
                 output_name, bits_in, bits_out, bonds_in, count):
@@ -26,9 +27,9 @@ def wang_landau(nonlocal_bonds_i, data, seed_increment, input_hdf5,
         input_name = os.path.realpath(input_hdf5)
 
     print(command)
-    sys.stdout.flush()
+    #sys.stdout.flush()
 
-    return WL_process(json_name=json_name, input_name=input_name)
+    return HMC.WL_process(json_name, input_name)
 
 
 def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5, hdf5_name,
@@ -57,9 +58,9 @@ def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5, hdf5_name,
         input_name = os.path.realpath(input_hdf5)
 
     print(command)
-    sys.stdout.flush()
+    #sys.stdout.flush()
 
-    run_simulation(json_name=json_name, output_name=hdf5_name, init_sbias=init_sbias, input_name=input_name)
+    HMC.adaptive_convergence(json_name, hdf5_name, init_sbias, input_name)
 
 
 def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, seed_increment, WL_sbias):
@@ -92,7 +93,7 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, seed_increment, 
                                                       input_hdf5, output_name, bits_in, bits_out,
                                                       bonds_in, count)
 
-        rc = (rc3, rc2, rc1)
+        rc = [round(el, 2) for el in (rc3, rc2, rc1)]
         sbias = sbias_0 - sbias_1
 
         # if sbias from wang landau test larger than a threshold value WL_sbias then staircase potential for this bond

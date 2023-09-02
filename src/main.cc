@@ -42,7 +42,10 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
   }
 
   if (!(cells.lcell >= check_rc)) {
-    throw std::invalid_argument("bead lcell must be at least rc");
+    std::cout << cells.lcell << " is cells.lcell and the check_rc is " << check_rc << std::endl;
+    float req_length = cells.ncell * check_rc + 0.0001;
+    std::cout << "Length has to be at least " << req_length << std::endl;
+    throw std::invalid_argument("bead lcell must be at least rc. Increase length to at least above value");
   }
 
   // split the box into smaller cells, and store the beads in each cell
@@ -425,7 +428,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
   return return_info;
 }
 
-int run_simulation(const std::string json_name, const std::string output_name, const double init_sbias,
+int adaptive_convergence(const std::string json_name, const std::string output_name, const double init_sbias,
                    const std::optional<std::string> input_name, const std::optional<std::string> snapshot_name) {
 
   //std::cout << "git commit " << VERSION << std::endl;
@@ -601,6 +604,6 @@ PYBIND11_MODULE(HMC, m) {
     m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
           "json_name"_a, "h5_input_name"_a=py::none());
 
-    m.def("run_simulation", &run_simulation, "A function that conducts the hybridmc simulation",
+    m.def("adaptive_convergence", &adaptive_convergence, "A function that conducts the hybridmc simulation",
           "json_name"_a, "h5_output_name"_a, "init_sbias"_a, "h5_input_name"_a=py::none(), "snapshot_name"_a=py::none());
 }

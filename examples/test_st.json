@@ -15,7 +15,7 @@
     "config_out": 1,
     "nbeads": 20,
     "tries": 10000,
-    "length": 18.0,
+    "length": 19.0,
     "ncell": 5,
     "nsteps": 8,
     "nsteps_eq": 8,
