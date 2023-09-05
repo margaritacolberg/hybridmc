@@ -13,10 +13,10 @@
 # must be from this newly created dir, and not from the dir from which the
 # simulation is initiated
 
-#SBATCH --account=def-jmschofi
-#SBATCH --time=3-0
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=256M
+# SBATCH --account=def-jmschofi
+# SBATCH --time=3-0
+# SBATCH --cpus-per-task=16
+# SBATCH --mem-per-cpu=256M
 
 import argparse
 import os
@@ -28,10 +28,10 @@ def main(args):
     dir_name = os.path.splitext(file_name)[0]
 
     if os.path.isdir(dir_name):
-        print('{} already exists; return'.format(dir_name))
+        print(f'{dir_name} already exists; return')
         return
 
-    tmp_dir_name = '{}.tmp'.format(dir_name)
+    tmp_dir_name = f'{dir_name}.tmp'
 
     init_json_args = {"json": args.json, "seed_increment": 1}
 
@@ -40,7 +40,6 @@ def main(args):
         nproc = os.getenv('SLURM_CPUS_PER_TASK')
 
     init_json_args["nproc"] = nproc
-
     init_json_args["WL_sbias"] = args.WL_sbias
 
     if not os.path.isdir(tmp_dir_name):

@@ -578,6 +578,7 @@ int adaptive_convergence(const std::string json_name, const std::string output_n
     done_g_test = g_test(config_count,nstates, p.sig_level);
     if (flipping_rate > p.flip_req) done_flip = true;
 
+    std::cout << "Working on output_file: " << output_name << std::endl;
     std::cout << " In iteration " << g_test_count << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
               << " must be greater than " << p.flip_req << " done_flip = " << done_flip << " done_g = " << done_g_test << std::endl;
     g_test_count++;

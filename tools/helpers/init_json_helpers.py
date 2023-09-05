@@ -27,18 +27,20 @@ def wang_landau(nonlocal_bonds_i, data, seed_increment, input_hdf5,
         input_name = os.path.realpath(input_hdf5)
 
     print(command)
-    #sys.stdout.flush()
+    sys.stdout.flush()
 
     return HMC.WL_process(json_name, input_name)
 
 
-def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5, hdf5_name,
+def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5,
             output_name, bits_in, bits_out, bonds_in, count, init_sbias):
     data['transient_bonds'] = [nonlocal_bonds_i]
     data['permanent_bonds'] = bonds_in
     data['config_in'] = int(format_bits(bits_in), 2)
     data['config_out'] = int(format_bits(bits_out), 2)
     data['seeds'] = [count, seed_increment]
+
+    hdf5_name = f'{output_name}.h5'
 
     if os.path.exists(hdf5_name):
         return
@@ -58,7 +60,7 @@ def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5, hdf5_name,
         input_name = os.path.realpath(input_hdf5)
 
     print(command)
-    #sys.stdout.flush()
+    sys.stdout.flush()
 
     HMC.adaptive_convergence(json_name, hdf5_name, init_sbias, input_name)
 
@@ -84,10 +86,8 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, seed_increment, 
         bp = None
         # seperate bond pair from rc in the nonlocal_bonds list
         rc_i = nonlocal_bonds[i][-1]  # rc is always the last element
-        nonlocal_bonds_i = nonlocal_bonds[i][:-1]  # so exclude last element to get the nonlocal bonds pair
 
-        output_name = 'hybridmc_{}_{}_{}'.format(layer,
-                                                 format_bits(bits_in), format_bits(bits_out))
+        output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
         sbias_0, sbias_1, rc1, rc2, rc3 = wang_landau(nonlocal_bonds[i], common_data, seed_increment,
                                                       input_hdf5, output_name, bits_in, bits_out,
@@ -98,10 +98,13 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, seed_increment, 
 
         # if sbias from wang landau test larger than a threshold value WL_sbias then staircase potential for this bond
         if sbias > WL_sbias:
+            print("Do Staircase")
             bp = nonlocal_bonds[i]
 
         # optional staircase potential
         if bp:
+            print("Reset sbias")
+            sbias_1 = 0
             for j in range(len(rc)):
                 data = copy.deepcopy(common_data)
 
@@ -114,26 +117,19 @@ def run_layer(nonlocal_bonds, common_data, in_queue, out_queue, seed_increment, 
                     data['stair'] = rc[j - 1]
 
                 if j < len(rc) - 1:
-                    output_name = 'hybridmc_{}_{}_{}_{}'.format(layer,
-                                                                format_bits(bits_in), format_bits(bits_out), rc[j])
-                    hdf5_name = '{}.h5'.format(output_name)
+                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}_{rc[j]}'
                 else:
-                    output_name = 'hybridmc_{}_{}_{}'.format(layer,
-                                                             format_bits(bits_in), format_bits(bits_out))
-                    hdf5_name = '{}.h5'.format(output_name)
+                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
                 data['rc'] = rc[j]
                 run_sim(nonlocal_bonds[i], data, seed_increment,
-                        input_hdf5, hdf5_name, output_name, bits_in, bits_out,
+                        input_hdf5, output_name, bits_in, bits_out,
                         bonds_in, count, sbias_1)
-                input_hdf5 = hdf5_name
+                input_hdf5 = f'{output_name}.h5'
 
         else:
-            output_name = 'hybridmc_{}_{}_{}'.format(layer,
-                                                     format_bits(bits_in), format_bits(bits_out))
-            hdf5_name = '{}.h5'.format(output_name)
             run_sim(nonlocal_bonds[i], common_data, seed_increment,
-                    input_hdf5, hdf5_name, output_name, bits_in, bits_out,
+                    input_hdf5, output_name, bits_in, bits_out,
                     bonds_in, count, sbias_1)
 
-        out_queue.put((bits_out, hdf5_name))
+        out_queue.put((bits_out, f'{output_name}.h5'))
