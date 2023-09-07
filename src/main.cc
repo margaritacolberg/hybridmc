@@ -233,33 +233,75 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
   return update_config.config;
 }
 
-// Wang-Landau algorithm for estimating entropy
-void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
-                 UpdateConfig &update_config, CountBond &count_bond,
-                 const unsigned int nstates, std::vector<double> &s_bias) {
-  // amount by which entropy is adjusted
-  double gamma = p.gamma;
-  unsigned int iter_wl = 0;
-  unsigned int native_ind = nstates - 1;
-  double wall_time = 0.0;
+void from_json(const nlohmann::json &json, Param &p) {
+    p.m = json["m"];
+    p.sigma = json["sigma_bb"];
+    p.sigma2 = p.sigma * p.sigma;
+    p.near_min = json["near_min"];
+    p.near_max = json["near_max"];
+    p.near_min2 = p.near_min * p.near_min;
+    p.near_max2 = p.near_max * p.near_max;
+    p.nnear_min = json["nnear_min"];
+    p.nnear_max = json["nnear_max"];
+    p.nnear_min2 = p.nnear_min * p.nnear_min;
+    p.nnear_max2 = p.nnear_max * p.nnear_max;
+    p.rh = json["rh"];
+    p.rc = json["rc"];
+    p.rh2 = p.rh * p.rh;
+    p.rc2 = p.rc * p.rc;
 
-  while (gamma > p.gamma_f) {
-    // iterate over the 2 states
-    for (unsigned int i = 0; i < nstates; i++) {
-      // run trajectory to get final state
-      Config state = run_trajectory_wl(sys, mt, p, box, update_config,
-                                       count_bond, wall_time, iter_wl);
-
-      if (state == 0) {
-        s_bias[native_ind] -= gamma;
-      } else {
-        s_bias[native_ind] += gamma;
-      }
+    if (json.count("stair") != 0) {
+        p.stair = json["stair"];
+        p.stair2 = *p.stair * *p.stair;
     }
 
-    iter_wl += 1;
-    gamma = 1.0 / double(iter_wl);
-  }
+    p.nonlocal_bonds = json["nonlocal_bonds"];
+
+    //p.nonlocal_bonds.printBonds();
+
+    p.transient_bonds = json["transient_bonds"];
+    p.permanent_bonds = json["permanent_bonds"];
+
+    //p.permanent_bonds.printBonds();
+
+    if (json.count("stair_bonds") != 0) {
+        p.stair_bonds = json["stair_bonds"];
+    }
+
+
+/*
+  if (json.count("p_rc") != 0) {
+    p.p_rc = json["p_rc"];
+    p.p_rc2 = *p.p_rc * *p.p_rc;
+  }*/
+
+    std::cout << *p.stair << std::endl;
+    if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
+        throw std::runtime_error("stair boundary is smaller than rc");
+    }
+
+    p.tries = json["tries"];
+    p.nbeads = json["nbeads"];
+    p.length = json["length"];
+    p.ncell = json["ncell"];
+    p.nsteps = json["nsteps"];
+    p.del_t = json["del_t"];
+    p.nsteps_wl = json["nsteps_wl"];
+    p.del_t_wl = json["del_t_wl"];
+    p.gamma = json["gamma"];
+    p.gamma_f = json["gamma_f"];
+    p.write_step = json["write_step"];
+    p.seeds = json["seeds"].get<std::vector<unsigned int>>();
+    p.temp = json["temp"];
+    p.mc_moves = json["mc_moves"];
+    p.mc_write = json["mc_write"];
+    p.total_iter = json["total_iter"];
+    p.pos_scale = json["pos_scale"];
+    p.neg_scale = json["neg_scale"];
+    p.sig_level = json["sig_level"];
+    p.max_nbonds = json["max_nbonds"];
+    p.max_g_test_count = json["max_g_test_count"];
+    p.flip_req = json["flip_req"];
 }
 
 std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name) {
@@ -274,7 +316,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     const unsigned int t_bonds = p.transient_bonds.get_nbonds();
     const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
-    const unsigned int nstates = std::pow(2, t_bonds);
+    const unsigned int nstates = std::pow(2, t_bonds); // TODO: find out if this nstates can just be 2 always
     ConfigInt store_config_int;
     std::vector<uint64_t> config_count(nstates);
     std::vector<double> dist(nbonds);
@@ -314,11 +356,11 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBond(0);
     int bead1 = std::get<0>(transient_pair);
     int bead2 = std::get<1>(transient_pair);
-    std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
+   // std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
     double rc_min2 = std::get<2>(transient_pair);
     double rc_min = std::sqrt(rc_min2);
     unsigned int iter_wl = 0;
-    unsigned int native_ind = nstates - 1;
+    unsigned int native_ind = nstates - 1; // TODO: find out if always just 1
     double wall_time = 0.0;
     std::vector<double> distance_values;
 
@@ -342,7 +384,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
             const double dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-            std::cout << " recording everything" << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
+            //std::cout << " recording everything" << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
 
             if (dist > rc_min){
                 //std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
@@ -358,11 +400,14 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     std::sort(distance_values.begin(), distance_values.end());
 
     std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+    std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
+    std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
 
     // create return vector
     std::vector<double> return_info;
     // get s bias values
-    return_info.push_back(sys.s_bias[0] - sys.s_bias[1]);
+    return_info.push_back(sys.s_bias[0]);
+    return_info.push_back(sys.s_bias[1]);
     // get rc_min
     return_info.push_back(rc_min);
     // get size of distance value array
@@ -377,72 +422,13 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     return_info.push_back(rc1);
     return_info.push_back(rc2);
 
-
   return return_info;
 }
 
-// create pybind11 module for wang_landau function
+int run_simulation(const std::string json_name, const std::string output_name, const double init_sbias,
+                   const std::optional<std::string> input_name, const std::optional<std::string> snapshot_name) {
 
-PYBIND11_MODULE(wang_landau, m) {
-    m.doc() = "pybind11 wang_landau plugin";
-
-    using namespace pybind11::literals;
-    m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
-          "json_name"_a, "input_name"_a=py::none());
-
-}
-
-int main(int argc, char *argv[]) {
-
-  // restart program from point of interruption
-  // see Prus, 2002, Boost.Program_options doc
-  //
-  // declare the supported options
-  po::options_description desc("allowed options");
-  desc.add_options()("help,h", "produce help message")(
-      "json-file", po::value<std::string>()->required(), "json")(
-      "output-file", po::value<std::string>()->required(),
-      "hdf5 output")("input-file", po::value<std::string>(), "hdf5 input")(
-      "snapshot-file", po::value<std::string>(), "hdf5 snapshot");
-
-  po::positional_options_description pod;
-  pod.add("json-file", 1);
-  pod.add("output-file", 1);
-
-  po::variables_map vm;
-  try {
-    po::store(
-        po::command_line_parser(argc, argv).options(desc).positional(pod).run(),
-        vm);
-
-    if (vm.count("help")) {
-      std::cout << "usage: hybridmc [options]... json-file output-file"
-                << std::endl;
-      std::cout << std::endl << desc << std::endl;
-      return 0;
-    }
-
-    po::notify(vm);
-  } catch (const po::error &e) {
-    std::cerr << "hybridmc: " << e.what() << std::endl;
-    std::cerr << "try hybridmc --help" << std::endl;
-    return 1;
-  }
-
-  std::optional<std::string> input_name;
-  if (vm.count("input-file")) {
-    input_name = vm["input-file"].as<std::string>();
-  }
-
-  std::optional<std::string> snapshot_name;
-  if (vm.count("snapshot-file")) {
-    snapshot_name = vm["snapshot-file"].as<std::string>();
-  }
-
-  const std::string json_name = vm["json-file"].as<std::string>();
-  const std::string output_name = vm["output-file"].as<std::string>();
-
-  std::cout << "git commit " << VERSION << std::endl;
+  //std::cout << "git commit " << VERSION << std::endl;
 
   std::ifstream input(json_name);
   nlohmann::json json;
@@ -454,7 +440,8 @@ int main(int argc, char *argv[]) {
 
   const unsigned int t_bonds = p.transient_bonds.get_nbonds();
   const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
-  const unsigned int nstates = std::pow(2, t_bonds);
+  const unsigned int nstates = std::pow(2, t_bonds); // TODO: find out if this nstates can just be 2 always
+  unsigned int native_ind = nstates - 1;
   ConfigInt store_config_int;
   std::vector<uint64_t> config_count(nstates);
   std::vector<double> dist(nbonds);
@@ -525,9 +512,10 @@ int main(int argc, char *argv[]) {
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
     // if warmup flag then stop after WL. print info to different json file or csv or hdf5
-  wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+  //wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+  sys.s_bias[native_ind] = init_sbias;
 
-  std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+  //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
   // parameters for checking if g test is validated or not
   unsigned int g_test_count = 0;
@@ -604,73 +592,15 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void from_json(const nlohmann::json &json, Param &p) {
-  p.m = json["m"];
-  p.sigma = json["sigma_bb"];
-  p.sigma2 = p.sigma * p.sigma;
-  p.near_min = json["near_min"];
-  p.near_max = json["near_max"];
-  p.near_min2 = p.near_min * p.near_min;
-  p.near_max2 = p.near_max * p.near_max;
-  p.nnear_min = json["nnear_min"];
-  p.nnear_max = json["nnear_max"];
-  p.nnear_min2 = p.nnear_min * p.nnear_min;
-  p.nnear_max2 = p.nnear_max * p.nnear_max;
-  p.rh = json["rh"];
-  p.rc = json["rc"];
-  p.rh2 = p.rh * p.rh;
-  p.rc2 = p.rc * p.rc;
+// create pybind11 module for wang_landau function
 
-  if (json.count("stair") != 0) {
-    p.stair = json["stair"];
-    p.stair2 = *p.stair * *p.stair;
-  }
+PYBIND11_MODULE(HMC, m) {
+    m.doc() = "pybind11 hybridmc plugin";
 
-  p.nonlocal_bonds = json["nonlocal_bonds"];
+    using namespace pybind11::literals;
+    m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
+          "json_name"_a, "h5_input_name"_a=py::none());
 
-  //p.nonlocal_bonds.printBonds();
-
-  p.transient_bonds = json["transient_bonds"];
-  p.permanent_bonds = json["permanent_bonds"];
-
-  //p.permanent_bonds.printBonds();
-
-  if (json.count("stair_bonds") != 0) {
-    p.stair_bonds = json["stair_bonds"];
-  }
-
-
-/*
-  if (json.count("p_rc") != 0) {
-    p.p_rc = json["p_rc"];
-    p.p_rc2 = *p.p_rc * *p.p_rc;
-  }*/
-
-  std::cout << *p.stair << std::endl;
-  if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
-    throw std::runtime_error("stair boundary is smaller than rc");
-  }
-
-  p.tries = json["tries"];
-  p.nbeads = json["nbeads"];
-  p.length = json["length"];
-  p.ncell = json["ncell"];
-  p.nsteps = json["nsteps"];
-  p.del_t = json["del_t"];
-  p.nsteps_wl = json["nsteps_wl"];
-  p.del_t_wl = json["del_t_wl"];
-  p.gamma = json["gamma"];
-  p.gamma_f = json["gamma_f"];
-  p.write_step = json["write_step"];
-  p.seeds = json["seeds"].get<std::vector<unsigned int>>();
-  p.temp = json["temp"];
-  p.mc_moves = json["mc_moves"];
-  p.mc_write = json["mc_write"];
-  p.total_iter = json["total_iter"];
-  p.pos_scale = json["pos_scale"];
-  p.neg_scale = json["neg_scale"];
-  p.sig_level = json["sig_level"];
-  p.max_nbonds = json["max_nbonds"];
-  p.max_g_test_count = json["max_g_test_count"];
-  p.flip_req = json["flip_req"];
+    m.def("run_simulation", &run_simulation, "A function that conducts the hybridmc simulation",
+          "json_name"_a, "h5_output_name"_a, "init_sbias"_a, "h5_input_name"_a=py::none(), "snapshot_name"_a=py::none());
 }
