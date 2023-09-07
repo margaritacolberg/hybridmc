@@ -236,6 +236,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
   return update_config.config;
 }
 
+
 void from_json(const nlohmann::json &json, Param &p) {
     p.m = json["m"];
     p.sigma = json["sigma_bb"];
@@ -271,13 +272,6 @@ void from_json(const nlohmann::json &json, Param &p) {
         p.stair_bonds = json["stair_bonds"];
     }
 
-
-/*
-  if (json.count("p_rc") != 0) {
-    p.p_rc = json["p_rc"];
-    p.p_rc2 = *p.p_rc * *p.p_rc;
-  }*/
-
     std::cout << *p.stair << std::endl;
     if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
         throw std::runtime_error("stair boundary is smaller than rc");
@@ -307,6 +301,38 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.flip_req = json["flip_req"];
 }
 
+
+// Wang-Landau algorithm for estimating entropy
+void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
+                 UpdateConfig &update_config, CountBond &count_bond,
+                 const unsigned int nstates, std::vector<double> &s_bias) {
+    // amount by which entropy is adjusted
+    double gamma = p.gamma;
+    unsigned int iter_wl = 0;
+    unsigned int native_ind = nstates - 1;
+    double wall_time = 0.0;
+
+    while (gamma > p.gamma_f) {
+        // iterate over the 2 states
+        for (unsigned int i = 0; i < nstates; i++) {
+      // run trajectory to get final state
+      Config state = run_trajectory_wl(sys, mt, p, box, update_config,
+                                       count_bond, wall_time, iter_wl);
+
+      if (state == 0) {
+        s_bias[native_ind] -= gamma;
+      } else {
+        s_bias[native_ind] += gamma;
+      }
+        }
+
+        iter_wl += 1;
+        gamma = 1.0 / double(iter_wl);
+    }
+}
+
+
+// wang landau plugin for python function
 std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name) {
 
     std::ifstream input(json_name);
@@ -428,10 +454,56 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
   return return_info;
 }
 
-int adaptive_convergence(const std::string json_name, const std::string output_name, const double init_sbias,
-                   const std::optional<std::string> input_name, const std::optional<std::string> snapshot_name) {
+int main(int argc, char *argv[]) {
+  // restart program from point of interruption
+  // see Prus, 2002, Boost.Program_options doc
+  //
+  // declare the supported options
+  po::options_description desc("allowed options");
+  desc.add_options()("help,h", "produce help message")(
+      "json-file", po::value<std::string>()->required(), "json")(
+      "output-file", po::value<std::string>()->required(),
+      "hdf5 output")("input-file", po::value<std::string>(), "hdf5 input")(
+      "snapshot-file", po::value<std::string>(), "hdf5 snapshot");
 
-  //std::cout << "git commit " << VERSION << std::endl;
+  po::positional_options_description pod;
+  pod.add("json-file", 1);
+  pod.add("output-file", 1);
+
+  po::variables_map vm;
+  try {
+    po::store(
+        po::command_line_parser(argc, argv).options(desc).positional(pod).run(),
+        vm);
+
+    if (vm.count("help")) {
+      std::cout << "usage: hybridmc [options]... json-file output-file"
+                << std::endl;
+      std::cout << std::endl << desc << std::endl;
+      return 0;
+    }
+
+    po::notify(vm);
+  } catch (const po::error &e) {
+    std::cerr << "hybridmc: " << e.what() << std::endl;
+    std::cerr << "try hybridmc --help" << std::endl;
+    return 1;
+  }
+
+  std::optional<std::string> input_name;
+  if (vm.count("input-file")) {
+    input_name = vm["input-file"].as<std::string>();
+  }
+
+  std::optional<std::string> snapshot_name;
+  if (vm.count("snapshot-file")) {
+    snapshot_name = vm["snapshot-file"].as<std::string>();
+  }
+
+  const std::string json_name = vm["json-file"].as<std::string>();
+  const std::string output_name = vm["output-file"].as<std::string>();
+
+  std::cout << "git commit " << VERSION << std::endl;
 
   std::ifstream input(json_name);
   nlohmann::json json;
@@ -443,8 +515,7 @@ int adaptive_convergence(const std::string json_name, const std::string output_n
 
   const unsigned int t_bonds = p.transient_bonds.get_nbonds();
   const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
-  const unsigned int nstates = std::pow(2, t_bonds); // TODO: find out if this nstates can just be 2 always
-  unsigned int native_ind = nstates - 1;
+  const unsigned int nstates = std::pow(2, t_bonds);
   ConfigInt store_config_int;
   std::vector<uint64_t> config_count(nstates);
   std::vector<double> dist(nbonds);
@@ -514,9 +585,8 @@ int adaptive_convergence(const std::string json_name, const std::string output_n
   p.transient_bonds.write_hdf5(file, "transient_bonds");
   p.permanent_bonds.write_hdf5(file, "permanent_bonds");
 
-    // if warmup flag then stop after WL. print info to different json file or csv or hdf5
-  //wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
-  sys.s_bias[native_ind] = init_sbias;
+  // if warmup flag then stop after WL. print info to different json file or csv or hdf5
+  wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
 
   //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
@@ -599,12 +669,10 @@ int adaptive_convergence(const std::string json_name, const std::string output_n
 // create pybind11 module for wang_landau function
 
 PYBIND11_MODULE(HMC, m) {
-    m.doc() = "pybind11 hybridmc plugin";
+    m.doc() = "pybind11 hybridmc plugin for wang_landau function";
 
     using namespace pybind11::literals;
     m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
           "json_name"_a, "h5_input_name"_a=py::none());
 
-    m.def("adaptive_convergence", &adaptive_convergence, "A function that conducts the hybridmc simulation",
-          "json_name"_a, "h5_output_name"_a, "init_sbias"_a, "h5_input_name"_a=py::none(), "snapshot_name"_a=py::none());
 }
