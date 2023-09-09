@@ -6,7 +6,6 @@
 
 #include "hardspheres.h"
 #include <string>
-#include <vector>
 
 void write_snapshot(const std::string snapshot_name,
                     const std::vector<Vec3> &pos,

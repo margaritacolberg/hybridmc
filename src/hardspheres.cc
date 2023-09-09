@@ -6,9 +6,7 @@
 // crossing events of the hard spheres in a priority queue
 
 #include "hardspheres.h"
-#include "config.h"
 #include "crankshaft.h"
-#include "system.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -39,9 +37,7 @@ void unit_sphere(Random &mt, double &x, double &y, double &z) {
 void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p) {
   const unsigned int nbeads = pos.size();
-  // pick a scaling factor that corresponds to the distance constraint
-  // between the nearest beads
-  std::uniform_real_distribution<> uniform_near(p.near_min, p.near_max);
+  std::uniform_real_distribution<> uniform_near(0.0, 1.0);
 
   if (pos.size() < 1)
     return;
@@ -54,6 +50,9 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
   uint64_t tries = 0;
   unsigned int i = 1;
 
+  const double near_min3 = std::pow(p.near_min, 3.0);
+  const double near_max3 = std::pow(p.near_max, 3.0);
+
   while (i < nbeads) {
     if (!(tries++ < p.tries)) {
       throw std::logic_error(
@@ -65,7 +64,10 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     double near_dx, near_dy, near_dz;
     unit_sphere(mt, near_dx, near_dy, near_dz);
 
-    double near = uniform_near(mt);
+    // pick a scaling factor that corresponds to the distance
+    // constraint between the nearest beads
+    const double val = uniform_near(mt);
+    const double near = std::cbrt(near_min3 + (val * (near_max3 - near_min3)));
 
     // center the point at the position of the previous point, and scale
     // according to the distance constraint between the nearest beads
@@ -219,7 +221,7 @@ void init_vel(std::vector<Vec3> &vel, Random &mt, const double temp,
 // separation), the function returns true and returns the time until collision
 // in t; if a collision does not occur, the function returns false
 bool t_until_inner_coll(double xij, double yij, double zij, double vxij,
-                        double vyij, double vzij, const double sigma2, //change
+                        double vyij, double vzij, const double sigma2,
                         double &t) {
   double rvij = xij * vxij + yij * vyij + zij * vzij;
 
@@ -412,11 +414,11 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
   double rc2_outer = rc2;
 
   if (p_bond_mask && p_rc2) {
-    rc2_outer = *p_rc2;
+    rc2_outer = *p_rc2; // p_rc2 is the largest rc
   }
 
   if (stair2 && update_config.non_bonded(t_bond_mask)) {
-    rc2_outer = *stair2;
+    rc2_outer = *stair2; // the stair2 is the rc1 -- middle rc2 value
   }
 
   return rc2_outer;
@@ -571,6 +573,7 @@ void add_events_for_all_beads(
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
     UpdateConfig &update_config, const unsigned int max_nbonds) {
+  assert(pos.size() == nbeads);
   // for a collision between two beads,
   for (unsigned int i = 0; i < nbeads; i++) {
     add_events_for_one_bead(pos, vel, rh2, stair2, p_rc2, box, counter,
@@ -593,7 +596,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
   double x_wall = cells.lcell * ixo;
   // position of bottom cell wall
   double y_wall = cells.lcell * iyo;
-  // position of in cell wall
+  // position of back cell wall
   double z_wall = cells.lcell * izo;
 
   double dx = x_wall - xi;
@@ -603,7 +606,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in x-direction,
   if (vxi > 0) {
-    // calculate the time needed reach the right wall
+    // calculate the time needed to reach the right wall
     double txr = (dx + cells.lcell) / vxi;
 
     // if a cell crossing occurs,
@@ -634,7 +637,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in y-direction,
   if (vyi > 0) {
-    // calculate the time needed to reach the up wall
+    // calculate the time needed to reach the top wall
     double tyr = (dy + cells.lcell) / vyi;
 
     if (!crossing || tyr < dt) {
@@ -649,7 +652,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // else if the velocity of the bead is negative in y-direction,
   else if (vyi < 0) {
-    // calculate the time needed to reach the down wall
+    // calculate the time needed to reach the bottom wall
     double tyl = dy / vyi;
 
     if (!crossing || tyl < dt) {
@@ -700,8 +703,9 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 // which contains the absolute time of the cell crossing, index of cell
 // crossing particle, its current collision counter, indices of the old and new
 // cells, and the cell wall that was crossed
-void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, const Box &box,
-             const std::vector<uint64_t> &counter, EventQueue &event_queue, const std::vector<double> &times,
+void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
+             const Box &box, const std::vector<uint64_t> &counter,
+             EventQueue &event_queue, const std::vector<double> &times,
              unsigned int i, const Cells &cells) {
   double dt;
   BeadCellEvent::Wall wall;
@@ -1135,6 +1139,8 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
                    UpdateConfig &update_config, CountBond &) {
   const unsigned int nbeads = sys.pos.size();
 
+  // if the actual (counter[ev.i, j]) and predicted (ni, nj) collision counters
+  // of the colliding beads match,
   if (sys.counter[ev.i] != ev.ni || sys.counter[ev.j] != ev.nj)
     return false;
 
@@ -1484,18 +1490,12 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   assert(check_overlap(ev.i, sys.pos, sys.vel, sys.times, p.rh2, box));
   assert(check_overlap(ev.j, sys.pos, sys.vel, sys.times, p.rh2, box));
 
-  //const Config t_bond_mask = p.transient_bonds.get_bond_mask(ev.i, ev.j);
-  //const Config p_bond_mask = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
-
-
   const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
   const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
-
-  //const double rc2 = std::get<1>(bond_mask_tuple);
 
   const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p.p_rc2, p_bond_mask);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
@@ -1508,7 +1508,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is formed " << update_config.config);
 
     count_bond.formed++;
-      LOG_DEBUG("number of times bond formed = " << count_bond.formed);
+    LOG_DEBUG("number of times bond formed = " << count_bond.formed);
   }
 
   if (ev.i > 1) {
@@ -1591,7 +1591,6 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
 
 
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    //const double rc2 = std::get<1>(bond_mask_tuple);
     const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, p.p_rc2, t_bond_mask, p_bond_mask, update_config);
 
   std::optional<double> dS;
@@ -1608,7 +1607,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is broken " << update_config.config);
 
     count_bond.broken++;
-      LOG_DEBUG("number of times bond broken = " << count_bond.broken);
+    LOG_DEBUG("number of times bond broken = " << count_bond.broken);
   }
 
   if (ev.i > 1) {

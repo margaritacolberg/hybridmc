@@ -22,7 +22,7 @@ struct Param {
   double near_min2;
   // largest bond length squared between nearest neighbors
   double near_max2;
-  // distance constrains for next-nearest neighbors
+  // distance constraints for next-nearest neighbors
   double nnear_min;
   double nnear_max;
   // smallest bond length squared between next-nearest neighbors
@@ -44,7 +44,7 @@ struct Param {
   std::optional<double> p_rc;
   std::optional<double> p_rc2;
 
-  // vector of indices of beads which form bonds + rc
+  // vector of indices of beads which form bonds
   NonlocalBonds nonlocal_bonds;
   // vector of indices of beads which form bonds that can be broken
   NonlocalBonds transient_bonds;
@@ -63,6 +63,7 @@ struct Param {
   unsigned int ncell;
   // number of time intervals
   unsigned int nsteps;
+  unsigned int nsteps_eq;
   // step at which to write output to file
   unsigned int write_step;
   // increment time
@@ -87,6 +88,7 @@ struct Param {
   unsigned int mc_write;
   // total number of iterations of MD trajectories and MC moves
   unsigned int total_iter;
+  unsigned int total_iter_eq;
   // entropy scaling factors
   double pos_scale;
   double neg_scale;

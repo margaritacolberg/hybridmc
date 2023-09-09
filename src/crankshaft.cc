@@ -5,7 +5,6 @@
 // chosen bonds to create a new configuration of the protein
 
 #include "crankshaft.h"
-#include "config.h"
 #include <algorithm>
 #include <cmath>
 
@@ -207,9 +206,6 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
       }
 
       // flip bit to form bond
-
-
-      //const Config bond_mask = transient_bonds.get_bond_mask(i, j);
       if (bond_mask != 0) {
         assert(update_config.non_bonded(bond_mask));
         update_config.flip_bond(bond_mask);
