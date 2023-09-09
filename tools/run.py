@@ -33,14 +33,13 @@ def main(args):
 
     tmp_dir_name = f'{dir_name}.tmp'
 
-    init_json_args = {"json": args.json, "seed_increment": 1}
+    init_json_args = {"json": args.json, "seed_increment": 1, "WL_sbias": args.WL_sbias}
 
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
         nproc = os.getenv('SLURM_CPUS_PER_TASK')
 
     init_json_args["nproc"] = nproc
-    init_json_args["WL_sbias"] = args.WL_sbias
 
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
