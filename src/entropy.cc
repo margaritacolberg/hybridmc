@@ -7,11 +7,9 @@
 // converges, biased entropy is approximately equal to true entropy
 
 #include "entropy.h"
-#include "config.h"
 #include <bit>
 #include <boost/math/distributions/chi_squared.hpp>
 #include <cmath>
-#include <vector>
 
 void init_s(std::vector<double> &s_bias, const unsigned int nbonds) {
   unsigned int nstates = std::pow(2, nbonds);

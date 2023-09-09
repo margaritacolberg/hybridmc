@@ -8,13 +8,11 @@
 // been visited roughly equally, giving the final value of the entropy of each
 // state;
 
-#include "config.h"
 #include "crankshaft.h"
 #include "entropy.h"
 #include "hardspheres.h"
 #include "json.hpp"
 #include "snapshot.h"
-#include "system.h"
 #include "writer.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -228,7 +226,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
     if (!(E_diff < 1e-6)) {
-      std::cout << E_diff << " energy difference " << "  tot_E_before = " << tot_E_before << " tot_E_during = " << tot_E_during << std::endl;
+      std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
   }
@@ -275,8 +273,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
     if (!(E_diff < 1e-6)) {
-      std::cout << E_diff << " energy difference in wl" << " tot_E_before = " << tot_E_before << " tot_E_during = " << tot_E_during << std::endl;
-      std::cout << " entropy of config " << update_config.config << " is " << sys.s_bias[update_config.config] << std::endl;
+      std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
   }
@@ -288,15 +285,15 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
                  const unsigned int nstates, std::vector<double> &s_bias) {
-    // amount by which entropy is adjusted
-    double gamma = p.gamma;
-    unsigned int iter_wl = 0;
-    unsigned int native_ind = nstates - 1;
-    double wall_time = 0.0;
+  // amount by which entropy is adjusted
+  double gamma = p.gamma;
+  unsigned int iter_wl = 0;
+  unsigned int native_ind = nstates - 1;
+  double wall_time = 0.0;
 
-    while (gamma > p.gamma_f) {
-        // iterate over the 2 states
-        for (unsigned int i = 0; i < nstates; i++) {
+  while (gamma > p.gamma_f) {
+    // iterate over the 2 states
+    for (unsigned int i = 0; i < nstates; i++) {
       // run trajectory to get final state
       Config state = run_trajectory_wl(sys, mt, p, box, update_config,
                                        count_bond, wall_time, iter_wl);
@@ -306,7 +303,7 @@ void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
       } else {
         s_bias[native_ind] += gamma;
       }
-        }
+    }
 
         iter_wl += 1;
         gamma = 1.0 / double(iter_wl);
@@ -653,24 +650,69 @@ int main(int argc, char *argv[]) {
 }
 
 void from_json(const nlohmann::json &json, Param &p) {
-  p.m = json["m"];
-  p.sigma = json["sigma_bb"];
-  p.sigma2 = p.sigma * p.sigma;
-  p.near_min = json["near_min"];
-  p.near_max = json["near_max"];
-  p.near_min2 = p.near_min * p.near_min;
-  p.near_max2 = p.near_max * p.near_max;
-  p.nnear_min = json["nnear_min"];
-  p.nnear_max = json["nnear_max"];
-  p.nnear_min2 = p.nnear_min * p.nnear_min;
-  p.nnear_max2 = p.nnear_max * p.nnear_max;
-  p.rh = json["rh"];
-  p.rc = json["rc"];
-  p.rh2 = p.rh * p.rh;
-  p.rc2 = p.rc * p.rc;
+    p.m = json["m"];
+    p.sigma = json["sigma_bb"];
+    p.sigma2 = p.sigma * p.sigma;
+    p.near_min = json["near_min"];
+    p.near_max = json["near_max"];
+    p.near_min2 = p.near_min * p.near_min;
+    p.near_max2 = p.near_max * p.near_max;
+    p.nnear_min = json["nnear_min"];
+    p.nnear_max = json["nnear_max"];
+    p.nnear_min2 = p.nnear_min * p.nnear_min;
+    p.nnear_max2 = p.nnear_max * p.nnear_max;
+    p.rh = json["rh"];
+    p.rh2 = p.rh * p.rh;
 
+    // if stair var is not false aka 0
+    if (json.count("stair") != 0) {
+        p.stair = json["stair"];
+        p.stair2 = *p.stair * *p.stair;
+    }
 
+    p.nonlocal_bonds = json["nonlocal_bonds"];
+    p.transient_bonds = json["transient_bonds"];
+    p.permanent_bonds = json["permanent_bonds"];
 
+    // define the stair bonds
+    if (json.count("stair_bonds") != 0) {
+        p.stair_bonds = json["stair_bonds"];
+    }
+
+    // set the outer wall rc of p_rc
+    if (json.count("p_rc") != 0) {
+        p.p_rc = json["p_rc"];
+        p.p_rc2 = *p.p_rc * *p.p_rc;
+    }
+
+    /*if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
+     // throw std::runtime_error("stair boundary is smaller than rc");
+    }*/
+
+    p.tries = json["tries"];
+    p.nbeads = json["nbeads"];
+    p.length = json["length"];
+    p.ncell = json["ncell"];
+    p.nsteps = json["nsteps"];
+    p.nsteps_eq = json["nsteps_eq"];
+    p.del_t = json["del_t"];
+    p.nsteps_wl = json["nsteps_wl"];
+    p.del_t_wl = json["del_t_wl"];
+    p.gamma = json["gamma"];
+    p.gamma_f = json["gamma_f"];
+    p.write_step = json["write_step"];
+    p.seeds = json["seeds"].get<std::vector<unsigned int>>();
+    p.temp = json["temp"];
+    p.mc_moves = json["mc_moves"];
+    p.mc_write = json["mc_write"];
+    p.total_iter = json["total_iter"];
+    p.total_iter_eq = json["total_iter_eq"];
+    p.pos_scale = json["pos_scale"];
+    p.neg_scale = json["neg_scale"];
+    p.sig_level = json["sig_level"];
+    p.max_nbonds = json["max_nbonds"];
+    p.max_g_test_count = json["max_g_test_count"];
+}
 
 // create pybind11 module for wang_landau function
 PYBIND11_MODULE(HMC, m) {
