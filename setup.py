@@ -126,13 +126,13 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="wang_landau",
+    name="HMC",
     version="0.0.1",
     author="Vigneshwar Rajesh",
     author_email="vignesh.rajesh@mail.utoronto.ca",
     description="A project using pybind11 and CMake",
     long_description="",
-    ext_modules=[CMakeExtension("wang_landau")],
+    ext_modules=[CMakeExtension("HMC")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
