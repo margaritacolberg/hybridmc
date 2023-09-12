@@ -31,25 +31,18 @@ struct Param {
   double nnear_max2;
   // distance constraints for nonlocal beads
   double rh;
-  double rc;
   // smallest bond length squared between nonlocal beads
   double rh2;
-  // largest bond length squared between nonlocal beads
-  double rc2;
   // edge of previous stair in staircase potential of transient bond
   std::optional<double> stair;
   std::optional<double> stair2;
-  // largest bond length between nonlocal beads in a permanent bond, if the
-  // transient bond has a staircase potential
-  std::optional<double> p_rc;
-  std::optional<double> p_rc2;
-
   // vector of indices of beads which form bonds
   NonlocalBonds nonlocal_bonds;
   // vector of indices of beads which form bonds that can be broken
   NonlocalBonds transient_bonds;
   // vector of indices of beads which form bonds that cannot be broken
   NonlocalBonds permanent_bonds;
+
   // vector of indices of beads whose potential is a staircase
   //std::optional<NonlocalBonds> stair_bonds;
 
