@@ -25,6 +25,7 @@
 #include <optional>
 
 namespace po = boost::program_options;
+namespace py = pybind11;
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,
