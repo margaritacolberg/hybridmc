@@ -125,7 +125,7 @@ bool check_local_dist_if_crankshaft(const std::vector<Vec3> &pos_trial,
 bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
                          const double rh2,
                          const std::optional<double> stair2,
-                         const std::optional<double> p_rc2,
+                         const std::optional<double>,
                          const NonlocalBonds &transient_bonds,
                          const NonlocalBonds &permanent_bonds) {
   const unsigned int nbeads = pos_trial.size();
@@ -152,10 +152,10 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
       const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
       //const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
-      //double rc2_inner = get_rc2_inner(rc2, p_rc2, p_bond_mask);
+      //double rc2_inner = get_rc2_inner(rc2,, p_bond_mask);
       //double rc2 = std::get<1>(p_bond_mask_tuple);
 
-      double rc2_inner = get_rc2_inner(std::get<1>(p_bond_mask_tuple), p_rc2, p_bond_mask);
+      double rc2_inner = get_rc2_inner(std::get<1>(p_bond_mask_tuple), p_bond_mask);
 
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {
@@ -239,7 +239,7 @@ void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
                 const double nnear_min2, const double nnear_max2,
                 const double rh2,
                 const std::optional<double> stair2,
-                const std::optional<double> p_rc2,
+                const std::optional<double>,
                 const NonlocalBonds &transient_bonds,
                 const NonlocalBonds &permanent_bonds, Random &mt,
                 const std::vector<double> &s_bias) {
@@ -262,7 +262,7 @@ void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
   } while (
       !(check_local_dist_if_crankshaft(pos_trial, box, near_min2, near_max2,
                                        nnear_min2, nnear_max2) &&
-        check_nonlocal_dist(pos_trial, box, rh2, stair2, p_rc2,
+        check_nonlocal_dist(pos_trial, box, rh2, stair2,
                             transient_bonds, permanent_bonds)));
 
   UpdateConfig trial_config = config_int(pos_trial, box, transient_bonds);

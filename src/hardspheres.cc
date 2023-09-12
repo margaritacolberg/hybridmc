@@ -397,24 +397,24 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   dvz = vel[j].z - vel[i].z;
 }
 
-double get_rc2_inner(double rc2, std::optional<double> p_rc2,
+double get_rc2_inner(double rc2, std::optional<double,
                      const Config p_bond_mask) {
   double rc2_inner = rc2;
 
-  if (p_bond_mask && p_rc2) {
-    rc2_inner = *p_rc2;
+  if (p_bond_mask &) {
+    rc2_inner =;
   }
 
   return rc2_inner;
 }
 
 double get_rc2_outer(double rc2, std::optional<double> stair2,
-                     std::optional<double> p_rc2, const Config t_bond_mask,
+                     std::optional<double, const Config t_bond_mask,
                      const Config p_bond_mask, UpdateConfig &update_config) {
   double rc2_outer = rc2;
 
-  if (p_bond_mask && p_rc2) {
-    rc2_outer = *p_rc2; // p_rc2 is the largest rc
+  if (p_bond_mask &) {
+    rc2_outer =; // 2 is the largest rc
   }
 
   if (stair2 && update_config.non_bonded(t_bond_mask)) {
@@ -432,7 +432,7 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
 // (DONE) see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
              double rh2, std::optional<double> stair2,
-             std::optional<double> p_rc2, const Box &box,
+             std::optional<double, const Box &box,
              const std::vector<uint64_t> &counter, EventQueue &event_queue,
              const std::vector<double> &times, unsigned int i, unsigned int j,
              const NonlocalBonds &transient_bonds,
@@ -466,8 +466,8 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
       // TODO: Add some error message
   }
 
-  const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
-  const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
+  const double rc2_inner = get_rc2_inner(rc2val, p_bond_mask);  is for stairs
+  const double rc2_outer = get_rc2_outer(rc2val, stair2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated
 
 
@@ -506,7 +506,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 // iterate collisions over all particle pairs
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                   double rh2, std::optional<double> stair2,
-                  std::optional<double> p_rc2, const Box &box,
+                  std::optional<double, const Box &box,
                   const std::vector<uint64_t> &counter, EventQueue &event_queue,
                   const std::vector<double> &times, const Cells &cells,
                   unsigned int icell, unsigned int i,
@@ -514,7 +514,7 @@ void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                   const NonlocalBonds &permanent_bonds,
                   UpdateConfig &update_config, const unsigned int max_nbonds) {
   for (unsigned int j : cells.cells[icell]) {
-    if_coll(pos, vel, rh2, stair2, p_rc2, box, counter, event_queue, times,
+    if_coll(pos, vel, rh2, stair2, box, counter, event_queue, times,
             i, j, transient_bonds, permanent_bonds, update_config, max_nbonds);
   }
 }
@@ -534,7 +534,7 @@ void walls_of_cell(unsigned int &zmin, unsigned int &zmax, unsigned int &ymin,
 // but without any cell crossings
 void add_events_for_one_bead(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
+    std::optional<double> stair2, std::optional<double,
     const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, const NonlocalBonds &transient_bonds,
@@ -555,7 +555,7 @@ void add_events_for_one_bead(
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
         // iterate collisions over the cell
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -568,7 +568,7 @@ void add_events_for_one_bead(
 void add_events_for_all_beads(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
     unsigned int nbeads, double rh2, std::optional<double> stair2,
-    std::optional<double> p_rc2, const Box &box,
+    std::optional<double, const Box &box,
     const std::vector<uint64_t> &counter, EventQueue &event_queue,
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
@@ -576,7 +576,7 @@ void add_events_for_all_beads(
   assert(pos.size() == nbeads);
   // for a collision between two beads,
   for (unsigned int i = 0; i < nbeads; i++) {
-    add_events_for_one_bead(pos, vel, rh2, stair2, p_rc2, box, counter,
+    add_events_for_one_bead(pos, vel, rh2, stair2, box, counter,
                             event_queue, times, cells, i, transient_bonds,
                             permanent_bonds, update_config, max_nbonds);
   }
@@ -767,7 +767,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
 // particle which recently crossed into a new cell
 void add_events_for_bead_after_crossing(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
+    std::optional<double> stair2, std::optional<double,
     const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, BeadCellEvent::Wall wall,
@@ -790,7 +790,7 @@ void add_events_for_bead_after_crossing(
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
         // iterate collisions over the cell
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -807,7 +807,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -824,7 +824,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -841,7 +841,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -858,7 +858,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -875,7 +875,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -1191,11 +1191,11 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
   // fill priority queue with collisions of all particle pairs involving a
   // recently-collided particle (executed many times to update the priority
   // queue and remove invalid entries)
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1258,11 +1258,11 @@ bool process_event(const MaxNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1321,11 +1321,11 @@ bool process_event(const MinNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1384,11 +1384,11 @@ bool process_event(const MaxNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1455,11 +1455,11 @@ bool process_event(const MinNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1497,7 +1497,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p.p_rc2, p_bond_mask);
+  const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p_bond_mask);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
@@ -1545,11 +1545,11 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1591,7 +1591,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
 
 
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, p.p_rc2, t_bond_mask, p_bond_mask, update_config);
+    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, t_bond_mask, p_bond_mask, update_config);
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,
@@ -1645,11 +1645,11 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
   }
 
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1678,7 +1678,7 @@ bool process_event(const BeadCellEvent &ev, System &sys, const Param &p,
   //const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_bead_after_crossing(
-      sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2, box, sys.counter,
+      sys.pos, sys.vel, p.rh2, p.stair2, box, sys.counter,
       event_queue, sys.times, cells, ev.i, ev.wall, p.transient_bonds,
       p.permanent_bonds, update_config, p.max_nbonds);
 

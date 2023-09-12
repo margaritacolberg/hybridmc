@@ -63,16 +63,16 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                unsigned int j, double &t, double &dx, double &dy, double &dz,
                double &dvx, double &dvy, double &dvz);
 
-double get_rc2_inner(double rc2, std::optional<double> p_rc2,
+double get_rc2_inner(double rc2, std::optional<double>,
                      const Config p_bond_mask);
 
 double get_rc2_outer(double rc2, std::optional<double> stair2,
-                     std::optional<double> p_rc2, const Config t_bond_mask,
+                     std::optional<double>, const Config t_bond_mask,
                      const Config p_bond_mask, UpdateConfig &update_config);
 
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
              double rh2, std::optional<double> stair2,
-             std::optional<double> p_rc2, const Box &box,
+             std::optional<double>, const Box &box,
              const std::vector<uint64_t> &counter, EventQueue &event_queue,
              const std::vector<double> &times, unsigned int i, unsigned int j,
              const NonlocalBonds &transient_bonds,
@@ -81,7 +81,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                   double rh2, std::optional<double> stair2,
-                  std::optional<double> p_rc2, const Box &box,
+                  std::optional<double>, const Box &box,
                   const std::vector<uint64_t> &counter, EventQueue &event_queue,
                   const std::vector<double> &times, const Cells &cells,
                   unsigned int icell, unsigned int i,
@@ -95,7 +95,7 @@ void walls_of_cell(unsigned int &zmin, unsigned int &zmax, unsigned int &ymin,
 
 void add_events_for_one_bead(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
+    std::optional<double> stair2, std::optional<double>,
     const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, const NonlocalBonds &transient_bonds,
@@ -105,7 +105,7 @@ void add_events_for_one_bead(
 void add_events_for_all_beads(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
     unsigned int nbeads, double rh2, std::optional<double> stair2,
-    std::optional<double> p_rc2, const Box &box,
+    std::optional<double>, const Box &box,
     const std::vector<uint64_t> &counter, EventQueue &event_queue,
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
@@ -132,7 +132,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
 
 void add_events_for_bead_after_crossing(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
+    std::optional<double> stair2, std::optional<double>,
     const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, BeadCellEvent::Wall wall,
