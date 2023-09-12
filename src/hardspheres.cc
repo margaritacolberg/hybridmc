@@ -397,25 +397,15 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   dvz = vel[j].z - vel[i].z;
 }
 
-double get_rc2_inner(double rc2, std::optional<double,
-                     const Config p_bond_mask) {
+double get_rc2_inner(double rc2, const Config p_bond_mask) {
   double rc2_inner = rc2;
-
-  if (p_bond_mask &) {
-    rc2_inner =;
-  }
-
   return rc2_inner;
 }
 
-double get_rc2_outer(double rc2, std::optional<double> stair2,
-                     std::optional<double, const Config t_bond_mask,
+double get_rc2_outer(double rc2, std::optional<double> stair2, const Config t_bond_mask,
                      const Config p_bond_mask, UpdateConfig &update_config) {
-  double rc2_outer = rc2;
 
-  if (p_bond_mask &) {
-    rc2_outer =; // 2 is the largest rc
-  }
+  double rc2_outer = rc2;
 
   if (stair2 && update_config.non_bonded(t_bond_mask)) {
     rc2_outer = *stair2; // the stair2 is the rc1 -- middle rc2 value
@@ -431,8 +421,7 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
 
 // (DONE) see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-             double rh2, std::optional<double> stair2,
-             std::optional<double, const Box &box,
+             double rh2, std::optional<double> stair2, const Box &box,
              const std::vector<uint64_t> &counter, EventQueue &event_queue,
              const std::vector<double> &times, unsigned int i, unsigned int j,
              const NonlocalBonds &transient_bonds,
@@ -466,7 +455,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
       // TODO: Add some error message
   }
 
-  const double rc2_inner = get_rc2_inner(rc2val, p_bond_mask);  is for stairs
+  const double rc2_inner = get_rc2_inner(rc2val, p_bond_mask);
   const double rc2_outer = get_rc2_outer(rc2val, stair2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
                                          p_bond_mask, update_config); // get position for rh associated
 
@@ -505,8 +494,7 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
 // iterate collisions over all particle pairs
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-                  double rh2, std::optional<double> stair2,
-                  std::optional<double, const Box &box,
+                  double rh2, std::optional<double> stair2, const Box &box,
                   const std::vector<uint64_t> &counter, EventQueue &event_queue,
                   const std::vector<double> &times, const Cells &cells,
                   unsigned int icell, unsigned int i,
@@ -534,8 +522,7 @@ void walls_of_cell(unsigned int &zmin, unsigned int &zmax, unsigned int &ymin,
 // but without any cell crossings
 void add_events_for_one_bead(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double,
-    const Box &box, const std::vector<uint64_t> &counter,
+    std::optional<double> stair2, const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, const NonlocalBonds &transient_bonds,
     const NonlocalBonds &permanent_bonds, UpdateConfig &update_config,
@@ -567,8 +554,7 @@ void add_events_for_one_bead(
 // its neighboring cells
 void add_events_for_all_beads(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-    unsigned int nbeads, double rh2, std::optional<double> stair2,
-    std::optional<double, const Box &box,
+    unsigned int nbeads, double rh2, std::optional<double> stair2, const Box &box,
     const std::vector<uint64_t> &counter, EventQueue &event_queue,
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
@@ -767,8 +753,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
 // particle which recently crossed into a new cell
 void add_events_for_bead_after_crossing(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double,
-    const Box &box, const std::vector<uint64_t> &counter,
+    std::optional<double> stair2, const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, BeadCellEvent::Wall wall,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
