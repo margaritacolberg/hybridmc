@@ -1490,7 +1490,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p_bond_mask);
+  const double rc2 = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
@@ -1584,7 +1584,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
 
 
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, t_bond_mask, p_bond_mask, update_config);
+    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), t_bond_mask, p.stair2, update_config);
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,
