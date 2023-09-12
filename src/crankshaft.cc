@@ -125,7 +125,6 @@ bool check_local_dist_if_crankshaft(const std::vector<Vec3> &pos_trial,
 bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
                          const double rh2,
                          const std::optional<double> stair2,
-                         const std::optional<double>,
                          const NonlocalBonds &transient_bonds,
                          const NonlocalBonds &permanent_bonds) {
   const unsigned int nbeads = pos_trial.size();
@@ -151,12 +150,7 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
       const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
       const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-      //const Config p_bond_mask = permanent_bonds.get_bond_mask(i, j);
-      //double rc2_inner = get_rc2_inner(rc2,, p_bond_mask);
-      //double rc2 = std::get<1>(p_bond_mask_tuple);
-
-      double rc2_inner = get_rc2_inner(std::get<1>(p_bond_mask_tuple), p_bond_mask);
-
+      const double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {
         LOG_DEBUG("permanent bond between beads "
@@ -164,8 +158,6 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
                   << std::sqrt(dist2) << " has been broken");
         return false;
       }
-
-      //const Config t_bond_mask = transient_bonds.get_bond_mask(i, j);
 
       if (stair2 && t_bond_mask && !(dist2 < *stair2)) {
         LOG_DEBUG("transient bond between beads "

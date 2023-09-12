@@ -397,18 +397,41 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   dvz = vel[j].z - vel[i].z;
 }
 
-double get_rc2_inner(double rc2, const Config p_bond_mask) {
-  double rc2_inner = rc2;
+// function to obtain the correct rc2 inner given the bond type;
+// for permanent, transient bonds get their respective rc value.
+double get_rc2_inner(const std::tuple<Config, double> t_bond_mask_tuple,
+                     const std::tuple<Config, double> p_bond_mask_tuple) {
+
+    const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+    const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+
+    // initialize variable to find appropriate rc value
+    double rc2_inner = 0;
+
+    // find rc value for given p or t bond
+    if (p_bond_mask) {
+        rc2_inner = std::get<1>(p_bond_mask_tuple);
+    } else if (t_bond_mask) {
+        rc2_inner = std::get<1>(t_bond_mask_tuple);
+    } else {
+        throw std::runtime_error("Bond not a permanent or transient bond; rc info not available");
+    }
+
   return rc2_inner;
 }
 
-double get_rc2_outer(double rc2, std::optional<double> stair2, const Config t_bond_mask,
-                     const Config p_bond_mask, UpdateConfig &update_config) {
+// function that outputs same rc as the bonding target rc if non staircase,
+// outputs outer hard wall rc if staircase
+double get_rc2_outer(double rc2_inner, const Config t_bond_mask, std::optional<double> stair2,
+                     UpdateConfig &update_config) {
 
-  double rc2_outer = rc2;
+  // initialize with whatever rc2_inner is; in non staircase case this is true
+  double rc2_outer = rc2_inner;
 
+  // if staircase rc is given then set the outer hard wall at given stair2 rc value
   if (stair2 && update_config.non_bonded(t_bond_mask)) {
-    rc2_outer = *stair2; // the stair2 is the rc1 -- middle rc2 value
+    rc2_outer = *stair2;
+    //std::cout << "STAIRCASED: " << "; rc2 inner = " << std::sqrt(rc2_inner) << "; rc2 outer = " << std::sqrt(rc2_outer) << std::endl;
   }
 
   return rc2_outer;
@@ -444,30 +467,15 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  // initialize variable to find appropriate rc value
-  double rc2val = 0;
-  // find rc value for given p or t bond
-  if (p_bond_mask) {
-      rc2val = std::get<1>(p_bond_mask_tuple);
-  } else if (t_bond_mask) {
-      rc2val = std::get<1>(t_bond_mask_tuple);
-  } else {
-      // TODO: Add some error message
-  }
+  // choose correct rc2 inner based on if permanent, transient or stair bond
+  const double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
 
-  const double rc2_inner = get_rc2_inner(rc2val, p_bond_mask);
-  const double rc2_outer = get_rc2_outer(rc2val, stair2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
-                                         p_bond_mask, update_config); // get position for rh associated
-
+  const double rc2_outer = get_rc2_outer(rc2_inner, t_bond_mask, stair2, update_config);
 
  // two beads in trans bond >rc then inner else outer
   // count the number of transient bonds already present
   const unsigned int nbonds = update_config.count_bonds();
   assert(nbonds <= max_nbonds);
-
-  if (stair2 && update_config.non_bonded(t_bond_mask)) {
-      std::cout << "STAIRCASED: " << "; rc2 inner = " << std::sqrt(rc2_inner) << "; rc2 outer = " << std::sqrt(rc2_outer) << std::endl;
-  }
 
   // if two nonlocal beads collide and form a bond (i and j must initially
   // not be bonded),
