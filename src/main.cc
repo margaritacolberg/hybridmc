@@ -679,16 +679,6 @@ void from_json(const nlohmann::json &json, Param &p) {
         p.stair_bonds = json["stair_bonds"];
     }
 
-    // set the outer wall rc of p_rc
-    if (json.count("p_rc") != 0) {
-        p.p_rc = json["p_rc"];
-        p.p_rc2 = *p.p_rc * *p.p_rc;
-    }
-
-    /*if (p.stair && ((*p.stair < p.rc) || (*p.stair < *p.p_rc))) {
-     // throw std::runtime_error("stair boundary is smaller than rc");
-    }*/
-
     p.tries = json["tries"];
     p.nbeads = json["nbeads"];
     p.length = json["length"];
