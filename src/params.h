@@ -51,7 +51,7 @@ struct Param {
   // vector of indices of beads which form bonds that cannot be broken
   NonlocalBonds permanent_bonds;
   // vector of indices of beads whose potential is a staircase
-  std::optional<NonlocalBonds> stair_bonds;
+  //std::optional<NonlocalBonds> stair_bonds;
 
   // number of tries to place beads in box
   uint64_t tries;
