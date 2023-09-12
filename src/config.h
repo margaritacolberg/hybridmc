@@ -19,10 +19,6 @@
 using Config = uint64_t;
 using ConfigInt = std::vector<uint64_t>;
 
-// TODO: has to change to account for rc in k index
-
-// TODO: when reading in the pairs, store rc squared rather than rc
-
 class NonlocalBonds {
 public:
   using Pairs = std::vector<std::tuple<unsigned int, unsigned int, double>>;
