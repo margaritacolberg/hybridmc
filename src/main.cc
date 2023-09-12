@@ -675,9 +675,9 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.permanent_bonds = json["permanent_bonds"];
 
     // define the stair bonds
-    if (json.count("stair_bonds") != 0) {
+    /*if (json.count("stair_bonds") != 0) {
         p.stair_bonds = json["stair_bonds"];
-    }
+    }*/
 
     p.tries = json["tries"];
     p.nbeads = json["nbeads"];
