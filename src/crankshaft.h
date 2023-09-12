@@ -20,10 +20,8 @@ bool check_local_dist_if_crankshaft(const std::vector<Vec3> &pos_trial,
                                     const double nnear_max2);
 
 bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
-                         const double rh2,
-                         const std::optional<double> stair2,
-                         const NonlocalBonds &transient_bonds,
-                         const NonlocalBonds &permanent_bonds);
+                         const double rh2, const std::optional<double> stair2,
+                         const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds);
 
 UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
                         const NonlocalBonds &transient_bonds);

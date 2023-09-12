@@ -63,11 +63,11 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                unsigned int j, double &t, double &dx, double &dy, double &dz,
                double &dvx, double &dvy, double &dvz);
 
-double get_rc2_inner(double rc2,
-                     const Config p_bond_mask);
+double get_rc2_inner(const std::tuple<Config, double> t_bond_mask_tuple,
+                     const std::tuple<Config, double> p_bond_mask_tuple);
 
-double get_rc2_outer(double rc2, std::optional<double> stair2, const Config t_bond_mask,
-                     const Config p_bond_mask, UpdateConfig &update_config);
+double get_rc2_outer(double rc2_inner, const Config t_bond_mask, std::optional<double> stair2,
+                     UpdateConfig &update_config);
 
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
              double rh2, std::optional<double> stair2, const Box &box,
