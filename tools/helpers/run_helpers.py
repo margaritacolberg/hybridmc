@@ -11,16 +11,21 @@ def init_json(args):
     with open(args["json"], 'r') as input_json:
         data = json.load(input_json)
 
+    # make copy of nonlocal bonds provided from json file for processing
     nonlocal_bonds = data['nonlocal_bonds']
     nbonds = len(nonlocal_bonds)
     nstates = 2 ** nbonds
 
-    # use make rc tuple to make each nonlocal bond to be a triplet with rc included
-    data['nonlocal_bonds'] = make_rc_tuple(nonlocal_bonds, data["rc"])
+    # use make rc tuple to make each nonlocal bond to be a triplet with rc included in case rc value not already
+    # included as a triplet for each bond pair list
+    nonlocal_bonds = make_rc_tuple(nonlocal_bonds, data["rc"])
 
     # sort the nonlocal_bonds list
     nonlocal_bonds = sort_triplet(nonlocal_bonds)
     nonlocal_bonds.sort()
+
+    # set the data json files nonlocal bonds list to processes nonlocal bonds list
+    data['nonlocal_bonds'] = nonlocal_bonds
 
     # set the transient bonds list to be the nonlocal bonds list initially
     data['transient_bonds'] = data["nonlocal_bonds"]
@@ -29,7 +34,7 @@ def init_json(args):
     out_queue = Queue()
 
     worker = []
-    layer_args = (nonlocal_bonds, data, in_queue, out_queue, args["seed_increment"], args["WL_sbias"])
+    layer_args = (data, in_queue, out_queue, args["seed_increment"], args["WL_sbias"])
 
     for _ in range(args["nproc"]):
         p = Process(target=run_layer, args=layer_args)

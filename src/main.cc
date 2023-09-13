@@ -323,7 +323,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     const unsigned int t_bonds = p.transient_bonds.get_nbonds();
     const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
-    const unsigned int nstates = std::pow(2, t_bonds); // TODO: find out if this nstates can just be 2 always
+    const unsigned int nstates = std::pow(2, t_bonds);
     ConfigInt store_config_int;
     std::vector<uint64_t> config_count(nstates);
     std::vector<double> dist(nbonds);
@@ -355,19 +355,18 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
         throw std::runtime_error("nonlocal beads overlap");
     }
 
-    // if warmup flag then stop after WL. print info to different json file or csv or hdf5
-    //wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
-
     double gamma = p.gamma;
     //get bead index for transient pair and rc value for it
     std::tuple<unsigned int, unsigned int, double> transient_pair = p.transient_bonds.getBond(0);
     int bead1 = std::get<0>(transient_pair);
     int bead2 = std::get<1>(transient_pair);
    // std::cout << "bead1: " << bead1 << " bead2: " << bead2 << std::endl;
+   // the minimum rc2 can be is the target bonding rc for this nonlocal bond; get this value and assign to rc_min2
     double rc_min2 = std::get<2>(transient_pair);
+    // take square root to get the minimum bonding distance value
     double rc_min = std::sqrt(rc_min2);
     unsigned int iter_wl = 0;
-    unsigned int native_ind = nstates - 1; // TODO: find out if always just 1
+    unsigned int native_ind = nstates - 1;
     double wall_time = 0.0;
     std::vector<double> distance_values;
 
