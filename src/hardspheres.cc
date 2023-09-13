@@ -17,20 +17,20 @@
 // sphere point picking: http://mathworld.wolfram.com/SpherePointPicking.html;
 // see also Marsaglia, 1972
 void unit_sphere(Random &mt, double &x, double &y, double &z) {
-  std::uniform_real_distribution<> uniform_vw(-1.0, 1.0);
-  double v, w, s;
+    std::uniform_real_distribution<> uniform_vw(-1.0, 1.0);
+    double v, w, s;
 
-  // reject points for which v^2 + w^2 >= 1
-  do {
-    v = uniform_vw(mt);
-    w = uniform_vw(mt);
-    s = v * v + w * w;
-  } while (!(s < 1));
+    // reject points for which v^2 + w^2 >= 1
+    do {
+        v = uniform_vw(mt);
+        w = uniform_vw(mt);
+        s = v * v + w * w;
+    } while (!(s < 1));
 
-  // using the random numbers v and w, calculate the x-, y- and z-coordinates
-  x = 2 * v * std::sqrt(1 - v * v - w * w);
-  y = 2 * w * std::sqrt(1 - v * v - w * w);
-  z = 1 - 2 * (v * v + w * w);
+    // using the random numbers v and w, calculate the x-, y- and z-coordinates
+    x = 2 * v * std::sqrt(1 - v * v - w * w);
+    y = 2 * w * std::sqrt(1 - v * v - w * w);
+    z = 1 - 2 * (v * v + w * w);
 }
 
 // initial positions of all beads
@@ -1581,7 +1581,6 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
 
     const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
     const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
-
 
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
     const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), t_bond_mask, p.stair2, update_config);
