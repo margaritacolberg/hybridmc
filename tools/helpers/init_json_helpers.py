@@ -101,7 +101,7 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias):
 
         # if sbias from wang landau test larger than a threshold value WL_sbias then staircase potential for this bond
         if sbias > WL_sbias:
-            bp = nonlocal_bonds[i]
+            bp = common_data['nonlocal_bonds'][i]
             print(f"Do Staircase on {bp}")
 
         # optional staircase potential
