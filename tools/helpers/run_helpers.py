@@ -31,9 +31,6 @@ def init_json(args):
     worker = []
     layer_args = (nonlocal_bonds, data, in_queue, out_queue, args["seed_increment"], args["WL_sbias"])
 
-    # check if all staircase rc values are proper
-    ## some lines ##
-
     for _ in range(args["nproc"]):
         p = Process(target=run_layer, args=layer_args)
         p.start()
@@ -56,18 +53,20 @@ def init_json(args):
         if bits_in in bits_seen:
             continue
 
-        bits_seen[bits_in] = True
+        else:
+            bits_seen[bits_in] = True
 
         for i in range(nbonds):
             # count is to initialize seed of random number generator
             count += 1
 
             # if two beads are bonded,
-            if bits_in[i]:
+            if bits_in[i] is True:
                 # skip; do not break the bond
                 continue
 
-            in_queue.put((i, bits_in, count, input_hdf5))
+            else:
+                in_queue.put((i, bits_in, count, input_hdf5))
 
     # signal to run_layer that no more items are left to be added to queue
     # (native state has been reached)
