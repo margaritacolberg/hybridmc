@@ -1,4 +1,7 @@
 import sys
+import os
+import json
+import HMC
 
 
 def make_rc_tuple(nonlocal_bonds, rc):
@@ -73,3 +76,21 @@ def bits_to_bonds(bits, nonlocal_bonds):
 def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
+
+def wang_landau(data, input_hdf5, output_name):
+    json_name = f'{output_name}.json'
+    with open(json_name, 'w') as output_json:
+        json.dump(data, output_json)
+
+    # for layer = 1 or greater,
+    command = ["wang_landau", json_name]
+    json_name = os.path.realpath(json_name)
+    input_name = None
+
+    if input_hdf5:
+        command += ['--input-file', input_hdf5]
+        input_name = os.path.realpath(input_hdf5)
+
+    print(f"Running Wang-Landau process for {json_name}")
+
+    return HMC.WL_process(json_name, input_name)

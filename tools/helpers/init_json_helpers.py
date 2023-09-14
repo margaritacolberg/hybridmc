@@ -5,26 +5,6 @@ import HMC
 import subprocess
 from .data_processing_helpers import *
 
-
-def wang_landau(data, input_hdf5, output_name):
-    json_name = f'{output_name}.json'
-    with open(json_name, 'w') as output_json:
-        json.dump(data, output_json)
-
-    # for layer = 1 or greater,
-    command = ["wang_landau", json_name]
-    json_name = os.path.realpath(json_name)
-    input_name = None
-
-    if input_hdf5:
-        command += ['--input-file', input_hdf5]
-        input_name = os.path.realpath(input_hdf5)
-
-    print(f"Running Wang-Landau process for {json_name}")
-
-    return HMC.WL_process(json_name, input_name)
-
-
 def run_sim(data, input_hdf5, output_name, exe):
     # Set the name for the hdf5 and json files generated
     hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
@@ -77,11 +57,13 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
 
         # Set the transient bond to form this trajectory
         common_data['transient_bonds'] = [common_data['nonlocal_bonds'][i]]
+
         # Set the existing bonds as permanent bonds
         common_data['permanent_bonds'] = bonds_in
+
         # Obtain configuration information
-        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out),
-                                                                                                2)
+        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out), 2)
+
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
 
