@@ -69,7 +69,7 @@ def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5,
                        stderr=subprocess.STDOUT)
 
 
-def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias):
+def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
     while True:
         item = in_queue.get()
         if item is None:
@@ -86,47 +86,49 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias):
         bonds_in = bits_to_bonds(bits_in, common_data['nonlocal_bonds'])
         layer = len(bonds_in)
 
-        # optional staircase potential, initially not on
-        bp = None
-
+        # Define the output files identifier for this transition (used to name hdf5 files, json files and log files)
         output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
-        sbias_0, sbias_1, rc1, rc2, rc3 = wang_landau(common_data['nonlocal_bonds'][i], common_data, seed_increment,
+        # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different quartiles
+        # for this run
+        sbias, rc1, rc2, rc3 = wang_landau(common_data['nonlocal_bonds'][i], common_data, seed_increment,
                                                       input_hdf5, output_name, bits_in, bits_out,
                                                       bonds_in, count)
 
-        # obtain rc values for staircasing; ensure values are in descending order
-        rc = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
-        sbias = sbias_0 - sbias_1
+        # Optional staircase potential, initially the bond pair (bp) is not staircased
+        stair_bp = None
+        stair_rc_list = None
 
-        # if sbias from wang landau test larger than a threshold value WL_sbias then staircase potential for this bond
+        # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
         if sbias > WL_sbias:
-            bp = common_data['nonlocal_bonds'][i]
-            print(f"Do Staircase on {bp}")
+            stair_bp = common_data['nonlocal_bonds'][i]
+            print(f"Do Staircase on {stair_bp}")
+            # Process rc values for staircasing from prior WL run; ensure values are in descending order
+            stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 
         # optional staircase potential
-        if bp:
+        if stair_bp:
             data = copy.deepcopy(common_data)
             # iterate through the different staircased rc values
-            for j in range(len(rc)):
+            for j in range(len(stair_rc_list)):
 
                 if j > 0:
-                    data['stair'] = rc[j - 1]
+                    data['stair'] = stair_rc_list[j - 1]
 
-                if rc[j] is not rc[-1]:
-                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}_{rc[j]}'
+                if stair_rc_list[j] != stair_rc_list[-1]:
+                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}_{stair_rc_list[j]}'
                 else:
                     output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
-                data['rc'] = rc[j]
+                data['rc'] = stair_rc_list[j]
                 run_sim(common_data['nonlocal_bonds'][i], data, seed_increment,
                         input_hdf5, output_name, bits_in, bits_out,
-                        bonds_in, count, sbias_1)
+                        bonds_in, count, exe)
                 input_hdf5 = f'{output_name}.h5'
 
         else:
             run_sim(common_data['nonlocal_bonds'][i], common_data, seed_increment,
                     input_hdf5, output_name, bits_in, bits_out,
-                    bonds_in, count, sbias_1)
+                    bonds_in, count, exe)
 
         out_queue.put((bits_out, f'{output_name}.h5'))
