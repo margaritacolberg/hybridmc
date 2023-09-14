@@ -6,14 +6,7 @@ import subprocess
 from .data_processing_helpers import *
 
 
-def wang_landau(nonlocal_bonds_i, data, seed_increment, input_hdf5,
-                output_name, bits_in, bits_out, bonds_in, count):
-    data['transient_bonds'] = [nonlocal_bonds_i]
-    data['permanent_bonds'] = bonds_in
-    data['config_in'] = int(format_bits(bits_in), 2)
-    data['config_out'] = int(format_bits(bits_out), 2)
-    data['seeds'] = [count, seed_increment]
-
+def wang_landau(data, input_hdf5, output_name):
     json_name = f'{output_name}.json'
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
@@ -32,28 +25,21 @@ def wang_landau(nonlocal_bonds_i, data, seed_increment, input_hdf5,
     return HMC.WL_process(json_name, input_name)
 
 
-def run_sim(nonlocal_bonds_i, data, seed_increment, input_hdf5,
-            output_name, bits_in, bits_out, bonds_in, count, exe):
-    data['transient_bonds'] = [nonlocal_bonds_i]
-    data['permanent_bonds'] = bonds_in
-    data['config_in'] = int(format_bits(bits_in), 2)
-    data['config_out'] = int(format_bits(bits_out), 2)
-    data['seeds'] = [count, seed_increment]
+def run_sim(data, input_hdf5, output_name, exe):
+    # Set the name for the hdf5 and json files generated
+    hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
 
-    hdf5_name = f'{output_name}.h5'
-
+    # Exit if this trajectory has already been run
     if os.path.exists(hdf5_name):
         print(f"Simulation results for {data['config_in']} to {data['config_out']} transition already generated")
         return
 
-    json_name = f'{output_name}.json'
+    # Create json file input for the HMC program to run this trajectory
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
 
-    # for layer = 1 or greater,
+    # Obtain real path for the HMC executable
     exe = os.path.realpath(exe)
-    json_name = os.path.realpath(json_name)
-    hdf5_name = os.path.realpath(hdf5_name)
 
     # for layer = 1 or greater,
     command = [exe, json_name, hdf5_name]
@@ -89,11 +75,19 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
         # Define the output files identifier for this transition (used to name hdf5 files, json files and log files)
         output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
-        # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different quartiles
-        # for this run
-        sbias, rc1, rc2, rc3 = wang_landau(common_data['nonlocal_bonds'][i], common_data, seed_increment,
-                                                      input_hdf5, output_name, bits_in, bits_out,
-                                                      bonds_in, count)
+        # Set the transient bond to form this trajectory
+        common_data['transient_bonds'] = [common_data['nonlocal_bonds'][i]]
+        # Set the existing bonds as permanent bonds
+        common_data['permanent_bonds'] = bonds_in
+        # Obtain configuration information
+        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out),
+                                                                                                2)
+        # Set the seed
+        common_data['seeds'] = [count, seed_increment]
+
+        # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different
+        # quartiles for this run
+        sbias, rc1, rc2, rc3 = wang_landau(common_data, input_hdf5, output_name)
 
         # Optional staircase potential, initially the bond pair (bp) is not staircased
         stair_bp = None
@@ -103,7 +97,7 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
         if sbias > WL_sbias:
             stair_bp = common_data['nonlocal_bonds'][i]
             print(f"Do Staircase on {stair_bp}")
-            # Process rc values for staircasing from prior WL run; ensure values are in descending order
+            # Process rc values for staircase from prior WL run; ensure values are in descending order
             stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 
         # optional staircase potential
@@ -121,14 +115,10 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
                     output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
                 data['rc'] = stair_rc_list[j]
-                run_sim(common_data['nonlocal_bonds'][i], data, seed_increment,
-                        input_hdf5, output_name, bits_in, bits_out,
-                        bonds_in, count, exe)
+                run_sim(data, input_hdf5, output_name, exe)
                 input_hdf5 = f'{output_name}.h5'
 
         else:
-            run_sim(common_data['nonlocal_bonds'][i], common_data, seed_increment,
-                    input_hdf5, output_name, bits_in, bits_out,
-                    bonds_in, count, exe)
+            run_sim(common_data, input_hdf5, output_name, exe)
 
         out_queue.put((bits_out, f'{output_name}.h5'))
