@@ -27,9 +27,6 @@ def init_json(args):
     # set the data json files nonlocal bonds list to processes nonlocal bonds list
     data['nonlocal_bonds'] = nonlocal_bonds
 
-    # set the transient bonds list to be the nonlocal bonds list initially
-    data['transient_bonds'] = data["nonlocal_bonds"]
-
     in_queue = Queue()
     out_queue = Queue()
 
