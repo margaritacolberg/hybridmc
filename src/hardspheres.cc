@@ -1584,9 +1584,9 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
     const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-    const double rc2 = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
-    if (!rc2) {rc2 = std::get<1>(bond_mask_tuple)}
-    const double rc2 = get_rc2_outer(rc2_inner, t_bond_mask, p.stair2, update_config); //TODO: ask jeremy if ok to change to transient bond or ask what to do with json file info
+    double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
+    if (!rc2_inner) {rc2_inner = std::get<1>(bond_mask_tuple);}
+    double rc2 = get_rc2_outer(rc2_inner, t_bond_mask, p.stair2, update_config); //TODO: ask jeremy if ok to change to transient bond or ask what to do with json file info
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,
