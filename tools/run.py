@@ -33,7 +33,7 @@ def main(args):
 
     tmp_dir_name = f'{dir_name}.tmp'
 
-    init_json_args = {"json": args.json, "seed_increment": 1, "WL_sbias": args.WL_sbias}
+    init_json_args = {"json": args.json, "seed_increment": 1, "WL_sbias": args.WL_sbias, "exe": args.exe}
 
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
@@ -53,6 +53,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
+    parser.add_argument('exe', help='hybridmc executable')
+    parser.add_argument('version', help='set version for old structure simulation run')
     parser.add_argument('--WL_sbias', type=float,
                         help='s_bias from wang landau test threshold after which bond potential is staircased')
 
