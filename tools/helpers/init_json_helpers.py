@@ -20,7 +20,7 @@ def wang_landau(data, input_hdf5, output_name):
         command += ['--input-file', input_hdf5]
         input_name = os.path.realpath(input_hdf5)
 
-    print(f"Running Wang-Landau procees for {json_name}")
+    print(f"Running Wang-Landau process for {json_name}")
 
     return HMC.WL_process(json_name, input_name)
 
