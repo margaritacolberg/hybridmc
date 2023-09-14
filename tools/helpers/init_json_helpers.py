@@ -1,9 +1,7 @@
 import copy
-import json
-import os
-import HMC
 import subprocess
 from .data_processing_helpers import *
+
 
 def run_sim(data, input_hdf5, output_name, exe):
     # Set the name for the hdf5 and json files generated
@@ -62,7 +60,8 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
         common_data['permanent_bonds'] = bonds_in
 
         # Obtain configuration information
-        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out), 2)
+        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out),
+                                                                                                2)
 
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
