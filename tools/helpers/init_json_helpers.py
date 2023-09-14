@@ -119,13 +119,13 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias):
                     output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
 
                 data['rc'] = rc[j]
-                run_sim(nonlocal_bonds[i], data, seed_increment,
+                run_sim(common_data['nonlocal_bonds'][i], data, seed_increment,
                         input_hdf5, output_name, bits_in, bits_out,
                         bonds_in, count, sbias_1)
                 input_hdf5 = f'{output_name}.h5'
 
         else:
-            run_sim(nonlocal_bonds[i], common_data, seed_increment,
+            run_sim(common_data['nonlocal_bonds'][i], common_data, seed_increment,
                     input_hdf5, output_name, bits_in, bits_out,
                     bonds_in, count, sbias_1)
 
