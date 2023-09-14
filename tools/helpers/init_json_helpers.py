@@ -33,7 +33,7 @@ def run_sim(data, input_hdf5, output_name, exe):
                        stderr=subprocess.STDOUT)
 
 
-def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
+def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
     while True:
         item = in_queue.get()
         if item is None:
@@ -60,46 +60,45 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, WL_sbias, exe):
         common_data['permanent_bonds'] = bonds_in
 
         # Obtain configuration information
-        common_data['config_in'], common_data['config_out'] = int(format_bits(bits_in), 2), int(format_bits(bits_out),
-                                                                                                2)
+        common_data['config_in'] = int(format_bits(bits_in), 2)
+        common_data['config_out'] = int(format_bits(bits_out), 2)
 
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
 
-        # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different
-        # quartiles for this run
-        sbias, rc1, rc2, rc3 = wang_landau(common_data, input_hdf5, output_name)
-
-        # Optional staircase potential, initially the bond pair (bp) is not staircased
-        stair_bp = None
-        stair_rc_list = None
-
-        # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
-        if sbias > WL_sbias:
-            stair_bp = common_data['nonlocal_bonds'][i]
-            print(f"Do Staircase on {stair_bp}")
-            # Process rc values for staircase from prior WL run; ensure values are in descending order
-            stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
-
-        # optional staircase potential
-        if stair_bp:
-            data = copy.deepcopy(common_data)
-            # iterate through the different staircased rc values
-            for j in range(len(stair_rc_list)):
-
-                if j > 0:
-                    data['stair'] = stair_rc_list[j - 1]
-
-                if stair_rc_list[j] != stair_rc_list[-1]:
-                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}_{stair_rc_list[j]}'
-                else:
-                    output_name = f'hybridmc_{layer}_{format_bits(bits_in)}_{format_bits(bits_out)}'
-
-                data['rc'] = stair_rc_list[j]
-                run_sim(data, input_hdf5, output_name, exe)
-                input_hdf5 = f'{output_name}.h5'
-
-        else:
+        # Check if staircase needed and do a staircase run for structure; if not do regular run
+        if not run_stairs(common_data, exe, input_hdf5, output_name):
             run_sim(common_data, input_hdf5, output_name, exe)
 
         out_queue.put((bits_out, f'{output_name}.h5'))
+
+
+def run_stairs(common_data, exe, input_hdf5, output_name):
+
+    # Check for stairs using wang_landau (WL) run
+    stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
+
+    # optional staircase potential
+    if stair_bp:
+        data = copy.deepcopy(common_data)
+        # iterate through the different staircased rc values
+        for j in range(len(stair_rc_list)):
+
+            if j > 0:
+                data['stair'] = stair_rc_list[j - 1]
+
+            if stair_rc_list[j] != stair_rc_list[-1]:
+                stair_output_name = f'{output_name}_{stair_rc_list[j]}'
+            else:
+                stair_output_name = output_name
+
+            data['rc'] = stair_rc_list[j]
+            run_sim(data, input_hdf5, stair_output_name, exe)
+            input_hdf5 = f'{stair_output_name}.h5'
+
+        print(f"Finished staircase run for {common_data['transient_bonds']}")
+        return True
+
+    else:
+        print(f"No staircase run for {common_data['transient_bonds']}")
+        return False

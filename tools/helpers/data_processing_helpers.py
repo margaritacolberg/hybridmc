@@ -77,20 +77,28 @@ def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
 
-def wang_landau(data, input_hdf5, output_name):
-    json_name = f'{output_name}.json'
+def stair_check(data, output_name, input_hdf5):
+
+    hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
+    print(f"Running Wang-Landau process for {json_name} to check if staircase potential needed")
+
+    # Create json input for the wang_landau run
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
 
-    # for layer = 1 or greater,
-    command = ["wang_landau", json_name]
-    json_name = os.path.realpath(json_name)
-    input_name = None
+    # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different
+    # quartiles for this run
+    sbias, rc1, rc2, rc3 = HMC.WL_process(json_name, input_hdf5)
 
-    if input_hdf5:
-        command += ['--input-file', input_hdf5]
-        input_name = os.path.realpath(input_hdf5)
+    # Optional staircase potential, initially the bond pair (bp) is not staircased
+    stair_bp = None
+    stair_rc_list = None
 
-    print(f"Running Wang-Landau process for {json_name}")
+    # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
+    if sbias > data['WL_sbias']:
+        stair_bp = data['transient_bonds']
+        print(f"Do Staircase on {stair_bp}")
+        # Process rc values for staircase from prior WL run; ensure values are in descending order
+        stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 
-    return HMC.WL_process(json_name, input_name)
+    return stair_bp, stair_rc_list
