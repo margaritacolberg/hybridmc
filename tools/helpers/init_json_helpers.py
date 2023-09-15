@@ -47,49 +47,49 @@ def run_sim(data, input_hdf5, output_name, exe):
                        stderr=subprocess.STDOUT)
 
 
-def run_stairs(common_data, input_hdf5, output_name, exe):
+def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     """
-    Run staircase simulations for a given transition
+    Run staircase simulations for a given transition:
+
+    Use rc values in stair_rc_list to define staircase potential for this transition.
+    Pipe each of the steps to run_sim and use results to eventually push beads together within a
+    distance of rc -- their target bonding rc.
+
+    This function returns nothing, instead it will produce files for each staircase step. The final step
+    output files will look like the normal non-staircase files but the intermediate outputs will have
+    the staircase inner rc value appended to the end of the file name.
+
     Parameters
     ----------
     common_data: dict: JSON input for the HMC program as a python dictionary
-    exe:
-    input_hdf5
-    output_name
+    input_hdf5: str: name of the input hdf5 file
+    output_name: str: name of the output file
+    exe: str: path to the HMC executable
+    stair_rc_list: list: list of rc values to define staircase potential for this transition
 
     Returns
     -------
-
+    None
     """
 
-    # Check for stairs using wang_landau (WL) run
-    stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
+    data = copy.deepcopy(common_data)
+    # iterate through the different staircased rc values
+    for j in range(len(stair_rc_list)):
 
-    # optional staircase potential
-    if stair_bp:
-        data = copy.deepcopy(common_data)
-        # iterate through the different staircased rc values
-        for j in range(len(stair_rc_list)):
+        if j > 0:
+            data['stair'] = stair_rc_list[j - 1]
 
-            if j > 0:
-                data['stair'] = stair_rc_list[j - 1]
+        if stair_rc_list[j] != stair_rc_list[-1]:
+            stair_output_name = f'{output_name}_{stair_rc_list[j]}'
+        else:
+            stair_output_name = output_name
 
-            if stair_rc_list[j] != stair_rc_list[-1]:
-                stair_output_name = f'{output_name}_{stair_rc_list[j]}'
-            else:
-                stair_output_name = output_name
+        data['rc'] = stair_rc_list[j]
+        run_sim(data, input_hdf5, stair_output_name, exe)
+        input_hdf5 = f'{stair_output_name}.h5'
 
-            data['rc'] = stair_rc_list[j]
-            run_sim(data, input_hdf5, stair_output_name, exe)
-            input_hdf5 = f'{stair_output_name}.h5'
-
-        print(f"Finished staircase run for {common_data['transient_bonds']}")
-        return True
-
-    else:
-        print(f"No staircase run for {common_data['transient_bonds']}")
-        return False
-
+    print(f"Finished staircase run for {common_data['transient_bonds']}")
+    return
 
 def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
     """
@@ -140,8 +140,15 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
 
+        # Check for stairs using wang_landau (WL) run
+        stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
+
         # Check if staircase needed and do a staircase run for structure; if not do regular run
-        if not run_stairs(common_data, input_hdf5, output_name, exe):
+        if stair_bp and stair_rc_list:
+            run_stairs(common_data, input_hdf5, output_name, exe)
+
+        else:
             run_sim(common_data, input_hdf5, output_name, exe)
 
+        # Put the output file name in the queue to indicate that this transition has been run
         out_queue.put((bits_out, f'{output_name}.h5'))
