@@ -78,6 +78,22 @@ def format_bits(bits):
 
 
 def stair_check(data, output_name, input_hdf5):
+    """
+    Function to check if staircase potential is needed for a given bond pair.
+    This is done by running a Wang-Landau process on the bond pair and checking if
+    the sbias value is larger than a threshold value. If so, then staircase potential is needed.
+
+    Parameters
+    ----------
+    data: dict -- dictionary containing the input parameters for the wang-landau run
+    output_name: str -- name of the output json file
+    input_hdf5: str -- name of the input hdf5 file
+
+    Returns
+    -------
+    stair_bp: list -- list containing the bond pair to use a staircase potential on
+    stair_rc_list: list -- list containing the rc values for the staircase potential
+    """
 
     hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
     print(f"Running Wang-Landau process for {json_name} to check if staircase potential needed")

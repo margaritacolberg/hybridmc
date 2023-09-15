@@ -75,7 +75,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     """
 
     data = copy.deepcopy(common_data)
-    # iterate through the different staircased rc values
+    # iterate through the different staircase rc values
     for j in range(len(stair_rc_list)):
 
         if j > 0:
