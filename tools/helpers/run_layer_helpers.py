@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+from .data_processing_helpers import update_rc
 
 
 def run_sim(data, input_hdf5, output_name, exe):
@@ -78,17 +79,26 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     # iterate through the different staircase rc values
     for j in range(len(stair_rc_list)):
 
+        # Once we push beads within the largest staircase rc, we can set that rc to be outer wall
+        # We call this boundary the "stair"
         if j > 0:
             data['stair'] = stair_rc_list[j - 1]
 
+        # So long as the rc is not at the target we append the intermediate rc to the output name
         if stair_rc_list[j] != stair_rc_list[-1]:
             stair_output_name = f'{output_name}_{stair_rc_list[j]}'
         else:
             stair_output_name = output_name
 
-        data['rc'] = stair_rc_list[j]
+        # update the rc value for the bonds in the transient_bonds list
+        update_rc(data, stair_rc_list[j])
+
+        # run the simulation for this staircase step
         run_sim(data, input_hdf5, stair_output_name, exe)
+
+        # update the input hdf5 file for the next step
         input_hdf5 = f'{stair_output_name}.h5'
 
     print(f"Finished staircase run for {common_data['transient_bonds']}")
+
     return

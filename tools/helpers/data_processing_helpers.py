@@ -120,3 +120,24 @@ def stair_check(data, output_name, input_hdf5):
         stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 
     return stair_bp, stair_rc_list
+
+
+def update_rc(data, new_rc):
+    """
+    Update the rc value for the bonds in the transient_bonds list and nonlocal_bonds list
+    Parameters
+    ----------
+    data: dict: JSON input for the HMC program as a python dictionary
+    new_rc: float: new rc value to be set for the bonds in the transient_bonds list
+
+    Returns
+    -------
+    None
+    """
+    # update the rc value for the bonds in the transient_bonds list
+    for bonds in data['nonlocal_bonds']:
+        # check if this bond is in the transient_bonds list
+        if bonds in data['transient_bonds']:
+            # if yes then update the rc value
+            bonds[-1] = new_rc
+            data['transient_bonds'] = [bonds]
