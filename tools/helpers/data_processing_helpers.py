@@ -9,16 +9,17 @@ def make_rc_tuple(nonlocal_bonds, rc):
     Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
     element
 
-    args:
+    Parameters
+    ----------
     nonlocal_bonds -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]].
     These elements may potentially have the bond length (rc) as the third element as well or not,
     for example [[1, 9, 2.3], [2, 6]].
 
     rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
 
-    returns:
-    The same list but with each list element having the bond length (rc) as their third element.
-
+    Returns
+    -------
+    nonlocal_bonds -- The same list but with each list element having the bond length (rc) as their third element.
     """
 
     # loop through each bonded bead pair
@@ -36,9 +37,10 @@ def sort_triplet(bond_list):
     """
 swap bond i and j in (i, j, rc) triplets within bond list if i > j
 
-params:
-
-bond_list: List[List]  - bond list
+Parameters
+----------
+bond_list -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]]. These
+elements may potentially have the bond length (rc) as the third element as well or not, for example [[1, 9, 2.3], [2, 6]].
 
 """
 
