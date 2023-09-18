@@ -9,16 +9,17 @@ def make_rc_tuple(nonlocal_bonds, rc):
     Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third
     element
 
-    args:
+    Parameters
+    ----------
     nonlocal_bonds -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]].
     These elements may potentially have the bond length (rc) as the third element as well or not,
     for example [[1, 9, 2.3], [2, 6]].
 
     rc -- Default rc to be appended to each nonlocal_bonds element in case they do not have this information
 
-    returns:
-    The same list but with each list element having the bond length (rc) as their third element.
-
+    Returns
+    -------
+    nonlocal_bonds -- The same list but with each list element having the bond length (rc) as their third element.
     """
 
     # loop through each bonded bead pair
@@ -36,9 +37,10 @@ def sort_triplet(bond_list):
     """
 swap bond i and j in (i, j, rc) triplets within bond list if i > j
 
-params:
-
-bond_list: List[List]  - bond list
+Parameters
+----------
+bond_list -- List of Lists containing the indices of beads bonded to each other, for example [ [1, 9], [4, 15]]. These
+elements may potentially have the bond length (rc) as the third element as well or not, for example [[1, 9, 2.3], [2, 6]].
 
 """
 
@@ -78,6 +80,22 @@ def format_bits(bits):
 
 
 def stair_check(data, output_name, input_hdf5):
+    """
+    Function to check if staircase potential is needed for a given bond pair.
+    This is done by running a Wang-Landau process on the bond pair and checking if
+    the sbias value is larger than a threshold value. If so, then staircase potential is needed.
+
+    Parameters
+    ----------
+    data: dict -- dictionary containing the input parameters for the wang-landau run
+    output_name: str -- name of the output json file
+    input_hdf5: str -- name of the input hdf5 file
+
+    Returns
+    -------
+    stair_bp: list -- list containing the bond pair to use a staircase potential on
+    stair_rc_list: list -- list containing the rc values for the staircase potential
+    """
 
     hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
     print(f"Running Wang-Landau process for {json_name} to check if staircase potential needed")
@@ -102,3 +120,24 @@ def stair_check(data, output_name, input_hdf5):
         stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 
     return stair_bp, stair_rc_list
+
+
+def update_rc(data, new_rc):
+    """
+    Update the rc value for the bonds in the transient_bonds list and nonlocal_bonds list
+    Parameters
+    ----------
+    data: dict: JSON input for the HMC program as a python dictionary
+    new_rc: float: new rc value to be set for the bonds in the transient_bonds list
+
+    Returns
+    -------
+    None
+    """
+    # update the rc value for the bonds in the transient_bonds list
+    for bonds in data['nonlocal_bonds']:
+        # check if this bond is in the transient_bonds list
+        if bonds in data['transient_bonds']:
+            # if yes then update the rc value
+            bonds[-1] = new_rc
+            data['transient_bonds'] = [bonds]

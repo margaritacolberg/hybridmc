@@ -1,39 +1,24 @@
-import copy
-import subprocess
 from .data_processing_helpers import *
-
-
-def run_sim(data, input_hdf5, output_name, exe):
-    # Set the name for the hdf5 and json files generated
-    hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
-
-    # Exit if this trajectory has already been run
-    if os.path.exists(hdf5_name):
-        print(f"Simulation results for {data['config_in']} to {data['config_out']} transition already generated")
-        return
-
-    # Create json file input for the HMC program to run this trajectory
-    with open(json_name, 'w') as output_json:
-        json.dump(data, output_json)
-
-    # Obtain real path for the HMC executable
-    exe = os.path.realpath(exe)
-
-    # for layer = 1 or greater,
-    command = [exe, json_name, hdf5_name]
-    if input_hdf5 is not None:
-        command += ['--input-file', input_hdf5]
-
-    print(command)
-    sys.stdout.flush()
-
-    log_name = '{}.log'.format(output_name)
-    with open(log_name, 'w') as output_log:
-        subprocess.run(command, check=True, stdout=output_log,
-                       stderr=subprocess.STDOUT)
+from .run_layer_helpers import run_sim, run_stairs
 
 
 def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
+    """
+    Run a single layer of simulations for all transitions in that layer in parallel. The assumption
+    for a "layer" is that all transitions in that layer have the same permanent bonds turned on.
+
+    Parameters
+    ----------
+    common_data: dict: JSON input for the HMC program as a python dictionary
+    in_queue: multiprocessing.Queue: queue of transitions to run
+    out_queue: multiprocessing.Queue: queue of transitions that have been run
+    seed_increment: int: seed increment for each trajectory
+    exe: str: path to the HMC executable
+
+    Returns
+    -------
+    None
+    """
     while True:
         item = in_queue.get()
         if item is None:
@@ -66,39 +51,15 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
 
+        # Check for stairs using wang_landau (WL) run
+        stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
+
         # Check if staircase needed and do a staircase run for structure; if not do regular run
-        if not run_stairs(common_data, input_hdf5, output_name, exe):
+        if stair_bp and stair_rc_list:
+            run_stairs(common_data, input_hdf5, output_name, exe)
+
+        else:
             run_sim(common_data, input_hdf5, output_name, exe)
 
+        # Put the output file name in the queue to indicate that this transition has been run
         out_queue.put((bits_out, f'{output_name}.h5'))
-
-
-def run_stairs(common_data, input_hdf5, output_name, exe):
-
-    # Check for stairs using wang_landau (WL) run
-    stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
-
-    # optional staircase potential
-    if stair_bp:
-        data = copy.deepcopy(common_data)
-        # iterate through the different staircased rc values
-        for j in range(len(stair_rc_list)):
-
-            if j > 0:
-                data['stair'] = stair_rc_list[j - 1]
-
-            if stair_rc_list[j] != stair_rc_list[-1]:
-                stair_output_name = f'{output_name}_{stair_rc_list[j]}'
-            else:
-                stair_output_name = output_name
-
-            data['rc'] = stair_rc_list[j]
-            run_sim(data, input_hdf5, stair_output_name, exe)
-            input_hdf5 = f'{stair_output_name}.h5'
-
-        print(f"Finished staircase run for {common_data['transient_bonds']}")
-        return True
-
-    else:
-        print(f"No staircase run for {common_data['transient_bonds']}")
-        return False
