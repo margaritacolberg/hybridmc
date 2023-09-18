@@ -67,13 +67,13 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
         common_data['seeds'] = [count, seed_increment]
 
         # Check if staircase needed and do a staircase run for structure; if not do regular run
-        if not run_stairs(common_data, exe, input_hdf5, output_name):
+        if not run_stairs(common_data, input_hdf5, output_name, exe):
             run_sim(common_data, input_hdf5, output_name, exe)
 
         out_queue.put((bits_out, f'{output_name}.h5'))
 
 
-def run_stairs(common_data, exe, input_hdf5, output_name):
+def run_stairs(common_data, input_hdf5, output_name, exe):
 
     # Check for stairs using wang_landau (WL) run
     stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)

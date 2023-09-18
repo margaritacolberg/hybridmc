@@ -28,8 +28,8 @@ def main(args):
     dir_name = os.path.splitext(file_name)[0]
 
     if os.path.isdir(dir_name):
-        print(f'{dir_name} already exists; return')
-        return
+        print(f'{dir_name} already exists; saved as old version with given version code')
+        os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
 
     tmp_dir_name = f'{dir_name}.tmp'
 
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
     parser.add_argument('exe', help='hybridmc executable')
-    parser.add_argument('version', help='set version for old structure simulation run')
+    parser.add_argument('old_version', help='set version for old structure simulation run', default='old')
     parser.add_argument('--WL_sbias', type=float,
                         help='s_bias from wang landau test threshold after which bond potential is staircased')
 
