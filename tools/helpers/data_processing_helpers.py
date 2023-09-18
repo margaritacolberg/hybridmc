@@ -51,7 +51,7 @@ elements may potentially have the bond length (rc) as the third element as well 
     return bond_list
 
 
-def stairs_check(bond_pair, stair_rcs, nonlocal_bonds):
+def stairs_rcval_check(bond_pair, stair_rcs, nonlocal_bonds):
     """
     function to check if staircase distances are appropriate
 
