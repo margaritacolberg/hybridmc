@@ -63,7 +63,14 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
     throw std::invalid_argument("bead ncell must be at least 4");
   }
 
-  double check_rc = p.rc;
+  double check_rc = 0;
+  for (unsigned int i=0; i < p.nonlocal_bonds.get_nbonds(); i++) {
+
+      if (p.nonlocal_bonds.getrc(i) > check_rc) {
+          check_rc = p.nonlocal_bonds.getrc(i);
+      }
+  }
+
   if (p.stair) {
     check_rc = *p.stair;
   }
@@ -418,14 +425,14 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
     // get size of distance value array
     int n_rcs = distance_values.size();
     // want integer index of n_rcs of 0.10 (10%), 0.30 (30%) etc
-    double rc1 = distance_values[int(n_rcs * 0.01)];
-    double rc2 = distance_values[int(n_rcs * 0.1)];
+    double rc_middle = distance_values[int(n_rcs * 0.005)];
+    double rc_outermost = distance_values[int(n_rcs * 0.05 )];
 
-    std::cout << "n_rcs: " << n_rcs << " rc1: " << rc1 << " rc2 " << rc2 << std::endl;
+    std::cout << "n_rcs: " << n_rcs << " rc_middle: " << rc_middle << " rc_outermost: " << rc_outermost << std::endl;
     std::cout << "True rc " << rc_min << " rc_min: " << distance_values[0] << " rc_max: " << distance_values[n_rcs - 1] << std::endl;
 
-    return_info.push_back(rc1);
-    return_info.push_back(rc2);
+    return_info.push_back(rc_middle);
+    return_info.push_back(rc_outermost);
 
   return return_info;
 }
@@ -703,7 +710,7 @@ void from_json(const nlohmann::json &json, Param &p) {
 }
 
 // create pybind11 module for wang_landau function
-PYBIND11_MODULE(HMC, m) {
+PYBIND11_MODULE(wang_landau, m) {
     m.doc() = "pybind11 hybridmc plugin for wang_landau function";
 
     using namespace pybind11::literals;

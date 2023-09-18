@@ -32,6 +32,9 @@ public:
   // obtain the bond_index'th bond in the master bonds list
   std::tuple<unsigned int, unsigned int, double> getBond(unsigned int bond_index) const;
 
+  // get rc of bond index'th rc
+  double getrc(unsigned int bond_index) const;
+
   // bond mask is obtained -- a configuration and the rc value packaged in a tuple
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const;
 

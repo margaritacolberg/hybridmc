@@ -415,7 +415,7 @@ double get_rc2_inner(const std::tuple<Config, double> t_bond_mask_tuple,
         rc2_inner = std::get<1>(t_bond_mask_tuple);
     } else {
         //throw std::runtime_error("Bond not a permanent or transient bond; rc info not available");
-        std::cout << "Bond not a permanent or transient bond; rc info not available" << std::endl;
+        //std::cout << "Bond not a permanent or transient bond; rc info not available" << std::endl;
     }
 
   return rc2_inner;
@@ -1486,10 +1486,10 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
 
   const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
-  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  //const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
-  const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+  //const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
   const double rc2 = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
@@ -1582,11 +1582,11 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
     const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
-    const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+    //const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
     double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
     if (!rc2_inner) {rc2_inner = std::get<1>(bond_mask_tuple);}
-    double rc2 = get_rc2_outer(rc2_inner, t_bond_mask, p.stair2, update_config); //TODO: ask jeremy if ok to change to transient bond or ask what to do with json file info
+    double rc2 = get_rc2_outer(rc2_inner, t_bond_mask, p.stair2, update_config);
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,

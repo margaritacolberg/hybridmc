@@ -13,7 +13,7 @@
     "config_out": 1,
     "nbeads": 20,
     "tries": 10000,
-    "length": 19.0,
+    "length": 15.0,
     "ncell": 5,
     "nsteps": 8,
     "nsteps_eq": 8,
@@ -34,5 +34,6 @@
     "sig_level": 0.05,
     "max_nbonds": 1,
     "max_g_test_count": 10000,
-    "flip_req": 1.0
+    "flip_req": 1.0,
+    "WL_sbias": 6.0
 }

@@ -56,7 +56,12 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
 
         # Check if staircase needed and do a staircase run for structure; if not do regular run
         if stair_bp and stair_rc_list:
-            run_stairs(common_data, input_hdf5, output_name, exe)
+
+            # ensure cell size can accommodate the rc
+            if (common_data["length"] / common_data["ncell"]) < stair_rc_list[0]:
+                common_data["length"] = stair_rc_list[0] * common_data["ncell"] + 0.1
+
+            run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list)
 
         else:
             run_sim(common_data, input_hdf5, output_name, exe)

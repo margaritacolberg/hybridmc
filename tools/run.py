@@ -21,6 +21,8 @@
 import argparse
 import os
 from helpers.run_helpers import init_json
+import diff_s_bias_stair
+import avg_s_bias
 
 
 def main(args):
@@ -31,9 +33,12 @@ def main(args):
         print(f'{dir_name} already exists; saved as old version with given version code')
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
 
+    if os.path.isdir(f"{dir_name}.tmp"):
+        os.remove(os.path.realpath(f"{dir_name}.tmp"))
+
     tmp_dir_name = f'{dir_name}.tmp'
 
-    init_json_args = {"json": args.json, "seed_increment": 1, "WL_sbias": args.WL_sbias, "exe": args.exe}
+    init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
 
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
@@ -47,16 +52,18 @@ def main(args):
 
     init_json(init_json_args)
 
-    os.rename(src=tmp_dir_name, dst=dir_name)
+    diff_s_bias_stair.main()
+    avg_s_bias.main()
 
+    os.chdir("../")
+
+    os.rename(src=tmp_dir_name, dst=dir_name)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
     parser.add_argument('exe', help='hybridmc executable')
-    parser.add_argument('old_version', help='set version for old structure simulation run', default='old')
-    parser.add_argument('--WL_sbias', type=float,
-                        help='s_bias from wang landau test threshold after which bond potential is staircased')
+    parser.add_argument('--old_version', help='set version for old structure simulation run', default='old')
 
     args = parser.parse_args()
 

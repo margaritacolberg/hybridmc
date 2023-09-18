@@ -226,12 +226,13 @@ bool accept_move(const std::vector<double> &s_bias, UpdateConfig &orig_config,
   return true;
 }
 
-void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
-                const Box &box, const double near_min2, const double near_max2,
+void crankshaft(std::vector<Vec3> &pos,
+                UpdateConfig &update_config,
+                const Box &box,
+                const double near_min2, const double near_max2,
                 const double nnear_min2, const double nnear_max2,
                 const double rh2,
                 const std::optional<double> stair2,
-                const std::optional<double>,
                 const NonlocalBonds &transient_bonds,
                 const NonlocalBonds &permanent_bonds, Random &mt,
                 const std::vector<double> &s_bias) {

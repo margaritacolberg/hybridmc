@@ -31,7 +31,7 @@ def init_json(args):
     out_queue = Queue()
 
     worker = []
-    layer_args = (data, in_queue, out_queue, args["seed_increment"], args["WL_sbias"])
+    layer_args = (data, in_queue, out_queue, args["seed_increment"], args['exe'])
 
     for _ in range(args["nproc"]):
         p = Process(target=run_layer, args=layer_args)

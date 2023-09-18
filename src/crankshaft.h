@@ -29,8 +29,10 @@ UpdateConfig config_int(const std::vector<Vec3> &pos_trial, const Box &box,
 bool accept_move(const std::vector<double> &s_bias, UpdateConfig &orig_config,
                  UpdateConfig &trial_config, Random &mt);
 
-void crankshaft(std::vector<Vec3> &pos, UpdateConfig &update_config,
-                const Box &box, const double near_min2, const double near_max2,
+void crankshaft(std::vector<Vec3> &pos,
+                UpdateConfig &update_config,
+                const Box &box,
+                const double near_min2, const double near_max2,
                 const double nnear_min2, const double nnear_max2,
                 const double rh2,
                 const std::optional<double> stair2,

@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-import HMC
+import wang_landau as WL
 
 
 def make_rc_tuple(nonlocal_bonds, rc):
@@ -106,11 +106,14 @@ def stair_check(data, output_name, input_hdf5):
 
     # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different
     # quartiles for this run
-    sbias, rc1, rc2, rc3 = HMC.WL_process(json_name, input_hdf5)
+    sbias, rc1, rc2, rc3 = WL.WL_process(json_name, input_hdf5)
 
     # Optional staircase potential, initially the bond pair (bp) is not staircased
     stair_bp = None
     stair_rc_list = None
+
+    if "WL_sbias" not in data:
+        data["WL_sbias"] = 6.0
 
     # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
     if sbias > data['WL_sbias']:
