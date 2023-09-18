@@ -411,9 +411,8 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     // create return vector
     std::vector<double> return_info;
-    // get s bias values
-    return_info.push_back(sys.s_bias[0]);
-    return_info.push_back(sys.s_bias[1]);
+    // get s bias value
+    return_info.push_back(sys.s_bias[0] - sys.s_bias[1]);
     // get rc_min
     return_info.push_back(rc_min);
     // get size of distance value array
