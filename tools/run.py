@@ -63,6 +63,7 @@ def main(args):
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='master json input file')
