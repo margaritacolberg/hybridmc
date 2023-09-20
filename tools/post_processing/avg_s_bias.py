@@ -11,14 +11,16 @@
 # example of how to run:
 # python ../tools/avg_s_bias.py ../examples/crambin.json diff_s_bias.csv
 
-import argparse
 import csv
 import json
 import numpy as np
+from sys import path
+path.append('..')
+from helpers.data_processing_helpers import format_bits
 
 
-def main(args):
-    with open(args.csv, 'r') as input_csv:
+def get_avg_sbias(diff_sbias_csv, structure_sim_json):
+    with open(diff_sbias_csv, 'r') as input_csv:
         reader = csv.reader(input_csv, delimiter=',')
         data_csv = list(reader)
 
@@ -26,7 +28,7 @@ def main(args):
     for i in range(len(data_csv)):
         diff_s_bias[(data_csv[i][0], data_csv[i][1])] = float(data_csv[i][2])
 
-    with open(args.json, 'r') as input_json:
+    with open(structure_sim_json, 'r') as input_json:
         data_json = json.load(input_json)
 
     nonlocal_bonds = data_json['nonlocal_bonds']
@@ -73,17 +75,3 @@ def main(args):
     with open('avg_s_bias.csv', 'w') as output_csv:
         writer = csv.writer(output_csv)
         writer.writerows(sorted(avg_s_bias.items()))
-
-
-def format_bits(bits):
-    return ''.join(map(lambda x: '1' if x else '0', bits))
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('json', help='master json input file')
-    parser.add_argument('csv', help='csv input file')
-
-    args = parser.parse_args()
-
-    main(args)

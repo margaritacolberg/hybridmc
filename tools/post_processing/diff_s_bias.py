@@ -2,7 +2,7 @@
 # Copyright (c) 2018-2022 Margarita Colberg
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# diff_s_bias_stair.py determines the entropy difference for each transition
+# diff_s_bias.py determines the entropy difference for each transition
 # whose initial and final states differ by one bond; for cases where the
 # transition has a staircase potential, the entropy for each step of the
 # staircase is placed into a list, from which the overall entropy of the
@@ -16,7 +16,7 @@ import re
 from itertools import combinations
 
 
-def main():
+def get_diff_sbias():
     src = 'hybridmc_*.h5'
 
     bits = []
@@ -64,7 +64,3 @@ def main():
     with open('diff_s_bias.csv', 'w') as output_csv:
         writer = csv.writer(output_csv)
         writer.writerows(output)
-
-
-if __name__ == '__main__':
-    main()

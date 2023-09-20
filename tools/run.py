@@ -21,8 +21,7 @@
 import argparse
 import os
 from helpers.run_helpers import init_json
-import diff_s_bias_stair
-import avg_s_bias
+from post_processing import diff_s_bias, avg_s_bias
 
 
 def main(args):
@@ -52,11 +51,16 @@ def main(args):
 
     init_json(init_json_args)
 
-    diff_s_bias_stair.main()
-    avg_s_bias.main()
+    # Obtain the differences in the sbias for each transition
+    diff_s_bias.get_diff_sbias()
 
+    # Obtain the average sbias for each bonding state
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=file_name)
+
+    # Move up from the directory with simulation results
     os.chdir("../")
 
+    # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)
 
 if __name__ == '__main__':

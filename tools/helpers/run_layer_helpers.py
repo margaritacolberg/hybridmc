@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import sys
-from .data_processing_helpers import update_rc
+from data_processing_helpers import update_rc
 
 
 def run_sim(data, input_hdf5, output_name, exe):
