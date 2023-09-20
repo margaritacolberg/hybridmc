@@ -55,7 +55,7 @@ def main(args):
     diff_s_bias.get_diff_sbias()
 
     # Obtain the average sbias for each bonding state
-    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=file_name)
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
 
     # Move up from the directory with simulation results
     os.chdir("../")

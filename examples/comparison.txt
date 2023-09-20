@@ -1,0 +1,15 @@
+With new code we get the following:
+
+State = Entropy
+00 = 10.373910364895796
+01 = 6.797676417277136
+10 = 3.0136364
+11 = 0.0
+
+With the Margarita version we get the following:
+
+State = Entropy
+00 = 10.928302492081484
+01 = 7.390324454598367
+10 = 2.962231
+11 = 0.0
