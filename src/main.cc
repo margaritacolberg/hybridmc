@@ -24,6 +24,7 @@
 #include <iostream>
 #include <optional>
 
+double max_time = std::numeric_limits<double>::max();
 namespace po = boost::program_options;
 namespace py = pybind11;
 
@@ -49,6 +50,9 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
 void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, Cells &cells,
                        EventQueue &event_queue) {
+
+
+  LOG_DEBUG("New step initialization");
   if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                         p.nnear_max2)) {
     throw std::runtime_error("local beads overlap");
@@ -137,9 +141,10 @@ void run_step(System &sys, const Param &p, const Box &box,
     std::visit(
         [&](auto &&ev) {
           wall_time = ev.t;
-          LOG_DEBUG("wall time " << wall_time);
+          LOG_DEBUG("wall time " << wall_time << " Queue Size is " << event_queue.size());
           process_event(ev, sys, p, box, event_queue, cells, update_config,
                         count_bond);
+          //if (wall_time > 15.1) {exit(0);}
         },
         event);
   }
@@ -164,10 +169,17 @@ void run_step(System &sys, const Param &p, const Box &box,
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
                        double wall_time, unsigned int iter) {
+
+  LOG_DEBUG("run_trajectory_eq");
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
+
+    //set max time based on wall_time
+    if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+
+    LOG_DEBUG("max_time = " << max_time << " wall_time = " << wall_time);
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
@@ -189,6 +201,8 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
                     CountBond &count_bond, double wall_time,
                     unsigned int iter) {
+
+  LOG_DEBUG("run_trajectory");
   // assume that the entire time during which the beads are undergoing events
   // can be divided into intervals of length p.del_t; the total number of such
   // intervals is p.nsteps (thus, the variable called step marks the intervals
@@ -200,6 +214,8 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
+    //set max time based on wall_time
+    if (step != 0) {max_time = (step * p.del_t) + 0.001;}
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     // to check energy conservation
@@ -263,16 +279,23 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
                          CountBond &count_bond, double wall_time,
                          const unsigned int iter_wl) {
-  EventQueue event_queue;
-  Cells cells{p.ncell, p.length / p.ncell};
 
-  initialize_system(sys, mt, p, box, update_config, cells, event_queue);
-
-  const double tot_E_before =
-      compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+  LOG_DEBUG("run_trajectory_wl");
 
   for (unsigned int step = iter_wl * p.nsteps_wl;
        step < (iter_wl + 1) * p.nsteps_wl; step++) {
+
+    EventQueue event_queue;
+    Cells cells{p.ncell, p.length / p.ncell};
+
+    //set max time based on wall_time
+    if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+
+    initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+
+    const double tot_E_before =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+    //TODO: find out if for loop actually here or now
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t_wl);
 

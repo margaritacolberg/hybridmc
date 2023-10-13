@@ -17,20 +17,20 @@
 // sphere point picking: http://mathworld.wolfram.com/SpherePointPicking.html;
 // see also Marsaglia, 1972
 void unit_sphere(Random &mt, double &x, double &y, double &z) {
-    std::uniform_real_distribution<> uniform_vw(-1.0, 1.0);
-    double v, w, s;
+  std::uniform_real_distribution<> uniform_vw(-1.0, 1.0);
+  double v, w, s;
 
-    // reject points for which v^2 + w^2 >= 1
-    do {
-        v = uniform_vw(mt);
-        w = uniform_vw(mt);
-        s = v * v + w * w;
-    } while (!(s < 1));
+  // reject points for which v^2 + w^2 >= 1
+  do {
+    v = uniform_vw(mt);
+    w = uniform_vw(mt);
+    s = v * v + w * w;
+  } while (!(s < 1));
 
-    // using the random numbers v and w, calculate the x-, y- and z-coordinates
-    x = 2 * v * std::sqrt(1 - v * v - w * w);
-    y = 2 * w * std::sqrt(1 - v * v - w * w);
-    z = 1 - 2 * (v * v + w * w);
+  // using the random numbers v and w, calculate the x-, y- and z-coordinates
+  x = 2 * v * std::sqrt(1 - v * v - w * w);
+  y = 2 * w * std::sqrt(1 - v * v - w * w);
+  z = 1 - 2 * (v * v + w * w);
 }
 
 // initial positions of all beads
@@ -307,9 +307,7 @@ double s_of_inner_event(const std::vector<double> &s_bias,
   unsigned int non_bonded_state = update_config.config;
   update_config.flip_bond(bond_mask);
   unsigned int bonded_state = update_config.config;
-  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state]
-                    << " and s of " << non_bonded_state << " is "
-                    << s_bias[non_bonded_state]);
+  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state] << " and s of " << non_bonded_state << " is " << s_bias[non_bonded_state]);
 
   // if a bond forms, dS must be negative
   double dS = s_bias[bonded_state] - s_bias[non_bonded_state];
@@ -325,9 +323,7 @@ double s_of_outer_event(const std::vector<double> &s_bias,
   unsigned int bonded_state = update_config.config;
   update_config.flip_bond(bond_mask);
   unsigned int non_bonded_state = update_config.config;
-  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state]
-                    << " and s of " << non_bonded_state << " is "
-                    << s_bias[non_bonded_state]);
+  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state] << " and s of " << non_bonded_state << " is " << s_bias[non_bonded_state]);
 
   // if a bond breaks, dS must be positive
   double dS = s_bias[non_bonded_state] - s_bias[bonded_state];
@@ -365,9 +361,7 @@ void init_cells(const std::vector<Vec3> &pos, const Box &box, Cells &cells) {
     cells.cell_x.emplace_back(icell_x);
     cells.cell_y.emplace_back(icell_y);
     cells.cell_z.emplace_back(icell_z);
-    LOG_DEBUG("particle " << j << " at " << pos[j].x << ", " << pos[j].y << ", "
-                          << pos[j].z << " in cell " << icell_x << ", "
-                          << icell_y << ", " << icell_z);
+    LOG_DEBUG("particle " << j << " at " << pos[j].x << ", " << pos[j].y << ", " << pos[j].z << " in cell " << icell_x << ", " << icell_y << ", " << icell_z);
     // store the 1D index for each cell, and the beads contained within, in
     // a vector of vectors
     cells.cells[icell].emplace_back(j);
@@ -484,20 +478,37 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
       update_config.non_bonded(t_bond_mask) &&
       t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rc2_inner, t)) { // takes rc single value
     MaxNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev); 
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
+
     // else if two nonlocal beads collide elastically,
   } else if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rh2, t)) { //rh2 is sigma2. Sigma2 is general variable for two beads distance
     MinNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
+
     // else if two nonlocal bonded beads reach rc,
   } else if (update_config.bonded(t_bond_mask) || p_bond_mask ||
              (stair2 && update_config.non_bonded(t_bond_mask))) {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, rc2_outer, t); // if two beads exit well break bond
     MaxNonlocalOuterEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
   }
 }
 
@@ -710,8 +721,9 @@ void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                    vel[i].z, cells.cell_x[i], cells.cell_y[i], cells.cell_z[i],
                    dt, wall, ixn, iyn, izn)) {
     BeadCellEvent ev{times[i] + dt, i, counter[i], ixn, iyn, izn, wall};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -739,9 +751,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
       ixn + iyn * cells.ncell + izn * cells.ncell * cells.ncell;
   assert(new_cell < cells.cells.size());
 
-  LOG_DEBUG("move particle " << i << " from " << cells.cell_x[i] << ", "
-                             << cells.cell_y[i] << ", " << cells.cell_z[i]
-                             << " to " << ixn << ", " << iyn << ", " << izn);
+  LOG_DEBUG("move particle " << i << " from " << cells.cell_x[i] << ", " << cells.cell_y[i] << ", " << cells.cell_z[i] << " to " << ixn << ", " << iyn << ", " << izn);
   auto ind =
       std::find(cells.cells[old_cell].begin(), cells.cells[old_cell].end(), i);
   assert(ind != cells.cells[old_cell].end());
@@ -893,13 +903,15 @@ void if_nearest_bond(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
   if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, near_min2, t)) {
     MinNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   } else {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, near_max2, t);
     MaxNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -934,13 +946,15 @@ void if_nnearest_bond(const std::vector<Vec3> &pos,
 
   if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, nnear_min2, t)) {
     MinNNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   } else {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, nnear_max2, t);
     MaxNNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -1017,8 +1031,7 @@ bool check_bond(const double min_dist2, const double max_dist2, double dx,
   double dist2 = dx * dx + dy * dy + dz * dz;
   // ! accounts for comparison with NaN values
   if (!(dist2 > min_dist2_tol && dist2 < max_dist2_tol)) {
-    LOG_DEBUG("check bond distance " << std::setprecision(15)
-                                     << std::sqrt(dist2));
+    LOG_DEBUG("check bond distance " << std::setprecision(15) << std::sqrt(dist2));
     return false;
   }
 
@@ -1049,8 +1062,7 @@ bool check_local_dist(const std::vector<Vec3> &pos_trial, const Box &box,
     box.mindist(dx, dy, dz);
 
     if (!check_bond(nnear_min2, nnear_max2, dx, dy, dz)) {
-      LOG_DEBUG("next-nearest neighbors " << i << " and " << i + 2
-                                          << " overlap");
+      LOG_DEBUG("next-nearest neighbors " << i << " and " << i + 2 << " overlap");
       return false;
     }
   }

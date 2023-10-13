@@ -22,6 +22,8 @@
   std::cout << __FILE__ << ":" << __LINE__ << ": " << x << std::endl
 #endif
 
+extern double max_time;
+
 using Random = std::mt19937;
 
 void unit_sphere(Random &mt, double &x, double &y, double &z);
