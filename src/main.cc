@@ -524,7 +524,7 @@ int main(int argc, char *argv[]) {
   nlohmann::json json;
   input >> json;
 
-  const Param p = json;
+  Param p = json;
   Param p_eq = p;
   const Box box{p.length};
   UpdateConfig update_config;
@@ -664,9 +664,23 @@ int main(int argc, char *argv[]) {
     double flips = double(count_bond.formed + count_bond.broken);
     auto  stateCount = std::reduce(config_count.begin(), config_count.end());
     flipping_rate = flips / stateCount;
+    int fail_counter = 0;
 
     done_g_test = g_test(config_count,nstates, p.sig_level);
-    if (flipping_rate > p.flip_req) done_flip = true;
+    if (flipping_rate > p.flip_req) {
+      done_flip = true;
+    } else {
+      done_flip = false;
+      // fail_counter incremented since flip rate too low here
+      fail_counter++;
+      // check if too many fails have occurred
+      if (fail_counter > p.fail_max) {
+        // increase the number of steps in trajectory
+        p.nsteps *= 2;
+        // reset fail counter
+        fail_counter = 0;
+      }
+    }
 
     std::cout << "Working on output_file: " << output_name << std::endl;
     std::cout << " In iteration " << g_test_count << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
@@ -740,6 +754,7 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.max_nbonds = json["max_nbonds"];
     p.max_g_test_count = json["max_g_test_count"];
     p.flip_req = json["flip_req"];
+    p.fail_max = json["fail_max"];
 }
 
 // create pybind11 module for wang_landau function

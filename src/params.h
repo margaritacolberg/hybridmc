@@ -94,6 +94,8 @@ struct Param {
   unsigned int max_nbonds;
   // flipping rate per trajectory requirement
   double flip_req;
+  // number of times to try to flip a bond
+  int fail_max;
 };
 
 #endif
