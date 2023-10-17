@@ -6,7 +6,7 @@
 # with an optional staircase potential
 #
 # example of how to run:
-# python ../tools/run.py ../../examples/test.json ../../release/hybridmc ../../tools/init_json.py -- --bp 4 16 --rc 3.0 2.2 1.5
+# python ../tools/run.py --json ../../examples/test.json --exe ../../release/hybridmc
 #
 # note that run.py creates a new dir which it enters to generate the output
 # files, thus, the path of the json input file, init_json.py and the executable
@@ -33,10 +33,16 @@ def main(args):
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
 
     if os.path.isdir(f"{dir_name}.tmp"):
-        os.remove(os.path.realpath(f"{dir_name}.tmp"))
+        os.rmdir(os.path.realpath(f"{dir_name}.tmp"))
 
     tmp_dir_name = f'{dir_name}.tmp'
 
+    # Change directory name to suit the new temp working directory.
+    # If ../ is featured in the path, consider it a relative path and add ../ to the path to indicate its use from a
+    # directory one more level down.
+    # Else consider it an absolute path and use it as is
+    (args.json, args.exe) = ("../" + path if path.startswith("../") else path for path in (args.json, args.exe))
+    # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
 
     nproc = os.cpu_count()
@@ -66,9 +72,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('json', help='master json input file')
-    parser.add_argument('exe', help='hybridmc executable')
-    parser.add_argument('--old_version', help='set version for old structure simulation run', default='old')
+    parser.add_argument('--json', help='master json input file')
+    parser.add_argument('--exe', help='hybridmc executable')
+    parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
+                        default='old')
 
     args = parser.parse_args()
 

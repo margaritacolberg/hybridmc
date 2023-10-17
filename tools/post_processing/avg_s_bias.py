@@ -15,11 +15,12 @@ import csv
 import json
 import numpy as np
 from sys import path
+
 path.append('..')
 from helpers.data_processing_helpers import format_bits
 
 
-def get_avg_sbias(diff_sbias_csv, structure_sim_json):
+def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv'):
     with open(diff_sbias_csv, 'r') as input_csv:
         reader = csv.reader(input_csv, delimiter=',')
         data_csv = list(reader)
@@ -35,7 +36,7 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json):
     nbonds = len(nonlocal_bonds)
 
     # initially fully bonded
-    work_list = [[True]*nbonds]
+    work_list = [[True] * nbonds]
 
     bonded_config = format_bits(work_list[0])
 
@@ -72,6 +73,14 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json):
             if not bits_out in work_list:
                 work_list.append(bits_out)
 
-    with open('avg_s_bias.csv', 'w') as output_csv:
+    with open(output_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
         writer.writerows(sorted(avg_s_bias.items()))
+
+
+if __name__ == '__main__':
+    import os
+
+    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
+
+    get_avg_sbias('diff_s_bias_sort.csv', '../test.json', output_csv='avg_s_bias_sort.csv')

@@ -16,15 +16,16 @@ import re
 from itertools import combinations
 
 
-def get_diff_sbias():
+def get_diff_sbias(out_csv='diff_s_bias.csv'):
     src = 'hybridmc_*.h5'
 
     bits = []
     s_bias = []
     duplicate_s_bias = {}
+
     for file_path in glob.glob(src):
         match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]+))?\.h5$',
-                file_path)
+                          file_path)
         bits_in = match.group('bits_in')
         bits_out = match.group('bits_out')
 
@@ -38,7 +39,7 @@ def get_diff_sbias():
                 # same set of bits associated with it, hence why it is
                 # 'duplicate')
                 duplicate_s_bias.setdefault((bits_in, bits_out),
-                        []).append(get_s_bias)
+                                            []).append(get_s_bias)
 
         if (bits_in, bits_out) not in bits:
             bits.append((bits_in, bits_out))
@@ -61,6 +62,14 @@ def get_diff_sbias():
     for i in range(len(bits)):
         output.append([bits[i][0], bits[i][1], s_bias[i]])
 
-    with open('diff_s_bias.csv', 'w') as output_csv:
+    with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
+        output.sort()  # sort the list by the bits in column
         writer.writerows(output)
+
+
+if __name__ == '__main__':
+    import os
+
+    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
+    get_diff_sbias(out_csv='diff_s_bias_sort.csv')
