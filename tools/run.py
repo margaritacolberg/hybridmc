@@ -32,11 +32,6 @@ def main(args):
         print(f'{dir_name} already exists; saved as old version with given version code')
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
 
-    if os.path.isdir(f"{dir_name}.tmp"):
-        os.rmdir(os.path.realpath(f"{dir_name}.tmp"))
-
-    tmp_dir_name = f'{dir_name}.tmp'
-
     # Change directory name to suit the new temp working directory.
     # If ../ is featured in the path, consider it a relative path and add ../ to the path to indicate its use from a
     # directory one more level down.
@@ -51,8 +46,15 @@ def main(args):
 
     init_json_args["nproc"] = nproc
 
+    tmp_dir_name = f'{dir_name}.tmp'
+
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
+    else:
+        print(f'{tmp_dir_name} already exists; removing and creating new directory')
+        os.rmdir(os.path.realpath(tmp_dir_name))
+        os.mkdir(tmp_dir_name)
+
     os.chdir(tmp_dir_name)
 
     init_json(init_json_args)

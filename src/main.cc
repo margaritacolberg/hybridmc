@@ -233,6 +233,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
     if (step % p.write_step == 0) {
       // store the integer of the configuration and the time of the event
+
       //store_config_int.emplace_back(update_config.config);
       //update_config_writer.config_int.emplace_back(update_config.config);
 
@@ -303,7 +304,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
     const double tot_E_before =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
-    //TODO: find out if for loop actually here or now
+
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t_wl);
 
