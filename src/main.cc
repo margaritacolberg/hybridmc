@@ -615,6 +615,7 @@ int main(int argc, char *argv[]) {
   double flipping_rate = 0;
   bool done_flip = false;
   bool done_g_test = false;
+  int fail_counter = 0;
 
   // the BIIIIIIIG loop
   do {
@@ -664,13 +665,12 @@ int main(int argc, char *argv[]) {
     double flips = double(count_bond.formed + count_bond.broken);
     auto  stateCount = std::reduce(config_count.begin(), config_count.end());
     flipping_rate = flips / stateCount;
-    int fail_counter = 0;
 
     done_g_test = g_test(config_count,nstates, p.sig_level);
     if (flipping_rate > p.flip_req) {
       done_flip = true;
     } else {
-      done_flip = false;
+      //std::cout << "flip rate too low" << std::endl;
       // fail_counter incremented since flip rate too low here
       fail_counter++;
       // check if too many fails have occurred
@@ -685,7 +685,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Working on output_file: " << output_name << std::endl;
-    std::cout << " In iteration " << g_test_count << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
+    std::cout << " In iteration " << g_test_count << " fail_counter = " << fail_counter << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
               << " must be greater than " << p.flip_req << " done_flip = " << done_flip << " done_g = " << done_g_test << std::endl;
     g_test_count++;
     if (g_test_count >= p.max_g_test_count)
