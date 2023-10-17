@@ -35,5 +35,6 @@
     "max_nbonds": 1,
     "max_g_test_count": 10000,
     "flip_req": 1.0,
-    "WL_sbias": 6.0
+    "WL_sbias": 6.0,
+    "flip_max": 5
 }
