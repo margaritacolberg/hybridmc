@@ -675,8 +675,10 @@ int main(int argc, char *argv[]) {
       fail_counter++;
       // check if too many fails have occurred
       if (fail_counter > p.fail_max) {
+        std::cout << " Too many fails have occurred." << std::endl;
         // increase the number of steps in trajectory
         p.nsteps *= 2;
+        std::cout << " Increasing the number of steps in trajectory to " << p.nsteps << std::endl;
         // reset fail counter
         fail_counter = 0;
       }
