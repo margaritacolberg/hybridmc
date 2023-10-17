@@ -50,10 +50,6 @@ def main(args):
 
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
-    else:
-        print(f'{tmp_dir_name} already exists; removing and creating new directory')
-        os.rmdir(os.path.realpath(tmp_dir_name))
-        os.mkdir(tmp_dir_name)
 
     os.chdir(tmp_dir_name)
 
