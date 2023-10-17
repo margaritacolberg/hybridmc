@@ -203,6 +203,9 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     unsigned int iter) {
 
   LOG_DEBUG("run_trajectory");
+
+  // Do Molecular Dynamics moves
+
   // assume that the entire time during which the beads are undergoing events
   // can be divided into intervals of length p.del_t; the total number of such
   // intervals is p.nsteps (thus, the variable called step marks the intervals
@@ -230,8 +233,8 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
     if (step % p.write_step == 0) {
       // store the integer of the configuration and the time of the event
-      store_config_int.emplace_back(update_config.config);
-      update_config_writer.config_int.emplace_back(update_config.config);
+      //store_config_int.emplace_back(update_config.config);
+      //update_config_writer.config_int.emplace_back(update_config.config);
 
       // if a transient bond forms, check if configuration has been previously
       // visited by comparing configuration to set of saved configurations; if
@@ -254,16 +257,21 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
     }
   }
 
+  // Do Monte Carlo moves (mc moves)
   for (unsigned int i = 0; i < p.mc_moves; i++) {
-    crankshaft(sys.pos, update_config, box, p.near_min2, p.near_max2,
-               p.nnear_min2, p.nnear_max2, p.rh2, p.stair2,
-               p.transient_bonds, p.permanent_bonds, mt, sys.s_bias);
-    for (unsigned int j = 1; j < p.mc_write; j++) {
-      if (i == ((j * p.mc_moves) / p.mc_write)) {
-        update_config_writer.config_int.emplace_back(update_config.config);
-      }
-    }
+      crankshaft(sys.pos, update_config, box, p.near_min2, p.near_max2,
+                 p.nnear_min2, p.nnear_max2, p.rh2, p.stair2,
+                 p.transient_bonds, p.permanent_bonds, mt, sys.s_bias);
+      /* for (unsigned int j = 1; j < p.mc_write; j++) {
+          if (i == ((j * p.mc_moves) / p.mc_write)) {
+              update_config_writer.config_int.emplace_back(update_config.config);
+          }
+      }*/
   }
+
+  // store the integer of the configuration and the time of the event
+  store_config_int.emplace_back(update_config.config);
+  update_config_writer.config_int.emplace_back(update_config.config);
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2));
