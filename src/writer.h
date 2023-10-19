@@ -182,8 +182,8 @@ class DistWriter {
   unsigned int step;
 
 public:
-  DistWriter(H5::H5Location &file, const std::string &name,
-             const unsigned int nbonds) {
+  DistWriter(H5::H5Location &file, const std::string &name, const unsigned int nbonds) {
+
     const hsize_t mem_dims[1] = {nbonds};
     const hsize_t file_dims[2] = {0, nbonds};
     const hsize_t max_dims[2] = {H5S_UNLIMITED, nbonds};
@@ -195,8 +195,8 @@ public:
     prop.setChunk(2, chunk_dims);
     prop.setDeflate(6);
 
-    dataset =
-        file.createDataSet(name, H5::PredType::NATIVE_DOUBLE, file_space, prop);
+    // create a dataset called dist with double values indicating distance
+    dataset = file.createDataSet(name, H5::PredType::NATIVE_DOUBLE, file_space, prop);
 
     step = 0;
   }
@@ -217,6 +217,14 @@ public:
 
     step++;
   }
+
+  int get_size() {
+    H5::DataSpace dataspace = dataset.getSpace();
+    hsize_t dims_out[2];
+    dataspace.getSimpleExtentDims(dims_out, NULL);
+    return dims_out[0];
+  }
+
 };
 
 #endif

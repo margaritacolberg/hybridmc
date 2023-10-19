@@ -554,6 +554,8 @@ int main(int argc, char *argv[]) {
   VelWriter vel_writer{group, "vel", p.nbeads};
   ConfigWriter config_writer{group, "config"};
   ConfigCountWriter config_count_writer{file, "config_count", nstates};
+
+  // Initialize distance writer with the H5 file, given nbonds and dataset name "dist"
   DistWriter dist_writer{file, "dist", nbonds};
 
   config_count_writer.append(config_count);
@@ -694,6 +696,8 @@ int main(int argc, char *argv[]) {
 	    break;
     }
   } while (!done_g_test or !done_flip);
+
+  std::cout << "The size of dist is " << dist_writer.get_size() << std::endl;
 
   file.close();
 

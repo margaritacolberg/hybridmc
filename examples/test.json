@@ -35,5 +35,7 @@
     "sig_level": 0.05,
     "max_nbonds": 3,
     "max_g_test_count": 10000,
-    "flip_req": 1.0
+    "flip_req": 1.0,
+    "fail_max": 5,
+    "WL_sbias": 6.0
 }
