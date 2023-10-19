@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cppcoreguidelines-narrowing-conversions"
 // Copyright (c) 2018-2022 Margarita Colberg
 // SPDX-License-Identifier: BSD-3-Clause
 //
@@ -63,7 +65,7 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
     throw std::runtime_error("nonlocal beads overlap");
   }
 
-  if (!(cells.ncell >= 4)) {
+  if (cells.ncell < 4) {
     throw std::invalid_argument("bead ncell must be at least 4");
   }
 
@@ -79,9 +81,9 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
     check_rc = *p.stair;
   }
 
-  if (!(cells.lcell >= check_rc)) {
+  if (cells.lcell < check_rc) {
     std::cout << cells.lcell << " is cells.lcell and the check_rc is " << check_rc << std::endl;
-    float req_length = cells.ncell * check_rc + 0.0001;
+    float req_length = cells.ncell * check_rc + 0.0001; // NOLINT(cppcoreguidelines-narrowing-conversions)
     std::cout << "Length has to be at least " << req_length << std::endl;
     throw std::invalid_argument("bead lcell must be at least rc. Increase length to at least above value");
   }
@@ -252,7 +254,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
     const double tot_E_during =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
-    if (!(E_diff < 1e-6)) {
+    if (E_diff >= 1e-6) {
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
@@ -311,7 +313,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
     const double tot_E_during =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
-    if (!(E_diff < 1e-6)) {
+    if (E_diff >= 1e-6) {
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
@@ -350,7 +352,7 @@ void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
 }
 
 // wang landau plugin for python function
-std::vector<double> wang_landau_process(std::string json_name, std::optional<std::string> input_name) {
+std::vector<double> wang_landau_process(const std::string& json_name, std::optional<std::string> input_name) {
 
     std::ifstream input(json_name);
     nlohmann::json json;
@@ -362,7 +364,7 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
 
     const unsigned int t_bonds = p.transient_bonds.get_nbonds();
     const unsigned int nbonds = p.nonlocal_bonds.get_nbonds();
-    const unsigned int nstates = std::pow(2, t_bonds);
+    const unsigned int nstates = std::pow(2, t_bonds); // NOLINT(cppcoreguidelines-narrowing-conversions)
     ConfigInt store_config_int;
     std::vector<uint64_t> config_count(nstates);
     std::vector<double> dist(nbonds);
@@ -427,13 +429,13 @@ std::vector<double> wang_landau_process(std::string json_name, std::optional<std
             double dz = sys.pos[bead2].z - sys.pos[bead1].z;
             box.mindist(dx, dy, dz);
 
-            const double dist = sqrt(dx * dx + dy * dy + dz * dz);
+            const double distance = sqrt(dx * dx + dy * dy + dz * dz);
 
             //std::cout << " recording everything" << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
 
-            if (dist > rc_min){
+            if (distance > rc_min){
                 //std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
-                distance_values.push_back(dist);
+                distance_values.push_back(distance);
             }
         }
 
@@ -614,13 +616,13 @@ int main(int argc, char *argv[]) {
 
   // parameters for checking if g test is validated or not
   unsigned int g_test_count = 0;
-  double flipping_rate = 0;
+  double flipping_rate;
   bool done_flip = false;
   bool done_g_test = false;
   int fail_counter = 0;
 
   // the BIIIIIIIG loop
-  do {
+  while (!done_g_test or !done_flip){
     // reset bead clocks, counters and wall time
     for (unsigned int i = 0; i < p.nbeads; i++) {
       sys.times[i] = 0.0;
@@ -645,8 +647,8 @@ int main(int argc, char *argv[]) {
     }
 
     // count the number of times each configuration is visited
-    for (unsigned int i = 0; i < store_config_int.size(); i++) {
-      config_count[store_config_int[i]]++;
+    for (unsigned long i: store_config_int) {
+      config_count[i]++;
     }
 
     compute_entropy(config_count, sys.s_bias, nstates, p.pos_scale,
@@ -664,7 +666,7 @@ int main(int argc, char *argv[]) {
 
     config_count_writer.append(config_count);
 
-    double flips = double(count_bond.formed + count_bond.broken);
+    auto flips = double(count_bond.formed + count_bond.broken);
     auto  stateCount = std::reduce(config_count.begin(), config_count.end());
     flipping_rate = flips / stateCount;
 
@@ -695,7 +697,7 @@ int main(int argc, char *argv[]) {
 	    std::cout << "  Done the maximum number of iterations: " << g_test_count <<  " without convergence." << std::endl;
 	    break;
     }
-  } while (!done_g_test or !done_flip);
+  }
 
   std::cout << "The size of dist is " << dist_writer.get_size() << std::endl;
 
@@ -773,3 +775,5 @@ PYBIND11_MODULE(wang_landau, m) {
           "json_name"_a, "h5_input_name"_a=py::none());
 
 }
+
+#pragma clang diagnostic pop
