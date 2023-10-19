@@ -220,9 +220,9 @@ public:
 
   int get_size() {
     H5::DataSpace dataspace = dataset.getSpace();
-    hsize_t dims_out[2];
-    dataspace.getSimpleExtentDims(dims_out, NULL);
-    return dims_out[0];
+      hsize_t dims_out[2];
+      dataspace.getSimpleExtentDims(dims_out, NULL);
+      return dims_out[0];
   }
 
 };

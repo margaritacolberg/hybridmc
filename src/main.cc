@@ -761,6 +761,7 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.max_g_test_count = json["max_g_test_count"];
     p.flip_req = json["flip_req"];
     p.fail_max = json["fail_max"];
+    p.req_dists = json["req_dists"];
 }
 
 // create pybind11 module for wang_landau function

@@ -79,6 +79,11 @@ def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
 
 
+def set_defaults(data, defaults):
+    for el in defaults.items():
+        data.setdefault(*el)
+
+
 def stair_check(data, output_name, input_hdf5):
     """
     Function to check if staircase potential is needed for a given bond pair.
@@ -111,9 +116,6 @@ def stair_check(data, output_name, input_hdf5):
     # Optional staircase potential, initially the bond pair (bp) is not staircased
     stair_bp = None
     stair_rc_list = None
-
-    if "WL_sbias" not in data:
-        data["WL_sbias"] = 6.0
 
     # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
     if sbias > data['WL_sbias']:

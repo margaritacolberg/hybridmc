@@ -96,6 +96,8 @@ struct Param {
   double flip_req;
   // number of times to try to flip a bond
   int fail_max;
+  // number of distances to store
+  int req_dists;
 };
 
 #endif

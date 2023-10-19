@@ -27,6 +27,14 @@ def init_json(args):
     # set the data json files nonlocal bonds list to processes nonlocal bonds list
     data['nonlocal_bonds'] = nonlocal_bonds
 
+    # set some more default values for parameters in case they are not provided in json file
+    set_defaults(data,
+                 defaults={
+                     "WL_sbias": 6.0,
+                     "fail_max": 5,
+                     "req_dists": 100000
+                 })
+
     in_queue = Queue()
     out_queue = Queue()
 
