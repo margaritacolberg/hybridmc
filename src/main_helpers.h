@@ -55,12 +55,14 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
                          CountBond &count_bond, double wall_time,
                          unsigned int iter_wl,
-                         std::optional<bool> record_dists,
-                         std::optional<DistWriter> &dist_writer);
+                         bool record_dists = false,
+                         std::vector<double>* dist = nullptr,
+                         DistWriter* dist_writer = nullptr);
 
 void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
-                 unsigned int nstates, std::vector<double> &s_bias);
+                 unsigned int nstates, std::vector<double> &s_bias,
+                 DistWriter &dist_writer, std::vector<double> &dist);
 
 void from_json(const nlohmann::json &json, Param &p);
 

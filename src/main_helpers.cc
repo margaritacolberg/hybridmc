@@ -269,10 +269,10 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
                          CountBond &count_bond, double wall_time,
-                         const unsigned int iter_wl,
-                         bool record_dists = false,
-                         std::vector<double> &dist = dist(0),
-                         auto *dist_writer = nullptr) {
+                         unsigned int iter_wl,
+                         bool record_dists,
+                         std::vector<double>* dist,
+                         DistWriter* dist_writer) {
 
   LOG_DEBUG("run_trajectory_wl");
 
@@ -295,7 +295,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
     if (record_dists) {
       dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, *dist);
-      *dist_writer.append(*dist);
+      dist_writer->append(*dist);
     }
 
     const double tot_E_during =
@@ -313,19 +313,22 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 // Wang-Landau algorithm for estimating entropy
 void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
-                 const unsigned int nstates, std::vector<double> &s_bias) {
+                 const unsigned int nstates, std::vector<double> &s_bias,
+                 DistWriter &dist_writer, std::vector<double> &dist) {
+
   // amount by which entropy is adjusted
   double gamma = p.gamma;
   unsigned int iter_wl = 0;
   unsigned int native_ind = nstates - 1;
   double wall_time = 0.0;
+  bool record_dists = true;
 
   while (gamma > p.gamma_f) {
     // iterate over the 2 states
     for (unsigned int i = 0; i < nstates; i++) {
       // run trajectory to get final state
       Config state = run_trajectory_wl(sys, mt, p, box, update_config,
-                                       count_bond, wall_time, iter_wl);
+                                       count_bond, wall_time, iter_wl, record_dists, &dist, &dist_writer);
 
       if (state == 0) {
         s_bias[native_ind] -= gamma;
