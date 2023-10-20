@@ -392,7 +392,6 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.seeds = json["seeds"].get<std::vector<unsigned int>>();
     p.temp = json["temp"];
     p.mc_moves = json["mc_moves"];
-    p.mc_write = json["mc_write"];
     p.total_iter = json["total_iter"];
     p.total_iter_eq = json["total_iter_eq"];
     p.pos_scale = json["pos_scale"];
