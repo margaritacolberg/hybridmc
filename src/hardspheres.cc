@@ -6,7 +6,6 @@
 // crossing events of the hard spheres in a priority queue
 
 #include "hardspheres.h"
-#include "crankshaft.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
