@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
 
   for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
     run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
-                      wall_time, iter);
+                      wall_time, iter, dist_writer, dist);
   }
 
   // Wang-Landau
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
     sys.counter[i] = 0.0;
   }
 
-  wang_landau(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias);
+  wang_landau_process(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias, dist_writer, dist);
 
   const hsize_t mem_dims[1] = {sys.s_bias.size()};
   H5::DataSpace mem_space(1, mem_dims);

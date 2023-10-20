@@ -40,7 +40,8 @@ void run_step(System &sys, const Param &p, const Box &box,
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double wall_time, unsigned int iter);
+                       double wall_time, unsigned int iter,
+                       DistWriter &dist_writer, std::vector<double> &dist);
 
 void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     std::vector<double> &dist, UpdateConfig &update_config,
@@ -59,7 +60,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          std::vector<double>* dist = nullptr,
                          DistWriter* dist_writer = nullptr);
 
-void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
+void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
                  unsigned int nstates, std::vector<double> &s_bias,
                  DistWriter &dist_writer, std::vector<double> &dist);

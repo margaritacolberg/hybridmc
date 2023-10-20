@@ -150,7 +150,8 @@ void run_step(System &sys, const Param &p, const Box &box,
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double wall_time, unsigned int iter) {
+                       double wall_time, unsigned int iter,
+                       DistWriter &dist_writer, std::vector<double> &dist) {
 
   LOG_DEBUG("run_trajectory_eq");
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
@@ -167,6 +168,10 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
 
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t);
+
+    dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
+    dist_writer.append(dist);
+
   }
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
@@ -311,7 +316,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 }
 
 // Wang-Landau algorithm for estimating entropy
-void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
+void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box,
                  UpdateConfig &update_config, CountBond &count_bond,
                  const unsigned int nstates, std::vector<double> &s_bias,
                  DistWriter &dist_writer, std::vector<double> &dist) {

@@ -2,7 +2,7 @@
 namespace po = boost::program_options;
 
 // wang landau plugin for python function
-std::vector<double> wang_landau_process(const std::string& json_name, std::optional<std::string> input_name) {
+std::vector<double> wang_landau_plugin(const std::string& json_name, std::optional<std::string> input_name) {
 
     std::ifstream input(json_name);
     nlohmann::json json;
@@ -129,7 +129,7 @@ PYBIND11_MODULE(wang_landau, m) {
     m.doc() = "pybind11 hybridmc plugin for wang_landau function";
 
     using namespace py::literals;
-    m.def("WL_process", &wang_landau_process, "A function that conducts the wang landau algorithm",
+    m.def("WL_process", &wang_landau_plugin, "A function that conducts the wang landau algorithm",
           "json_name"_a, "h5_input_name"_a=py::none());
 
 }
