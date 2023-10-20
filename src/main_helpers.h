@@ -1,0 +1,67 @@
+//
+// Created by vrajesh on 19/10/23.
+//
+
+#ifndef HYBRIDMC_MAIN_HELPERS_H
+#define HYBRIDMC_MAIN_HELPERS_H
+
+#include "crankshaft.h"
+#include "entropy.h"
+#include "hardspheres.h"
+#include "json.hpp"
+#include "snapshot.h"
+#include "writer.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <H5Cpp.h>
+#include <boost/program_options.hpp>
+#include <cassert>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <optional>
+
+double max_time = std::numeric_limits<double>::max();
+
+void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
+                    UpdateConfig &update_config,
+                    std::optional<std::string> input_name,
+                    std::optional<std::string> snapshot_name,
+                    unsigned int t_bonds);
+
+void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
+                      UpdateConfig &update_config, Cells &cells,
+                      EventQueue &event_queue);
+
+void run_step(System &sys, const Param &p, const Box &box,
+              UpdateConfig &update_config, CountBond &count_bond,
+              double wall_time, Cells &cells, EventQueue &event_queue,
+              unsigned int step, double del_t);
+
+void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
+                       UpdateConfig &update_config, CountBond &count_bond,
+                       double wall_time, unsigned int iter);
+
+void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
+                    std::vector<double> &dist, UpdateConfig &update_config,
+                    UpdateConfigWriter &update_config_writer,
+                    PosWriter &pos_writer, VelWriter &vel_writer,
+                    ConfigWriter &config_writer, DistWriter &dist_writer,
+                    std::set<Config> &store_config, ConfigInt &store_config_int,
+                    CountBond &count_bond, double wall_time,
+                    unsigned int iter);
+
+Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
+                         const Box &box, UpdateConfig &update_config,
+                         CountBond &count_bond, double wall_time,
+                         unsigned int iter_wl,
+                         std::optional<bool> record_dists,
+                         std::optional<DistWriter> &dist_writer);
+
+void wang_landau(System &sys, Random &mt, const Param &p, const Box &box,
+                 UpdateConfig &update_config, CountBond &count_bond,
+                 unsigned int nstates, std::vector<double> &s_bias);
+
+void from_json(const nlohmann::json &json, Param &p);
+
+#endif
