@@ -76,9 +76,6 @@ struct Param {
   double temp;
   // number of Monte Carlo crankshaft moves
   unsigned int mc_moves;
-  // number of times MC crankshaft moves are carried out before configuration
-  // saved
-  unsigned int mc_write;
   // total number of iterations of MD trajectories and MC moves
   unsigned int total_iter;
   unsigned int total_iter_eq;
