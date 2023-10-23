@@ -11,8 +11,6 @@
 #include "json.hpp"
 #include "snapshot.h"
 #include "writer.h"
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <H5Cpp.h>
 #include <boost/program_options.hpp>
 #include <cassert>
@@ -20,8 +18,6 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
-
-double max_time = std::numeric_limits<double>::max();
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,

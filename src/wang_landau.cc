@@ -1,4 +1,6 @@
 #include "main_helpers.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 namespace po = boost::program_options;
 
 // wang landau plugin for python function

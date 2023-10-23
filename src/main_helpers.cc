@@ -9,6 +9,7 @@
 // state;
 
 #include "main_helpers.h"
+double max_time = std::numeric_limits<double>::max();
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,
