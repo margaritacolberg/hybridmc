@@ -130,6 +130,7 @@ def stair_check(data, output_name, input_hdf5):
 def update_rc(data, new_rc):
     """
     Update the rc value for the bonds in the transient_bonds list and nonlocal_bonds list
+
     Parameters
     ----------
     data: dict: JSON input for the HMC program as a python dictionary
@@ -146,3 +147,19 @@ def update_rc(data, new_rc):
             # if yes then update the rc value
             bonds[-1] = new_rc
             data['transient_bonds'] = [bonds]
+
+
+def get_mcMoves(data: dict):
+    """
+    Function to determine how many monte-carlo moves to make based on the number of bonding restrictions present
+
+    Parameters
+    ----------
+    data: dict: JSON input for the HMC program as a python dictionary
+
+    Returns
+    -------
+    mcMoves: int: number of monte-carlo moves to make
+    """
+    return round(1000 * 1 - (len(data['permanent_bonds']) / len(data['nonlocal_bonds'])))
+

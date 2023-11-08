@@ -56,7 +56,6 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     with open(json_in, 'r') as input_json:
         data = json.load(input_json)
 
-    rc = data['rc']
     rh = data['rh']
     beta = 1.0
     nknots = 8
@@ -64,6 +63,8 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']
     nl_bonds = data['nonlocal_bonds']
+
+    rc_transient = t_bonds[-1]
 
     t_ind = next(i for i, bond in enumerate(nl_bonds) if bond == t_bonds[0])
 
@@ -97,11 +98,13 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
     output = []
     for i in range(nbonds):
-        if i not in p_ind:
+        rc = nl_bonds[i][-1]
+        if i not in p_ind: # if bond is not permanent
             t_on = []
             t_off = []
             if i == t_ind:
                 for j in range(len(dist[i])):
+
                     if dist[i][j] < rc:
                         t_on.append(dist[i][j])
                     else:
@@ -114,10 +117,11 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
                 fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc, True)[0]
 
                 if run_bootstrap:
-                    fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc, True,
-                            nboot)
-            else:
+                    fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc, True, nboot)
+
+            else: # if bond is not transient
                 for j in range(len(dist[i])):
+
                     if dist[t_ind][j] < rc and dist[i][j] >= rc:
                         t_on.append(dist[i][j])
                     elif dist[t_ind][j] >= rc and dist[i][j] >= rc:
