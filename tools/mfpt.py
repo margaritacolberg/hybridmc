@@ -29,6 +29,7 @@ from scipy import sparse
 from sklearn import utils
 
 import os
+import re
 import multiprocessing
 import glob
 import matrix_element
@@ -89,7 +90,7 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
     rh = data['rh']
     beta = 1.0
-    nknots = 8
+    nknots = 12
 
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']
@@ -97,7 +98,8 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
     rc_transient = t_bonds[-1]
 
-    t_ind = next(i for i, bond in enumerate(nl_bonds) if bond == t_bonds[0])
+    # get index of the transient bond in the list of nonlocal bonds
+    t_ind = nl_bonds.index(t_bonds[0])
 
     if p_bonds:
         p_ind = [i for i, bond in enumerate(nl_bonds) for j in
@@ -128,61 +130,29 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
             run_bootstrap = False
 
     output = []
-    for i in range(nbonds):
+    t_on = []
+    t_off = []
+    for j in range(len(dist[t_ind])):
 
-        if i not in p_ind:  # if bond is not permanent
-            t_on = []
-            t_off = []
-            if i == t_ind:  # transient
-                for j in range(len(dist[i])):
+        if dist[t_ind][j] < rc_transient:
+            t_on.append(dist[t_ind][j])
 
-                    if dist[i][j] < rc:
-                        t_on.append(dist[i][j])
-                    else:
-                        t_off.append(dist[i][j])
+        else:
+            t_off.append(dist[t_ind][j])
 
-                t_on = np.array(t_on)
-                t_off = np.array(t_off)
+        t_on = np.array(t_on)
+        t_off = np.array(t_off)
 
-                # inner fpt for transient bond turned on
-                fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc_transient, True)[0]
+        # inner and outer fpt for transient bond turned on
+        fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc_transient, True)[0]
+        fpt_off = fpt_per_bead_pair(t_off, nknots, beta, rc_transient, np.max(t_off), False)[0]
 
-                if run_bootstrap:
-                    fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc_transient, True, nboot)
+        if run_bootstrap:
+            fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc_transient, True, nboot)
+            fpt_off_var = fpt_var(t_off, nknots, beta, rc_transient, np.max(t_off), False, nboot)
+            output += [fpt_on_var, fpt_off_var]
 
-                rc = rc_transient
-
-            else:  # if bond is not transient
-
-                rc = nl_bonds[i][-1]
-                for j in range(len(dist[i])):
-
-                    if dist[t_ind][j] < rc_transient and dist[i][j] >= rc:
-                        t_on.append(dist[i][j])
-                    elif dist[t_ind][j] >= rc_transient and dist[i][j] >= rc:
-                        t_off.append(dist[i][j])
-
-                t_on = np.array(t_on)
-                t_off = np.array(t_off)
-
-                # outer fpt for any bead pair when transient bond turned on
-                fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rc,
-                                           np.max(t_on), False)[0]
-
-                if run_bootstrap:
-                    fpt_on_var = fpt_var(t_on, nknots, beta, rc, np.max(t_on),
-                                         False, nboot)
-
-            fpt_off = fpt_per_bead_pair(t_off, nknots, beta, rc, np.max(t_off),
-                                        False)[0]
-
-            output_i = [i, fpt_on, fpt_off]
-            if run_bootstrap:
-                fpt_off_var = fpt_var(t_off, nknots, beta, rc, np.max(t_off),
-                                      False, nboot)
-                output_i += [fpt_on_var, fpt_off_var]
-
-            output.append(output_i)
+        output = [t_ind, fpt_on, fpt_off]
 
     with open(csv_out, 'w') as output_csv:
         writer = csv.writer(output_csv)
