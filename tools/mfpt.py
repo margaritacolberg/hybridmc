@@ -28,19 +28,50 @@ from scipy import optimize
 from scipy import sparse
 from sklearn import utils
 
+import os
+import multiprocessing
+import glob
+import matrix_element
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('json', help='json input file')
-    parser.add_argument('hdf5', help='hdf5 input file')
-    parser.add_argument('nboot', type=int,
-            help='number of bootstrap samples to run')
-    parser.add_argument('csv', help='csv output file')
-    parser.add_argument('--layers',
-            help='option to determine var using bootstrap samples in case of layers')
-    args = parser.parse_args()
 
-    fpt_write(args.json, args.hdf5, args.nboot, args.csv, args.layers)
+def process_mfpts():
+    output = []
+    for file_path in os.listdir('.'):
+        if re.search('hybridmc_[0-9]+_([01]+)_([01]+).csv', file_path):
+            bits_i, bits_j, t_ind, int_i, int_j = matrix_element.get_state_data(file_path)
+            inner_fpt, outer_fpt = matrix_element.get_fpt(file_path, t_ind)
+            layer = str(bits_i).count('1')
+            output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
+
+    output.sort(key=lambda x: x[2])
+    csv_out = 'mfpt.csv'
+
+    output.insert(0, ['state i bits', 'state j bits', 'layer', 'inner fpt',
+                      'outer fpt'])
+
+    with open(csv_out, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)
+
+
+def get_mfpt():
+    src = '*.json'
+    names = []
+    for file_path in glob.glob(src):
+        file_name = os.path.basename(file_path)
+        name = os.path.splitext(file_name)[0]
+
+        json_in = name + '.json'
+        hdf5_in = name + '.h5'
+        csv_out = name + '.csv'
+
+        if os.path.exists(csv_out):
+            continue
+
+        names.append((json_in, hdf5_in, 0, csv_out, False))
+
+    with multiprocessing.Pool() as pool:
+        pool.starmap(fpt_write, names)
 
 
 def fpt_write(json_in, hdf5_in, nboot, csv_out, layers):
@@ -70,7 +101,7 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
     if p_bonds:
         p_ind = [i for i, bond in enumerate(nl_bonds) for j in
-                range(len(p_bonds)) if bond == p_bonds[j]]
+                 range(len(p_bonds)) if bond == p_bonds[j]]
     else:
         p_ind = []
 
@@ -98,11 +129,11 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
     output = []
     for i in range(nbonds):
-        rc = nl_bonds[i][-1]
-        if i not in p_ind: # if bond is not permanent
+
+        if i not in p_ind:  # if bond is not permanent
             t_on = []
             t_off = []
-            if i == t_ind:
+            if i == t_ind:  # transient
                 for j in range(len(dist[i])):
 
                     if dist[i][j] < rc:
@@ -114,17 +145,21 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
                 t_off = np.array(t_off)
 
                 # inner fpt for transient bond turned on
-                fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc, True)[0]
+                fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc_transient, True)[0]
 
                 if run_bootstrap:
-                    fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc, True, nboot)
+                    fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc_transient, True, nboot)
 
-            else: # if bond is not transient
+                rc = rc_transient
+
+            else:  # if bond is not transient
+
+                rc = nl_bonds[i][-1]
                 for j in range(len(dist[i])):
 
-                    if dist[t_ind][j] < rc and dist[i][j] >= rc:
+                    if dist[t_ind][j] < rc_transient and dist[i][j] >= rc:
                         t_on.append(dist[i][j])
-                    elif dist[t_ind][j] >= rc and dist[i][j] >= rc:
+                    elif dist[t_ind][j] >= rc_transient and dist[i][j] >= rc:
                         t_off.append(dist[i][j])
 
                 t_on = np.array(t_on)
@@ -132,19 +167,19 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
                 # outer fpt for any bead pair when transient bond turned on
                 fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rc,
-                        np.max(t_on), False)[0]
+                                           np.max(t_on), False)[0]
 
                 if run_bootstrap:
                     fpt_on_var = fpt_var(t_on, nknots, beta, rc, np.max(t_on),
-                            False, nboot)
+                                         False, nboot)
 
             fpt_off = fpt_per_bead_pair(t_off, nknots, beta, rc, np.max(t_off),
-                    False)[0]
+                                        False)[0]
 
             output_i = [i, fpt_on, fpt_off]
             if run_bootstrap:
                 fpt_off_var = fpt_var(t_off, nknots, beta, rc, np.max(t_off),
-                        False, nboot)
+                                      False, nboot)
                 output_i += [fpt_on_var, fpt_off_var]
 
             output.append(output_i)
@@ -155,15 +190,15 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
 
 def A_matrix(x):
-    upper_A_diag = np.zeros(x.size-1)
+    upper_A_diag = np.zeros(x.size - 1)
     A_diag = np.ones(x.size)
-    lower_A_diag = np.zeros(x.size-1)
+    lower_A_diag = np.zeros(x.size - 1)
 
     h_lower = x[1:-1] - x[:-2]
     h_upper = x[2:] - x[1:-1]
 
     lower_A_diag[:-1] = h_lower
-    A_diag[1:-1] = 2*(h_upper + h_lower)
+    A_diag[1:-1] = 2 * (h_upper + h_lower)
     upper_A_diag[1:] = h_upper
 
     A_diags = [A_diag, lower_A_diag, upper_A_diag]
@@ -190,8 +225,8 @@ def spline(x_knot, y_knot, x_input):
     for i in range(len(ind)):
         del_x = x_input[i] - x_knot[ind[i]]
         coeff_i = np.column_stack((a[ind[i]], b[ind[i]], c[ind[i]], d[ind[i]]))
-        f.append((coeff_i[:, 0] + coeff_i[:, 1]*del_x + coeff_i[:, 2]*del_x**2
-            + coeff_i[:, 3]*del_x**3)[0])
+        f.append((coeff_i[:, 0] + coeff_i[:, 1] * del_x + coeff_i[:, 2] * del_x ** 2
+                  + coeff_i[:, 3] * del_x ** 3)[0])
 
     return np.array(f)
 
@@ -201,9 +236,9 @@ def integrate_spline(x_knot, y_knot):
     output = []
     f = lambda x: np.exp(-spline(x_knot, y_knot, x))
 
-    for i in range(len(x_knot)-1):
-        output.append(integrate.quadrature(f, x_knot[i], x_knot[i+1], tol=1e-6,
-            rtol=1e-6)[0])
+    for i in range(len(x_knot) - 1):
+        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=1e-6,
+                                           rtol=1e-6)[0])
 
     return sum(output)
 
@@ -223,9 +258,9 @@ def fun(x, y, x_i):
 
 
 def dB_matrix(x):
-    upper_dB_diag = np.zeros(x.size-1)
+    upper_dB_diag = np.zeros(x.size - 1)
     dB_diag = np.zeros(x.size)
-    lower_dB_diag = np.zeros(x.size-1)
+    lower_dB_diag = np.zeros(x.size - 1)
 
     h_lower = 3 / (x[1:-1] - x[:-2])
     h_upper = 3 / (x[2:] - x[1:-1])
@@ -247,15 +282,15 @@ def dspline_coefficients(x, i):
     # dc coefficients of the spline
     dc_i = np.dot(A, dB_i)
     h = x[1:] - x[:-1]
-    db = (-h/3) * (2*dc_i[:-1] + dc_i[1:])
+    db = (-h / 3) * (2 * dc_i[:-1] + dc_i[1:])
 
     if i >= 1:
-        db[i-1] += 1/h[i-1]
+        db[i - 1] += 1 / h[i - 1]
 
     if i < len(db):
-        db[i] -= 1/h[i]
+        db[i] -= 1 / h[i]
 
-    dd = (dc_i[1:] - dc_i[:-1]) / (3*h)
+    dd = (dc_i[1:] - dc_i[:-1]) / (3 * h)
 
     dc_i = dc_i[:-1]
 
@@ -274,8 +309,8 @@ def dspline(x_knot, x_input, ind):
 
     del_x = x_input - x_knot[i]
     coeff_mat = np.column_stack((db[i], dc[i], dd[i]))
-    f = coeff_mat[:, 0]*del_x + coeff_mat[:, 1]*del_x**2 + coeff_mat[:,
-            2]*del_x**3
+    f = coeff_mat[:, 0] * del_x + coeff_mat[:, 1] * del_x ** 2 + coeff_mat[:,
+                                                                 2] * del_x ** 3
 
     # add da / dy_i to spline, if it exists
     f[i == ind] += 1.0
@@ -285,11 +320,11 @@ def dspline(x_knot, x_input, ind):
 
 def integrate_dspline(x_knot, y_knot, ind):
     output = []
-    f = lambda x: -dspline(x_knot, x, ind)*np.exp(-spline(x_knot, y_knot, x))
+    f = lambda x: -dspline(x_knot, x, ind) * np.exp(-spline(x_knot, y_knot, x))
 
-    for i in range(len(x_knot)-1):
-        output.append(integrate.quadrature(f, x_knot[i], x_knot[i+1], tol=1e-6,
-            rtol=1e-6)[0])
+    for i in range(len(x_knot) - 1):
+        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=1e-6,
+                                           rtol=1e-6)[0])
 
     return sum(output)
 
@@ -308,7 +343,7 @@ def dfun(x, y, x_i):
         if count > 0:
             df_i /= (count * 1.0)
 
-        df_i += (1/f_integral)*df_integral
+        df_i += (1 / f_integral) * df_integral
         df.append(df_i)
 
     return np.array(df)
@@ -318,10 +353,10 @@ def minimize_f(x, x_i, y0):
     f = lambda y: fun(x, y, x_i)
     df = lambda y: dfun(x, y, x_i)
 
-    #min_f2 = optimize.minimize(f, x0=y0, method='BFGS', jac=df,
-            #options={'gtol': 0.000001, 'disp': True})
+    # min_f2 = optimize.minimize(f, x0=y0, method='BFGS', jac=df,
+    # options={'gtol': 0.000001, 'disp': True})
     min_f = minimize.minimize(f, y0, method=nlopt.LD_LBFGS, jac=df, ub=None,
-            lb=None)
+                              lb=None)
 
     return min_f
 
@@ -330,13 +365,13 @@ def cdf_at_x(x_knot, y_knot, x, norm):
     output = []
     f = lambda t: np.exp(-spline(x_knot, y_knot, t))
 
-    for i in range(len(x_knot)-1):
-        if (x_knot[i+1] < x) and (x_knot[i] < x):
-            output.append(integrate.quadrature(f, x_knot[i], x_knot[i+1],
-                tol=1e-6, rtol=1e-6)[0])
-        elif (x_knot[i+1] > x) and (x_knot[i] < x):
+    for i in range(len(x_knot) - 1):
+        if (x_knot[i + 1] < x) and (x_knot[i] < x):
+            output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1],
+                                               tol=1e-6, rtol=1e-6)[0])
+        elif (x_knot[i + 1] > x) and (x_knot[i] < x):
             output.append(integrate.quadrature(f, x_knot[i], x, tol=1e-6,
-                rtol=1e-6)[0])
+                                               rtol=1e-6)[0])
 
     return sum(output) / norm
 
@@ -348,7 +383,7 @@ def fpt_integrand(x_knot, y_knot, x, beta, state):
     norm = integrate_spline(x_knot, y_knot)
     f = spline(x_knot, y_knot, x)
 
-    pdf = np.exp(-beta*f) / norm
+    pdf = np.exp(-beta * f) / norm
 
     cdf = []
     for i in range(len(x)):
@@ -370,7 +405,7 @@ def fpt(x_knot, y_knot, beta, xmin, xmax, state):
     f = lambda x: fpt_integrand(x_knot, y_knot, x, beta, state)
 
     return integrate.quadrature(f, xmin, xmax, tol=1e-6, rtol=1e-6,
-            maxiter=100)
+                                maxiter=100)
 
 
 def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
@@ -386,15 +421,15 @@ def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
 
 
 def fpt_var(dist_vec, nknots, beta, min_dist, max_dist, state, nboot):
-    sample_size = int(len(dist_vec)/2)
+    sample_size = int(len(dist_vec) / 2)
 
     boot_fpt = []
     for i in range(nboot):
         print('bootstrap round', i)
         boot_fpt_i = utils.resample(dist_vec, n_samples=sample_size,
-                random_state=i)
+                                    random_state=i)
         boot_fpt.append(fpt_per_bead_pair(boot_fpt_i, nknots, beta, min_dist,
-            max_dist, state)[0])
+                                          max_dist, state)[0])
 
     return np.var(boot_fpt, ddof=1)
 

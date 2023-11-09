@@ -22,6 +22,9 @@ import argparse
 import os
 from helpers.run_helpers import init_json
 from post_processing import diff_s_bias, avg_s_bias
+import mfpt
+
+
 
 
 def main(args):
@@ -46,13 +49,15 @@ def main(args):
 
     init_json_args["nproc"] = nproc
 
+    # create a temporary directory to run the simulations
     tmp_dir_name = f'{dir_name}.tmp'
-
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
 
+    # move into the temporary directory
     os.chdir(tmp_dir_name)
 
+    # run the simulations for the layers
     init_json(init_json_args)
 
     # Obtain the differences in the sbias for each transition
@@ -60,6 +65,12 @@ def main(args):
 
     # Obtain the average sbias for each bonding state
     avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
+
+    # Obtain the mfpt for each bonding state
+    mfpt.get_mfpt()
+
+    # put together the mfpts in one file
+    mfpt.process_mfpts()
 
     # Move up from the directory with simulation results
     os.chdir("../")
