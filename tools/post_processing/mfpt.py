@@ -406,7 +406,3 @@ def fpt_var(dist_vec, nknots, beta, min_dist, max_dist, state, nboot):
 
 def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
-
-
-if __name__ == '__main__':
-    main()

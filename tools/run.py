@@ -21,10 +21,7 @@
 import argparse
 import os
 from helpers.run_helpers import init_json
-from post_processing import diff_s_bias, avg_s_bias
-import mfpt
-
-
+from post_processing import diff_s_bias, avg_s_bias, mfpt
 
 
 def main(args):
