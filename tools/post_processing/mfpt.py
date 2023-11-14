@@ -14,9 +14,8 @@
 # the last step of the staircase (ie. where the width of the step is between rh
 # and rc)
 
-import minimize
-
-import argparse
+from . import minimize, matrix_element
+import multiprocessing
 import csv
 import h5py
 import json
@@ -24,16 +23,12 @@ import numpy as np
 import nlopt
 from scipy import integrate
 from scipy import interpolate
-from scipy import optimize
 from scipy import sparse
 from sklearn import utils
 
 import os
 import re
-import multiprocessing
 import glob
-import matrix_element
-
 
 def process_mfpts():
     output = []

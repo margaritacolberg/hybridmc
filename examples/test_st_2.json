@@ -7,7 +7,7 @@
     "nnear_max": 1.67,
     "rh": 1.25,
     "rc": 1.5,
-    "nonlocal_bonds": [[4, 16], [6, 10]],
+    "nonlocal_bonds": [[4, 16, 1.6], [6, 10, 1.5]],
     "permanent_bonds": [],
     "config_in": 0,
     "config_out": 1,
