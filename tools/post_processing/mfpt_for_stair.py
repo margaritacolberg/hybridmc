@@ -24,7 +24,6 @@ import sys
 sys.path.insert(0, '/home/rgladkik/scratch/experiments/tools')
 import matrix_element
 import mfpt
-
 import argparse
 import csv
 import glob

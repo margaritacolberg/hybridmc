@@ -17,7 +17,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", help="results_path", default='test.valid')
-    parser.add_argument("--json", help="json_path", default='../test.json')
+    parser.add_argument("--path", help="results_path", default='test_st_OGVarrc')
+    parser.add_argument("--json", help="json_path", default='../test_st_2.json')
     args = parser.parse_args()
     main(args)

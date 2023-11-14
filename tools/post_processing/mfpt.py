@@ -14,7 +14,8 @@
 # the last step of the staircase (ie. where the width of the step is between rh
 # and rc)
 
-from . import minimize, matrix_element
+import minimize
+import matrix_element
 import multiprocessing
 import csv
 import h5py
