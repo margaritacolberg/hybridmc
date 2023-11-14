@@ -91,7 +91,7 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     p_bonds = data['permanent_bonds']
     nl_bonds = data['nonlocal_bonds']
 
-    rc_transient = t_bonds[-1]
+    rc_transient = t_bonds[-1][-1]
 
     # get index of the transient bond in the list of nonlocal bonds
     t_ind = nl_bonds.index(t_bonds[0])
