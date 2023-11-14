@@ -131,23 +131,25 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
 
         if dist[t_ind][j] < rc_transient:
             t_on.append(dist[t_ind][j])
-
         else:
             t_off.append(dist[t_ind][j])
 
-        t_on = np.array(t_on)
-        t_off = np.array(t_off)
+    t_on = np.array(t_on)
+    t_off = np.array(t_off)
 
-        # inner and outer fpt for transient bond turned on
-        fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc_transient, True)[0]
-        fpt_off = fpt_per_bead_pair(t_off, nknots, beta, rc_transient, np.max(t_off), False)[0]
+    # inner fpt for transient bond turned on
+    fpt_on = fpt_per_bead_pair(t_on, nknots, beta, rh, rc_transient, True)[0]
 
-        if run_bootstrap:
-            fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc_transient, True, nboot)
-            fpt_off_var = fpt_var(t_off, nknots, beta, rc_transient, np.max(t_off), False, nboot)
-            output += [fpt_on_var, fpt_off_var]
+    fpt_off = fpt_per_bead_pair(t_off, nknots, beta, rc_transient, np.max(t_off), False)[0]
 
-        output = [t_ind, fpt_on, fpt_off]
+    output_i = [t_ind, fpt_on, fpt_off]
+
+    if run_bootstrap:
+        fpt_on_var = fpt_var(t_on, nknots, beta, rh, rc_transient, True, nboot)
+        fpt_off_var = fpt_var(t_off, nknots, beta, rc_transient, np.max(t_off), False, nboot)
+        output_i += [fpt_on_var, fpt_off_var]
+
+    output.append(output_i)
 
     with open(csv_out, 'w') as output_csv:
         writer = csv.writer(output_csv)
