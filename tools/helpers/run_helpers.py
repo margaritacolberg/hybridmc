@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from init_json_helpers import *
+from .init_json_helpers import *
 from multiprocessing import Process, Queue
 
 

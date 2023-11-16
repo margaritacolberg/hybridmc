@@ -1,5 +1,5 @@
-from data_processing_helpers import *
-from run_layer_helpers import run_sim, run_stairs
+from .data_processing_helpers import *
+from .run_layer_helpers import run_sim, run_stairs
 
 
 def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
