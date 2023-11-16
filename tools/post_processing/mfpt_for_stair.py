@@ -20,8 +20,6 @@
 #SBATCH --mem-per-cpu=256M
 
 import sys
-
-sys.path.insert(0, '/home/rgladkik/scratch/experiments/tools')
 import matrix_element
 import mfpt
 import argparse
