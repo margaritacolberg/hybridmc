@@ -36,5 +36,4 @@
     "max_g_test_count": 10000,
     "flip_req": 1.0,
     "WL_sbias": 6.0,
-    "fail_max": 5
-}
+    "fail_max": 5}
