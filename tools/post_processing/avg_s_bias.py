@@ -14,10 +14,7 @@
 import csv
 import json
 import numpy as np
-from sys import path
-
-path.append('..')
-from helpers.data_processing_helpers import format_bits
+from ..helpers.data_processing_helpers import format_bits
 
 
 def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv'):

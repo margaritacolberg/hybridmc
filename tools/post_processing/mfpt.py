@@ -14,15 +14,13 @@
 # the last step of the staircase (ie. where the width of the step is between rh
 # and rc)
 
-import matrix_element
-import multiprocessing
 import csv
-
 import os
 import re
 import glob
-
-from hybridmc.tools.helpers.mfpt_helpers import fpt_write
+import matrix_element
+import multiprocessing
+from ..helpers.mfpt_helpers import fpt_write
 
 
 def process_mfpts():
@@ -63,10 +61,3 @@ def get_mfpt():
 
     with multiprocessing.Pool() as pool:
         pool.starmap(fpt_write, names)
-
-
-# norm factor
-
-
-def format_bits(bits):
-    return ''.join(map(lambda x: '1' if x else '0', bits))

@@ -5,9 +5,11 @@ import h5py
 import nlopt
 import numpy as np
 from scipy import sparse, interpolate, integrate
+from scipy.special import kolmogorov
 from sklearn import utils
 
-from hybridmc.tools.post_processing import minimize
+from hybridmc_marga.tools.mfpt import spline, minimize_f, integrate_spline, fpt
+from ..post_processing import minimize
 
 
 def fpt_write(json_in, hdf5_in, nboot, csv_out, layers):
@@ -314,7 +316,7 @@ def fpt(x_knot, y_knot, beta, xmin, xmax, state):
                                 maxiter=100)
 
 
-def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
+def fpt_per_bead_pair_old(dist_vec, nknots, beta, min_dist, max_dist, state):
     dist_vec.sort()
 
     x = np.linspace(min_dist, max_dist, nknots)
@@ -338,3 +340,78 @@ def fpt_var(dist_vec, nknots, beta, min_dist, max_dist, state, nboot):
                                           max_dist, state)[0])
 
     return np.var(boot_fpt, ddof=1)
+
+
+def KStest(x_knot, y_knot, dist_vec, norm):
+    f = lambda t: np.exp(-spline(x_knot, y_knot, t))
+
+    npoints = len(dist_vec)
+    # print("In KStest with npoints = ", npoints)
+    cdf = []
+    cdf.append(0.)
+
+    ecdfs = np.arange(npoints + 1, dtype=float) / npoints
+    # print(" ecdf is ", ecdfs)
+
+    cdf_prev = 0.
+    for i in range(npoints - 1):
+        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=1e-6, rtol=1e-6)[0] / norm
+        cdf_i = cdf_prev + integral_val
+        cdf.append(cdf_i)
+        cdf_prev = cdf_i
+
+    cdf.append(1.0)
+    cdf = np.array(cdf)
+    # print(' size of ecdf is ', ecdfs.size, ' size of cdf is ', cdf.size)
+    # print('cdf is ', cdf)
+
+    e = 0.
+    devIndex = -1
+    h = -1
+    b = np.sqrt(npoints)
+    c = 2.
+    for i in range(npoints):
+        d = np.fabs(cdf[i] - e)
+        # print(' d is ', d, ' for i = ', i)
+        if (d > h):
+            devIndex = i
+            h = d
+        e = ecdfs[i + 1]
+        d = np.fabs(e - cdf[i])
+
+        if (d > h):
+            devIndex = i
+            h = d
+    Kn = b * h
+    d = b * h + 0.12 * h + 0.11 * h / b
+    q = kolmogorov(d)
+    a = -2 * d * d
+    g = 0.
+    # print(' Calculate q value using h = ', h, ' Kn = ', Kn, ' devIndex = ', devIndex)
+    maxDev = h
+    #print('q is ', q, ' devIndex is ', devIndex, ' maxDev is ', maxDev, ' num knots is ', x_knot.size)
+    devX = dist_vec[devIndex]
+
+    return q, maxDev, devX
+
+
+def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
+    dist_vec.sort()
+
+    q = 0
+    nknots = 5
+    while q < 0.95 and nknots < 18:
+        x = np.linspace(min_dist, max_dist, nknots)
+        # initial guess for y-coordinates of knots8
+        y = np.zeros(nknots)
+
+        y = minimize_f(x, dist_vec, y)
+
+        norm = integrate_spline(x, y)
+        #print('norm is ', norm)
+        q, maxDev, devX = KStest(x, y, dist_vec, norm)
+        nknots = nknots + 1
+
+    print(' Converged for q = ', q, ' for nknots = ', nknots - 1)
+
+    return fpt(x, y, beta, min_dist, max_dist, state)
