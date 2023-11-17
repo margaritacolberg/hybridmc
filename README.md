@@ -81,6 +81,85 @@ make release
 For any protein with or without staircase potentials, use `run.py`; for
 non-staircase crambin folding, use `run.py` or `crambin.sh`.
 
+The json files for running the examples (for example test.json) in the examples directory
+have the following parameters:
+
+
+    "m": 1.0, -- mass of each bead
+
+    "sigma_bb": 1.0, -- 
+
+    "near_min": 1.0, -- shortest bond dist between nearest neighbors
+
+    "near_max": 1.17, -- longest bond dist between nearest neighbors
+
+    "nnear_min": 1.4, -- shortest bond dist between next nearest neighbors
+
+    "nnear_max": 1.67, -- longest bond dist between next nearest neighbors
+
+    "rh": 1.25, -- The minimum distance between nonlocal beads 
+
+    "rc": 1.5, -- the minimum distance between transient beads. Default value top add to list of bonds if not specified
+    
+    "nonlocal_bonds": [[2, 6], [6, 10, 1.7], [10, 14]], -- list of  nonlocal beads. Could specify rc for each bond
+    
+    "transient_bonds": [[2, 6], [6, 10], [10, 14]], -- list of transient beads
+    
+    "permanent_bonds": [], -- list of permanent beads
+    
+    "config_in": 0, 
+
+    "config_out": 7,
+
+    "nbeads": 20, -- number of beads in the protein
+
+    "tries": 10000, -- number of tries to find a valid configuration
+
+    "length": 18.0, -- length of the periodic box in each dimension
+
+    "ncell": 5, -- number of cells in each dimension
+
+    "nsteps": 8, -- number of steps in each iteration
+
+    "nsteps_eq": 8, -- number of steps in each iteration for equilibration
+
+    "del_t": 15.0, -- length of dynamical trajectory used for sampling
+
+    "nsteps_wl": 1, -- number of steps for wang_landau
+
+    "del_t_wl": 4.0, -- length of dynamical trajectory used for wang_landau
+
+    "gamma": 0.1, -- starting adjustment factor for wang landau
+
+    "gamma_f": 0.001, -- final adjustment factor for wang landau
+
+    "seeds": [3, 1], -- seeds for random number generator
+
+    "temp": 1.0, -- temperature
+
+    "mc_moves": 20, -- number of monte carlo moves
+
+    "total_iter": 400, -- number of state counts per iteration used to calculate the sbias. Increasing this imporves sbias calculation accuracy
+    
+    "total_iter_eq": 100, -- total number of iterations for equilibration
+
+    "pos_scale": 0.5, --
+
+    "neg_scale": 0.1, --
+
+    "sig_level": 0.05, -- significance level for the g-test
+
+    "max_nbonds": 3, -- maximum number of bonds for the protein
+
+    "max_g_test_count": 10000, -- maximum number of g-tests to run
+
+    "flip_req": 1.0, -- fraction of bonds that must be flipped to consider a configuration valid
+
+    "fail_max": 5, -- maximum number of times to fail to find a valid configuration before increasing the numebr of iterations
+
+    "WL_sbias": 6.0 -- the sbias value for a wang landau simulation result beyond which a configuration is deemed to need staircasing 
+
+
 ### Calculate Entropy
 
 To get biased entropy of each state, use `diff_s_bias.py`, followed by
