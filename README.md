@@ -45,6 +45,14 @@ complicated.
 
   * Boost
 
+All of these can be obtained through the conda environment yaml file: hybridmc.yaml
+
+To create the conda environment, run
+
+```
+conda env create -f hybridmc.yaml
+```
+
 ### Commands for Compiling
 
 To compile HybridMC for development and testing:
