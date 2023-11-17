@@ -22,7 +22,7 @@ struct Param {
   double near_min2;
   // largest bond length squared between nearest neighbors
   double near_max2;
-  // distance constrains for next-nearest neighbors
+  // distance constraints for next-nearest neighbors
   double nnear_min;
   double nnear_max;
   // smallest bond length squared between next-nearest neighbors
@@ -31,27 +31,20 @@ struct Param {
   double nnear_max2;
   // distance constraints for nonlocal beads
   double rh;
-  double rc;
   // smallest bond length squared between nonlocal beads
   double rh2;
-  // largest bond length squared between nonlocal beads
-  double rc2;
   // edge of previous stair in staircase potential of transient bond
   std::optional<double> stair;
   std::optional<double> stair2;
-  // largest bond length between nonlocal beads in a permanent bond, if the
-  // transient bond has a staircase potential
-  std::optional<double> p_rc;
-  std::optional<double> p_rc2;
-
-  // vector of indices of beads which form bonds + rc
+  // vector of indices of beads which form bonds
   NonlocalBonds nonlocal_bonds;
   // vector of indices of beads which form bonds that can be broken
   NonlocalBonds transient_bonds;
   // vector of indices of beads which form bonds that cannot be broken
   NonlocalBonds permanent_bonds;
+
   // vector of indices of beads whose potential is a staircase
-  std::optional<NonlocalBonds> stair_bonds;
+  //std::optional<NonlocalBonds> stair_bonds;
 
   // number of tries to place beads in box
   uint64_t tries;
@@ -63,6 +56,7 @@ struct Param {
   unsigned int ncell;
   // number of time intervals
   unsigned int nsteps;
+  unsigned int nsteps_eq;
   // step at which to write output to file
   unsigned int write_step;
   // increment time
@@ -82,11 +76,9 @@ struct Param {
   double temp;
   // number of Monte Carlo crankshaft moves
   unsigned int mc_moves;
-  // number of times MC crankshaft moves are carried out before configuration
-  // saved
-  unsigned int mc_write;
   // total number of iterations of MD trajectories and MC moves
   unsigned int total_iter;
+  unsigned int total_iter_eq;
   // entropy scaling factors
   double pos_scale;
   double neg_scale;
@@ -99,6 +91,10 @@ struct Param {
   unsigned int max_nbonds;
   // flipping rate per trajectory requirement
   double flip_req;
+  // number of times to try to flip a bond
+  int fail_max;
+  // number of distances to store
+  int req_dists;
 };
 
 #endif

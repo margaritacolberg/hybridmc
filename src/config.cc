@@ -28,6 +28,10 @@ std::tuple<unsigned int, unsigned int, double> NonlocalBonds::getBond(unsigned i
     return ij_[bond_index];
 }
 
+double NonlocalBonds::getrc(unsigned int bond_index) const {
+    return std::sqrt(std::get<2>(ij_[bond_index]));
+}
+
 std::tuple<Config, double> NonlocalBonds::get_bond_mask(unsigned int i, unsigned int j) const {
     assert(j > i);
 
@@ -58,9 +62,9 @@ std::tuple<Config, double> NonlocalBonds::get_bond_mask(unsigned int i, unsigned
 // print out bonds list
 void NonlocalBonds::printBonds()
 {
-    for (int i=0;i< int(ij_.size());i++){
-        std::cout << " Bond pair " << std::get<0>(ij_[i]) << "-" << std::get<1>(ij_[i])
-                  << " has rc2 =  " << std::get<2>(ij_[i]) << std::endl;
+    for (auto & i : ij_){
+        std::cout << " Bond pair " << std::get<0>(i) << "-" << std::get<1>(i)
+                  << " has rc2 =  " << std::get<2>(i) << std::endl;
     }
 }
 

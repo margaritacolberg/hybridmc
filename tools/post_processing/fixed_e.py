@@ -10,8 +10,6 @@
 # python ../tools/fixed_e.py ../examples/crambin.json 5.5 fixed_e.csv
 
 import matrix_element
-import minimize
-
 import argparse
 import csv
 import glob

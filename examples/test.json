@@ -17,6 +17,7 @@
     "length": 18.0,
     "ncell": 5,
     "nsteps": 8,
+    "nsteps_eq": 8,
     "del_t": 15.0,
     "nsteps_wl": 1,
     "del_t_wl": 4.0,
@@ -27,11 +28,14 @@
     "temp": 1.0,
     "mc_moves": 20,
     "mc_write": 5,
-    "total_iter": 200,
+    "total_iter": 400,
+    "total_iter_eq": 100,
     "pos_scale": 0.5,
     "neg_scale": 0.1,
     "sig_level": 0.05,
     "max_nbonds": 3,
     "max_g_test_count": 10000,
-    "flip_req": 1.0
+    "flip_req": 1.0,
+    "fail_max": 5,
+    "WL_sbias": 6.0
 }

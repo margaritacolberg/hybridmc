@@ -6,9 +6,6 @@
 // crossing events of the hard spheres in a priority queue
 
 #include "hardspheres.h"
-#include "config.h"
-#include "crankshaft.h"
-#include "system.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -39,9 +36,7 @@ void unit_sphere(Random &mt, double &x, double &y, double &z) {
 void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p) {
   const unsigned int nbeads = pos.size();
-  // pick a scaling factor that corresponds to the distance constraint
-  // between the nearest beads
-  std::uniform_real_distribution<> uniform_near(p.near_min, p.near_max);
+  std::uniform_real_distribution<> uniform_near(0.0, 1.0);
 
   if (pos.size() < 1)
     return;
@@ -54,6 +49,9 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
   uint64_t tries = 0;
   unsigned int i = 1;
 
+  const double near_min3 = std::pow(p.near_min, 3.0);
+  const double near_max3 = std::pow(p.near_max, 3.0);
+
   while (i < nbeads) {
     if (!(tries++ < p.tries)) {
       throw std::logic_error(
@@ -65,7 +63,10 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     double near_dx, near_dy, near_dz;
     unit_sphere(mt, near_dx, near_dy, near_dz);
 
-    double near = uniform_near(mt);
+    // pick a scaling factor that corresponds to the distance
+    // constraint between the nearest beads
+    const double val = uniform_near(mt);
+    const double near = std::cbrt(near_min3 + (val * (near_max3 - near_min3)));
 
     // center the point at the position of the previous point, and scale
     // according to the distance constraint between the nearest beads
@@ -219,7 +220,7 @@ void init_vel(std::vector<Vec3> &vel, Random &mt, const double temp,
 // separation), the function returns true and returns the time until collision
 // in t; if a collision does not occur, the function returns false
 bool t_until_inner_coll(double xij, double yij, double zij, double vxij,
-                        double vyij, double vzij, const double sigma2, //change
+                        double vyij, double vzij, const double sigma2,
                         double &t) {
   double rvij = xij * vxij + yij * vyij + zij * vzij;
 
@@ -305,9 +306,7 @@ double s_of_inner_event(const std::vector<double> &s_bias,
   unsigned int non_bonded_state = update_config.config;
   update_config.flip_bond(bond_mask);
   unsigned int bonded_state = update_config.config;
-  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state]
-                    << " and s of " << non_bonded_state << " is "
-                    << s_bias[non_bonded_state]);
+  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state] << " and s of " << non_bonded_state << " is " << s_bias[non_bonded_state]);
 
   // if a bond forms, dS must be negative
   double dS = s_bias[bonded_state] - s_bias[non_bonded_state];
@@ -323,9 +322,7 @@ double s_of_outer_event(const std::vector<double> &s_bias,
   unsigned int bonded_state = update_config.config;
   update_config.flip_bond(bond_mask);
   unsigned int non_bonded_state = update_config.config;
-  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state]
-                    << " and s of " << non_bonded_state << " is "
-                    << s_bias[non_bonded_state]);
+  LOG_DEBUG("s of " << bonded_state << " is " << s_bias[bonded_state] << " and s of " << non_bonded_state << " is " << s_bias[non_bonded_state]);
 
   // if a bond breaks, dS must be positive
   double dS = s_bias[non_bonded_state] - s_bias[bonded_state];
@@ -363,9 +360,7 @@ void init_cells(const std::vector<Vec3> &pos, const Box &box, Cells &cells) {
     cells.cell_x.emplace_back(icell_x);
     cells.cell_y.emplace_back(icell_y);
     cells.cell_z.emplace_back(icell_z);
-    LOG_DEBUG("particle " << j << " at " << pos[j].x << ", " << pos[j].y << ", "
-                          << pos[j].z << " in cell " << icell_x << ", "
-                          << icell_y << ", " << icell_z);
+    LOG_DEBUG("particle " << j << " at " << pos[j].x << ", " << pos[j].y << ", " << pos[j].z << " in cell " << icell_x << ", " << icell_y << ", " << icell_z);
     // store the 1D index for each cell, and the beads contained within, in
     // a vector of vectors
     cells.cells[icell].emplace_back(j);
@@ -395,28 +390,42 @@ void delta_tpv(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   dvz = vel[j].z - vel[i].z;
 }
 
-double get_rc2_inner(double rc2, std::optional<double> p_rc2,
-                     const Config p_bond_mask) {
-  double rc2_inner = rc2;
+// function to obtain the correct rc2 inner given the bond type;
+// for permanent, transient bonds get their respective rc value.
+double get_rc2_inner(const std::tuple<Config, double> t_bond_mask_tuple,
+                     const std::tuple<Config, double> p_bond_mask_tuple) {
 
-  if (p_bond_mask && p_rc2) {
-    rc2_inner = *p_rc2;
-  }
+    const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
+    const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+
+    // initialize variable to find appropriate rc value
+    double rc2_inner = 0;
+
+    // find rc value for given p or t bond
+    if (p_bond_mask) {
+        rc2_inner = std::get<1>(p_bond_mask_tuple);
+    } else if (t_bond_mask) {
+        rc2_inner = std::get<1>(t_bond_mask_tuple);
+    } else {
+        //throw std::runtime_error("Bond not a permanent or transient bond; rc info not available");
+        //std::cout << "Bond not a permanent or transient bond; rc info not available" << std::endl;
+    }
 
   return rc2_inner;
 }
 
-double get_rc2_outer(double rc2, std::optional<double> stair2,
-                     std::optional<double> p_rc2, const Config t_bond_mask,
-                     const Config p_bond_mask, UpdateConfig &update_config) {
-  double rc2_outer = rc2;
+// function that outputs same rc as the bonding target rc if non staircase,
+// outputs outer hard wall rc if staircase
+double get_rc2_outer(double rc2_inner, const Config t_bond_mask, std::optional<double> stair2,
+                     UpdateConfig &update_config) {
 
-  if (p_bond_mask && p_rc2) {
-    rc2_outer = *p_rc2;
-  }
+  // initialize with whatever rc2_inner is; in non staircase case this is true
+  double rc2_outer = rc2_inner;
 
+  // if staircase rc is given then set the outer hard wall at given stair2 rc value
   if (stair2 && update_config.non_bonded(t_bond_mask)) {
     rc2_outer = *stair2;
+    //std::cout << "STAIRCASED: " << "; rc2 inner = " << std::sqrt(rc2_inner) << "; rc2 outer = " << std::sqrt(rc2_outer) << std::endl;
   }
 
   return rc2_outer;
@@ -429,8 +438,7 @@ double get_rc2_outer(double rc2, std::optional<double> stair2,
 
 // (DONE) see get bond mask -- config.cc or config.h do smthn similar. Check i and j transientness. New input to jc
 void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-             double rh2, std::optional<double> stair2,
-             std::optional<double> p_rc2, const Box &box,
+             double rh2, std::optional<double> stair2, const Box &box,
              const std::vector<uint64_t> &counter, EventQueue &event_queue,
              const std::vector<double> &times, unsigned int i, unsigned int j,
              const NonlocalBonds &transient_bonds,
@@ -453,20 +461,10 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
   const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  // initialize variable to find appropriate rc value
-  double rc2val = 0;
-  // find rc value for given p or t bond
-  if (p_bond_mask) {
-      rc2val = std::get<1>(p_bond_mask_tuple);
-  } else if (t_bond_mask) {
-      rc2val = std::get<1>(t_bond_mask_tuple);
-  } else {
-      // TODO: Add some error message
-  }
+  // choose correct rc2 inner based on if permanent, transient or stair bond
+  const double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
 
-  const double rc2_inner = get_rc2_inner(rc2val, p_rc2, p_bond_mask); //p_rc2 is for stairs
-  const double rc2_outer = get_rc2_outer(rc2val, stair2, p_rc2, t_bond_mask, //look here. check correct pair of beads. if have i and j for correct set then grab the r values
-                                         p_bond_mask, update_config); // get position for rh associated
+  const double rc2_outer = get_rc2_outer(rc2_inner, t_bond_mask, stair2, update_config);
 
 
  // two beads in trans bond >rc then inner else outer
@@ -484,27 +482,43 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
       update_config.non_bonded(t_bond_mask) &&
       t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rc2_inner, t)) { // takes rc single value
     MaxNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev); 
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
+
     // else if two nonlocal beads collide elastically,
   } else if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, rh2, t)) { //rh2 is sigma2. Sigma2 is general variable for two beads distance
     MinNonlocalInnerEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
+
     // else if two nonlocal bonded beads reach rc,
   } else if (update_config.bonded(t_bond_mask) || p_bond_mask ||
              (stair2 && update_config.non_bonded(t_bond_mask))) {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, rc2_outer, t); // if two beads exit well break bond
     MaxNonlocalOuterEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);
+    } else {
+      LOG_DEBUG("not queueing " << ev << " max time is " << max_time);
+    }
   }
 }
 
 // iterate collisions over all particle pairs
 void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-                  double rh2, std::optional<double> stair2,
-                  std::optional<double> p_rc2, const Box &box,
+                  double rh2, std::optional<double> stair2, const Box &box,
                   const std::vector<uint64_t> &counter, EventQueue &event_queue,
                   const std::vector<double> &times, const Cells &cells,
                   unsigned int icell, unsigned int i,
@@ -512,7 +526,7 @@ void iterate_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
                   const NonlocalBonds &permanent_bonds,
                   UpdateConfig &update_config, const unsigned int max_nbonds) {
   for (unsigned int j : cells.cells[icell]) {
-    if_coll(pos, vel, rh2, stair2, p_rc2, box, counter, event_queue, times,
+    if_coll(pos, vel, rh2, stair2, box, counter, event_queue, times,
             i, j, transient_bonds, permanent_bonds, update_config, max_nbonds);
   }
 }
@@ -532,8 +546,7 @@ void walls_of_cell(unsigned int &zmin, unsigned int &zmax, unsigned int &ymin,
 // but without any cell crossings
 void add_events_for_one_bead(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
-    const Box &box, const std::vector<uint64_t> &counter,
+    std::optional<double> stair2, const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, const NonlocalBonds &transient_bonds,
     const NonlocalBonds &permanent_bonds, UpdateConfig &update_config,
@@ -553,7 +566,7 @@ void add_events_for_one_bead(
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
         // iterate collisions over the cell
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -565,15 +578,15 @@ void add_events_for_one_bead(
 // its neighboring cells
 void add_events_for_all_beads(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
-    unsigned int nbeads, double rh2, std::optional<double> stair2,
-    std::optional<double> p_rc2, const Box &box,
+    unsigned int nbeads, double rh2, std::optional<double> stair2, const Box &box,
     const std::vector<uint64_t> &counter, EventQueue &event_queue,
     const std::vector<double> &times, const Cells &cells,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
     UpdateConfig &update_config, const unsigned int max_nbonds) {
+  assert(pos.size() == nbeads);
   // for a collision between two beads,
   for (unsigned int i = 0; i < nbeads; i++) {
-    add_events_for_one_bead(pos, vel, rh2, stair2, p_rc2, box, counter,
+    add_events_for_one_bead(pos, vel, rh2, stair2, box, counter,
                             event_queue, times, cells, i, transient_bonds,
                             permanent_bonds, update_config, max_nbonds);
   }
@@ -593,7 +606,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
   double x_wall = cells.lcell * ixo;
   // position of bottom cell wall
   double y_wall = cells.lcell * iyo;
-  // position of in cell wall
+  // position of back cell wall
   double z_wall = cells.lcell * izo;
 
   double dx = x_wall - xi;
@@ -603,7 +616,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in x-direction,
   if (vxi > 0) {
-    // calculate the time needed reach the right wall
+    // calculate the time needed to reach the right wall
     double txr = (dx + cells.lcell) / vxi;
 
     // if a cell crossing occurs,
@@ -634,7 +647,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // if the velocity of the bead is positive in y-direction,
   if (vyi > 0) {
-    // calculate the time needed to reach the up wall
+    // calculate the time needed to reach the top wall
     double tyr = (dy + cells.lcell) / vyi;
 
     if (!crossing || tyr < dt) {
@@ -649,7 +662,7 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 
   // else if the velocity of the bead is negative in y-direction,
   else if (vyi < 0) {
-    // calculate the time needed to reach the down wall
+    // calculate the time needed to reach the bottom wall
     double tyl = dy / vyi;
 
     if (!crossing || tyl < dt) {
@@ -700,8 +713,9 @@ bool t_until_cell(double xi, double yi, double zi, const Box &box,
 // which contains the absolute time of the cell crossing, index of cell
 // crossing particle, its current collision counter, indices of the old and new
 // cells, and the cell wall that was crossed
-void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, const Box &box,
-             const std::vector<uint64_t> &counter, EventQueue &event_queue, const std::vector<double> &times,
+void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
+             const Box &box, const std::vector<uint64_t> &counter,
+             EventQueue &event_queue, const std::vector<double> &times,
              unsigned int i, const Cells &cells) {
   double dt;
   BeadCellEvent::Wall wall;
@@ -711,8 +725,9 @@ void if_cell(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, const B
                    vel[i].z, cells.cell_x[i], cells.cell_y[i], cells.cell_z[i],
                    dt, wall, ixn, iyn, izn)) {
     BeadCellEvent ev{times[i] + dt, i, counter[i], ixn, iyn, izn, wall};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -740,9 +755,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
       ixn + iyn * cells.ncell + izn * cells.ncell * cells.ncell;
   assert(new_cell < cells.cells.size());
 
-  LOG_DEBUG("move particle " << i << " from " << cells.cell_x[i] << ", "
-                             << cells.cell_y[i] << ", " << cells.cell_z[i]
-                             << " to " << ixn << ", " << iyn << ", " << izn);
+  LOG_DEBUG("move particle " << i << " from " << cells.cell_x[i] << ", " << cells.cell_y[i] << ", " << cells.cell_z[i] << " to " << ixn << ", " << iyn << ", " << izn);
   auto ind =
       std::find(cells.cells[old_cell].begin(), cells.cells[old_cell].end(), i);
   assert(ind != cells.cells[old_cell].end());
@@ -763,8 +776,7 @@ void move_to_new_cell(Cells &cells, unsigned int i, unsigned int ixn,
 // particle which recently crossed into a new cell
 void add_events_for_bead_after_crossing(
     const std::vector<Vec3> &pos, const std::vector<Vec3> &vel, double rh2,
-    std::optional<double> stair2, std::optional<double> p_rc2,
-    const Box &box, const std::vector<uint64_t> &counter,
+    std::optional<double> stair2, const Box &box, const std::vector<uint64_t> &counter,
     EventQueue &event_queue, const std::vector<double> &times,
     const Cells &cells, unsigned int i, BeadCellEvent::Wall wall,
     const NonlocalBonds &transient_bonds, const NonlocalBonds &permanent_bonds,
@@ -786,7 +798,7 @@ void add_events_for_bead_after_crossing(
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
         // iterate collisions over the cell
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -803,7 +815,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -820,7 +832,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -837,7 +849,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -854,7 +866,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -871,7 +883,7 @@ void add_events_for_bead_after_crossing(
 
         unsigned int icell = icell_x + icell_y * cells.ncell +
                              icell_z * cells.ncell * cells.ncell;
-        iterate_coll(pos, vel, rh2, stair2, p_rc2, box, counter,
+        iterate_coll(pos, vel, rh2, stair2, box, counter,
                      event_queue, times, cells, icell, i, transient_bonds,
                      permanent_bonds, update_config, max_nbonds);
       }
@@ -895,13 +907,15 @@ void if_nearest_bond(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
 
   if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, near_min2, t)) {
     MinNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   } else {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, near_max2, t);
     MaxNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -936,13 +950,15 @@ void if_nnearest_bond(const std::vector<Vec3> &pos,
 
   if (t_until_inner_coll(dx, dy, dz, dvx, dvy, dvz, nnear_min2, t)) {
     MinNNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   } else {
     t_until_outer_coll(dx, dy, dz, dvx, dvy, dvz, nnear_max2, t);
     MaxNNearestEvent ev{t, i, j, counter[i], counter[j]};
-    LOG_DEBUG("queueing " << ev);
-    event_queue.emplace(ev);
+    if (ev.t < max_time) {
+      LOG_DEBUG("queueing " << ev);
+      event_queue.emplace(ev);}
   }
 }
 
@@ -1019,8 +1035,7 @@ bool check_bond(const double min_dist2, const double max_dist2, double dx,
   double dist2 = dx * dx + dy * dy + dz * dz;
   // ! accounts for comparison with NaN values
   if (!(dist2 > min_dist2_tol && dist2 < max_dist2_tol)) {
-    LOG_DEBUG("check bond distance " << std::setprecision(15)
-                                     << std::sqrt(dist2));
+    LOG_DEBUG("check bond distance " << std::setprecision(15) << std::sqrt(dist2));
     return false;
   }
 
@@ -1051,8 +1066,7 @@ bool check_local_dist(const std::vector<Vec3> &pos_trial, const Box &box,
     box.mindist(dx, dy, dz);
 
     if (!check_bond(nnear_min2, nnear_max2, dx, dy, dz)) {
-      LOG_DEBUG("next-nearest neighbors " << i << " and " << i + 2
-                                          << " overlap");
+      LOG_DEBUG("next-nearest neighbors " << i << " and " << i + 2 << " overlap");
       return false;
     }
   }
@@ -1135,6 +1149,8 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
                    UpdateConfig &update_config, CountBond &) {
   const unsigned int nbeads = sys.pos.size();
 
+  // if the actual (counter[ev.i, j]) and predicted (ni, nj) collision counters
+  // of the colliding beads match,
   if (sys.counter[ev.i] != ev.ni || sys.counter[ev.j] != ev.nj)
     return false;
 
@@ -1185,11 +1201,11 @@ bool process_event(const MinNearestEvent &ev, System &sys, const Param &p,
   // fill priority queue with collisions of all particle pairs involving a
   // recently-collided particle (executed many times to update the priority
   // queue and remove invalid entries)
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1252,11 +1268,11 @@ bool process_event(const MaxNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1315,11 +1331,11 @@ bool process_event(const MinNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1378,11 +1394,11 @@ bool process_event(const MaxNNearestEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1449,11 +1465,11 @@ bool process_event(const MinNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1484,20 +1500,14 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
   assert(check_overlap(ev.i, sys.pos, sys.vel, sys.times, p.rh2, box));
   assert(check_overlap(ev.j, sys.pos, sys.vel, sys.times, p.rh2, box));
 
-  //const Config t_bond_mask = p.transient_bonds.get_bond_mask(ev.i, ev.j);
-  //const Config p_bond_mask = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
-
-
   const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(ev.i, ev.j);
   const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
-  const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
+  //const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
   const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
-  const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+  //const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-  //const double rc2 = std::get<1>(bond_mask_tuple);
-
-  const double rc2 = get_rc2_inner(std::get<1>(bond_mask_tuple), p.p_rc2, p_bond_mask);
+  const double rc2 = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
   double dS = s_of_inner_event(sys.s_bias, update_config, t_bond_mask);
 
   // flip bit to form bond
@@ -1508,7 +1518,7 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is formed " << update_config.config);
 
     count_bond.formed++;
-      LOG_DEBUG("number of times bond formed = " << count_bond.formed);
+    LOG_DEBUG("number of times bond formed = " << count_bond.formed);
   }
 
   if (ev.i > 1) {
@@ -1545,11 +1555,11 @@ bool process_event(const MaxNonlocalInnerEvent &ev, System &sys, const Param &p,
                      ev.j, ev.j + 2, p.nnear_min2, p.nnear_max2);
   }
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1585,14 +1595,14 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
 
     const std::tuple<Config, double> t_bond_mask_tuple = p.transient_bonds.get_bond_mask(ev.i, ev.j);
     const std::tuple<Config, double> p_bond_mask_tuple = p.permanent_bonds.get_bond_mask(ev.i, ev.j);
+    const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
 
     const Config t_bond_mask = std::get<0>(t_bond_mask_tuple);
-    const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
+    //const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
-
-    const std::tuple<Config, double> bond_mask_tuple = p.nonlocal_bonds.get_bond_mask(ev.i, ev.j);
-    //const double rc2 = std::get<1>(bond_mask_tuple);
-    const double rc2 = get_rc2_outer(std::get<1>(bond_mask_tuple), p.stair2, p.p_rc2, t_bond_mask, p_bond_mask, update_config);
+    double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
+    if (!rc2_inner) {rc2_inner = std::get<1>(bond_mask_tuple);}
+    double rc2 = get_rc2_outer(rc2_inner, t_bond_mask, p.stair2, update_config);
 
   std::optional<double> dS;
   // if i, j belong to set of transient bonds,
@@ -1608,7 +1618,7 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
     LOG_DEBUG("bond is broken " << update_config.config);
 
     count_bond.broken++;
-      LOG_DEBUG("number of times bond broken = " << count_bond.broken);
+    LOG_DEBUG("number of times bond broken = " << count_bond.broken);
   }
 
   if (ev.i > 1) {
@@ -1646,11 +1656,11 @@ bool process_event(const MaxNonlocalOuterEvent &ev, System &sys, const Param &p,
   }
 
 
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.i,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
-  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2,
+  add_events_for_one_bead(sys.pos, sys.vel, p.rh2, p.stair2,
                           box, sys.counter, event_queue, sys.times, cells, ev.j,
                           p.transient_bonds, p.permanent_bonds, update_config,
                           p.max_nbonds);
@@ -1679,7 +1689,7 @@ bool process_event(const BeadCellEvent &ev, System &sys, const Param &p,
   //const double rc2 = std::get<1>(bond_mask_tuple);
 
   add_events_for_bead_after_crossing(
-      sys.pos, sys.vel, p.rh2, p.stair2, p.p_rc2, box, sys.counter,
+      sys.pos, sys.vel, p.rh2, p.stair2, box, sys.counter,
       event_queue, sys.times, cells, ev.i, ev.wall, p.transient_bonds,
       p.permanent_bonds, update_config, p.max_nbonds);
 

@@ -2,7 +2,7 @@
 # Copyright (c) 2018-2022 Margarita Colberg
 # SPDX-License-Identifier: BSD-3-Clause
 #
-# diff_s_bias_stair.py determines the entropy difference for each transition
+# diff_s_bias.py determines the entropy difference for each transition
 # whose initial and final states differ by one bond; for cases where the
 # transition has a staircase potential, the entropy for each step of the
 # staircase is placed into a list, from which the overall entropy of the
@@ -16,15 +16,16 @@ import re
 from itertools import combinations
 
 
-def main():
+def get_diff_sbias(out_csv='diff_s_bias.csv'):
     src = 'hybridmc_*.h5'
 
     bits = []
     s_bias = []
     duplicate_s_bias = {}
+
     for file_path in glob.glob(src):
         match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]+))?\.h5$',
-                file_path)
+                          file_path)
         bits_in = match.group('bits_in')
         bits_out = match.group('bits_out')
 
@@ -38,7 +39,7 @@ def main():
                 # same set of bits associated with it, hence why it is
                 # 'duplicate')
                 duplicate_s_bias.setdefault((bits_in, bits_out),
-                        []).append(get_s_bias)
+                                            []).append(get_s_bias)
 
         if (bits_in, bits_out) not in bits:
             bits.append((bits_in, bits_out))
@@ -61,10 +62,14 @@ def main():
     for i in range(len(bits)):
         output.append([bits[i][0], bits[i][1], s_bias[i]])
 
-    with open('diff_s_bias.csv', 'w') as output_csv:
+    with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
+        output.sort()  # sort the list by the bits in column
         writer.writerows(output)
 
 
 if __name__ == '__main__':
-    main()
+    import os
+
+    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
+    get_diff_sbias(out_csv='diff_s_bias_sort.csv')

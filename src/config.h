@@ -19,10 +19,6 @@
 using Config = uint64_t;
 using ConfigInt = std::vector<uint64_t>;
 
-// TODO: has to change to account for rc in k index
-
-// TODO: when reading in the pairs, store rc squared rather than rc
-
 class NonlocalBonds {
 public:
   using Pairs = std::vector<std::tuple<unsigned int, unsigned int, double>>;
@@ -35,6 +31,9 @@ public:
 
   // obtain the bond_index'th bond in the master bonds list
   std::tuple<unsigned int, unsigned int, double> getBond(unsigned int bond_index) const;
+
+  // get rc of bond index'th rc
+  double getrc(unsigned int bond_index) const;
 
   // bond mask is obtained -- a configuration and the rc value packaged in a tuple
   std::tuple<Config, double> get_bond_mask(unsigned int i, unsigned int j) const;
