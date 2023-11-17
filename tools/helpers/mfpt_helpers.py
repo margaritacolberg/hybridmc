@@ -1,15 +1,14 @@
 import csv
 import json
-
 import h5py
 import nlopt
 import numpy as np
 from scipy import sparse, interpolate, integrate
 from scipy.special import kolmogorov
 from sklearn import utils
-
-from hybridmc_marga.tools.mfpt import spline, minimize_f, integrate_spline, fpt
-from ..post_processing import minimize
+from sys import path
+path.append('../')
+from post_processing import minimize, matrix_element
 
 
 def fpt_write(json_in, hdf5_in, nboot, csv_out, layers):
@@ -415,3 +414,44 @@ def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
     print(' Converged for q = ', q, ' for nknots = ', nknots - 1)
 
     return fpt(x, y, beta, min_dist, max_dist, state)
+
+
+def if_stair(file_path, files):
+    """
+    Funtion to check if the file_path ahs associated staircased steps simulations results. If yes, then the paths of these
+    intermediate steps' csv files with their mfpt information are compiled into a list and returned.
+
+    :param file_path: the final step mfpt csv file path
+    :param files: the list of files in this directory
+    :return: list containing all the intermediate staircase mfpt csv files
+    """
+
+    # initialize output list merging all intermediate stair mfpt csv paths
+    merge_paths = []
+    # get the reference simulation id tag
+    ref_sim_id = file_path.rstrip('.csv')
+
+    # loop through csv files in directory
+    for file in files:
+        if file.endswith('.csv'):
+            # obtain simulation tag for this file
+            sim_id = file.rstrip('.csv')
+            # if the reference tag and this are the same then add the filepath to the output list
+            if ref_sim_id.split('_') == sim_id.split('_')[:-1]:
+                merge_paths.append(file)
+
+    return merge_paths
+
+
+def compile_outer_fpt(stair_paths, t_ind):
+    """
+    Function to compile all the staircase outer fpts to one number that is returned
+    :param stair_paths: list containing all the intermediate staircase mfpt csv files
+    :param t_ind: the transient bond index for this simulation
+    :return: the compiled outer_fpt value
+    """
+    outer_fpt = 0
+    for file_path in stair_paths:
+        outer_fpt += matrix_element.get_fpt(file_path, t_ind)[1]
+
+    return outer_fpt

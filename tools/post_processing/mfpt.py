@@ -18,29 +18,11 @@ import csv
 import os
 import re
 import glob
-import matrix_element
+from . import matrix_element
 import multiprocessing
-from ..helpers.mfpt_helpers import fpt_write
-
-
-def process_mfpts():
-    output = []
-    for file_path in os.listdir('.'):
-        if re.search('hybridmc_[0-9]+_([01]+)_([01]+).csv', file_path):
-            bits_i, bits_j, t_ind, int_i, int_j = matrix_element.get_state_data(file_path)
-            inner_fpt, outer_fpt = matrix_element.get_fpt(file_path, t_ind)
-            layer = str(bits_i).count('1')
-            output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
-
-    output.sort(key=lambda x: x[2])
-    csv_out = 'mfpt.csv'
-
-    output.insert(0, ['state i bits', 'state j bits', 'layer', 'inner fpt',
-                      'outer fpt'])
-
-    with open(csv_out, 'w') as output_csv:
-        writer = csv.writer(output_csv)
-        writer.writerows(output)
+from sys import path
+path.append('..')
+from helpers.mfpt_helpers import fpt_write, if_stair, compile_outer_fpt
 
 
 def get_mfpt():
@@ -61,3 +43,39 @@ def get_mfpt():
 
     with multiprocessing.Pool() as pool:
         pool.starmap(fpt_write, names)
+
+
+def compile_mfpts():
+    """
+    Function to compile all the mfpt csv files in the current directory into one csv file
+
+    Returns
+    -------
+    None, but writes a csv file with the compiled mfpt data
+
+    """
+    output = []
+    files = os.listdir()
+    for file_path in files:
+
+        if re.search('hybridmc_[0-9]+_([01]+)_([01]+).csv', file_path):
+
+            bits_i, bits_j, t_ind, _, _ = matrix_element.get_state_data(file_path)
+            inner_fpt, outer_fpt = matrix_element.get_fpt(file_path, t_ind)
+            layer = file_path.split('_')[1]
+
+            stair_paths = if_stair(file_path, files)
+            if stair_paths:
+                outer_fpt += compile_outer_fpt(stair_paths, t_ind)
+
+            output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
+
+    output.sort(key=lambda x: x[2])
+    csv_out = 'mfpt.csv'
+
+    output.insert(0, ['state i bits', 'state j bits', 'layer', 'inner fpt',
+                      'outer fpt'])
+
+    with open(csv_out, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)

@@ -33,10 +33,9 @@ def main(args):
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
 
     # Change directory name to suit the new temp working directory.
-    # If ../ is featured in the path, consider it a relative path and add ../ to the path to indicate its use from a
-    # directory one more level down.
-    # Else consider it an absolute path and use it as is
-    (args.json, args.exe) = ("../" + path if path.startswith("../") else path for path in (args.json, args.exe))
+    # add ../ to the path to indicate its use from a directory one more level down.
+    (args.json, args.exe) = ("../" + path for path in (args.json, args.exe))
+
     # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
 
@@ -67,7 +66,7 @@ def main(args):
     mfpt.get_mfpt()
 
     # put together the mfpts in one file
-    mfpt.process_mfpts()
+    mfpt.compile_mfpts()
 
     # Move up from the directory with simulation results
     os.chdir("../")
@@ -79,7 +78,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', help='master json input file', default='test_st.json')
-    parser.add_argument('--exe', help='hybridmc executable', defaul="../../release/hybridmc")
+    parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default='old')
 
