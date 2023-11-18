@@ -46,7 +46,7 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     with h5py.File(hdf5_in, 'r') as f:
         dist = f['dist'][:]
 
-    print('number of distances =', len(dist))
+    #print('number of distances =', len(dist))
 
     dist = dist.T
     nbonds = len(nl_bonds)
@@ -411,7 +411,7 @@ def fpt_per_bead_pair(dist_vec, nknots, beta, min_dist, max_dist, state):
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
         nknots = nknots + 1
 
-    print(' Converged for q = ', q, ' for nknots = ', nknots - 1)
+    print(f' Converged for q = {q} for nknots = {nknots} - 1 with {len(dist_vec)} distances')
 
     return fpt(x, y, beta, min_dist, max_dist, state)
 

@@ -41,7 +41,7 @@ def run_sim(data, input_hdf5, output_name, exe):
     if input_hdf5 is not None:
         command += ['--input-file', input_hdf5]
 
-    print(command)
+    print([os.path.relpath(el) for el in command])
     sys.stdout.flush()
 
     log_name = '{}.log'.format(output_name)
@@ -99,6 +99,10 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         # update the input hdf5 file for the next step
         input_hdf5 = f'{stair_output_name}.h5'
 
-    print(f"Finished staircase run for {common_data['transient_bonds']}")
+
+    # find what configurational change is happening for this simulation
+    config_in, config_out = output_name.split('_')[-2], output_name.split('_')[-1]
+
+    print(f"Finished staircase run for {common_data['transient_bonds']} for transition {config_in} to {config_out}")
 
     return

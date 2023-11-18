@@ -100,9 +100,9 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     //sort distance vector
     std::sort(distance_values.begin(), distance_values.end());
 
-    std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
-    std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
-    std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
+    //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+//    std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
+//    std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
 
     // create return vector
     std::vector<double> return_info;

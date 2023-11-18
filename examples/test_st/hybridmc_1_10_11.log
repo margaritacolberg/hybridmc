@@ -1,7 +1,7 @@
-git commit c53025a95d48c7bc252c55ccf06027ef882611ce-DIRTY
-entropy of 0 is 2.96976 with count 185
-entropy of 1 is 0 with count 215
-ACCEPTED: g_val 2.25211, g_crit 3.84146, p_val 0.133432
+git commit 8a1342ecd7c9d839ee044bcdc417ee6a01c7fd94-DIRTY
+entropy of 0 is 3.04654 with count 388
+entropy of 1 is 0 with count 412
+ACCEPTED: g_val 0.720108, g_crit 3.84146, p_val 0.396108
 Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
- In iteration 0 fail_counter = 0 stateCount = 400 flips = 2406 flip rate = 6.015 must be greater than 1 done_flip = 1 done_g = 1
-The size of dist is 6000
+ In iteration 0 fail_counter = 0 stateCount = 800 flips = 4672 flip rate = 5.84 must be greater than 1 done_flip = 1 done_g = 1
+The size of dist is 11200

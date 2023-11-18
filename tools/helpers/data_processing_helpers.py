@@ -103,7 +103,10 @@ def stair_check(data, output_name, input_hdf5):
     """
 
     hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
-    print(f"Running Wang-Landau process for {json_name} to check if staircase potential needed")
+    print(f"Running Wang-Landau process for {os.path.relpath(json_name)} to check if staircase potential needed")
+
+    # find what configurational change is happening for this simulation
+    config_in, config_out = json_name.strip('.json').split('_')[-2], json_name.strip('.json').split('_')[-1]
 
     # Create json input for the wang_landau run
     with open(json_name, 'w') as output_json:
@@ -120,7 +123,7 @@ def stair_check(data, output_name, input_hdf5):
     # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
     if sbias > data['WL_sbias']:
         stair_bp = data['transient_bonds']
-        print(f"Do Staircase on {stair_bp}")
+        print(f"Do Staircase on {stair_bp} because sbias is {sbias} for transition {config_in} to {config_out}")
         # Process rc values for staircase from prior WL run; ensure values are in descending order
         stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
 

@@ -73,6 +73,11 @@ To compile HybridMC for running simulations:
 ```
 make release
 ```
+To then install the wang landau plugin for python, go to the main hybridmc directory and run
+
+```
+pip install .
+```
 
 ## Python Program Details
 

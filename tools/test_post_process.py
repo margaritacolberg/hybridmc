@@ -10,9 +10,9 @@ def main(args):
     # Obtain the average sbias for each bonding state
     #avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
     # Obtain the mfpt for each bonding state
-    #mfpt.get_mfpt()
+    mfpt.get_mfpt()
     # put together the mfpts in one file
-    mfpt.compile_mfpts()
+    #mfpt.compile_mfpts()
 
 
 if __name__ == "__main__":
