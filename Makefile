@@ -12,6 +12,7 @@ debug: LDFLAGS += -fsanitize=address
 release debug:
 	rm -rf $@
 	cmake -S . -B $@ -G Ninja -DCMAKE_BUILD_TYPE=$(CONFIG)
+
 	cmake --build $@
 
 clean:
