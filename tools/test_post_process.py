@@ -12,7 +12,7 @@ def main(args):
     # Obtain the mfpt for each bonding state
     mfpt.get_mfpt()
     # put together the mfpts in one file
-    #mfpt.compile_mfpts()
+    mfpt.compile_mfpts()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import csv
 import json
+import os
+
 import h5py
 import nlopt
 import numpy as np
@@ -77,23 +79,73 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     t_on = np.array(t_on)
     t_off = np.array(t_off)
 
-    # inner fpt for transient bond turned on
-    fpt_on = fpt_per_bead_pair(t_on, nknots, rh, rc_transient, True)[0]
+    stair = if_stair(csv_out, os.listdir())
+    if not stair:
+        # inner fpt for transient bond turned on
+        fpt_on = fpt_per_bead_pair(t_on, nknots, rh, rc_transient, True)[0]
+        fpt_off = fpt_per_bead_pair(t_off, nknots, rc_transient, np.max(t_off), False)[0]
 
-    fpt_off = fpt_per_bead_pair(t_off, nknots, rc_transient, np.max(t_off), False)[0]
+        output_i = [t_ind, fpt_on, fpt_off]
 
-    output_i = [t_ind, fpt_on, fpt_off]
+        if run_bootstrap:
+            fpt_on_var = fpt_var(t_on, nknots, rh, rc_transient, True, nboot)
+            fpt_off_var = fpt_var(t_off, nknots, rc_transient, np.max(t_off), False, nboot)
+            output_i += [fpt_on_var, fpt_off_var]
 
-    if run_bootstrap:
-        fpt_on_var = fpt_var(t_on, nknots, rh, rc_transient, True, nboot)
-        fpt_off_var = fpt_var(t_off, nknots, rc_transient, np.max(t_off), False, nboot)
-        output_i += [fpt_on_var, fpt_off_var]
+        output.append(output_i)
 
-    output.append(output_i)
+        with open(csv_out, 'w') as output_csv:
+            writer = csv.writer(output_csv)
+            writer.writerows(output)
 
-    with open(csv_out, 'w') as output_csv:
-        writer = csv.writer(output_csv)
-        writer.writerows(output)
+    else:
+
+        xknots_total = []
+        yknots_total = []
+
+        for j in range(len(stair_rc_list)):
+
+            if j > 0:
+                data['stair'] = stair_rc_list[j - 1]
+
+            # So long as the rc is not at the target we append the intermediate rc to the output name
+            if stair_rc_list[j] != stair_rc_list[-1]:
+                stair_output_name = f'{output_name}_{stair_rc_list[j]}'
+            else:
+                stair_output_name = output_name
+
+            input_hdf5 = f'{stair_output_name}.h5'
+            json_name = f'{stair_output_name}.json'
+
+            if j == 0:
+                rc_max = -1.
+            else:
+                rc_max = stair_rc_list[j-1]
+
+            nknots, x_knot, y_knot = knots_wrap(json_name, input_hdf5,rc_max)
+
+            if j == 0:
+                xknots_total = x_knot.copy()
+                yknots_total = y_knot.copy()
+            else:
+                # exclude last x_knot, y_knot
+                l = len(x_knot)
+                last_y = yknots_total[0]
+                for i in range(l-2,-1,-1):
+                    xknots_total = np.insert(xknots_total, 0, x_knot[i])
+                    yknots_total = np.insert(yknots_total, 0, y_knot[i] + last_y)
+
+        t_ind, inner_fpt = inner_stair_fpt(json_name, input_hdf5)
+        outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
+
+        output = []
+        output.append([t_ind, inner_fpt,outer_fpt])
+        csv_name = f'{output_name}.csv'
+        with open(csv_name, 'w') as output_csv:
+            writer = csv.writer(output_csv)
+            writer.writerows(output)
+
+
 
 
 def A_matrix(x):
@@ -392,7 +444,7 @@ def KStest(x_knot, y_knot, dist_vec, norm):
     return q, maxDev, devX
 
 def find_knots(dist_vec, min_dist, max_dist):
-    print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
+    #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
     #print('dist_vec is ', dist_vec)
 
@@ -405,7 +457,7 @@ def find_knots(dist_vec, min_dist, max_dist):
         y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
-        print('q is ', q, ' for nknots = ', nknots)
+        #print('q is ', q, ' for nknots = ', nknots)
  
     # make last index zero
     y = [x - y[-1] for x in y]

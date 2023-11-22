@@ -97,7 +97,6 @@ def inner_stair_fpt(json_in,hdf5_in):
 
 
 def knots_wrap(json_in, hdf5_in, rc_max):
-    print('input json:', json_in)
     with open(json_in, 'r') as input_json:
         data = json.load(input_json)
 
@@ -111,7 +110,6 @@ def knots_wrap(json_in, hdf5_in, rc_max):
 
     # get index of the transient bond in the list of nonlocal bonds
     t_ind = nl_bonds.index(t_bonds[0])
-    print(' transient bond index i ', t_ind)
 
     if p_bonds:
         p_ind = [i for i, bond in enumerate(nl_bonds) for j in
@@ -119,19 +117,15 @@ def knots_wrap(json_in, hdf5_in, rc_max):
     else:
         p_ind = []
 
-    print(' Input hdf5 file is ', hdf5_in)
     with h5py.File(hdf5_in, 'r') as f:
         dist = f['dist'][:]
 
-    print('number of distances =', len(dist))
 
     dist = dist.T
     nbonds = len(nl_bonds)
 
     t_on = []
     t_off = []
-
-    print('length of input is ', len(dist[t_ind]))
 
     for j in range(len(dist[t_ind])):
         if dist[t_ind][j] < rc_transient:
@@ -141,15 +135,10 @@ def knots_wrap(json_in, hdf5_in, rc_max):
 
     t_off = np.array(t_off)
 
-    #print('from file ', hdf5_in, ' dist array is ', dist[t_ind])
     if rc_max == -1.:
         rc_max = np.max(t_off)
 
-    print('Will find knots between ', rc_transient, ' and ', rc_max)
     return find_knots(t_off, rc_transient, rc_max)
-
-
-
 
 
 def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
@@ -197,7 +186,6 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
 
         # run the simulation for this staircase step
         run_sim(data, input_hdf5, stair_output_name, exe)
-        print('Done local staircase with rc = ', stair_rc_list[j])
         input_hdf5 = f'{stair_output_name}.h5'
 
 
@@ -217,18 +205,12 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         input_hdf5 = f'{stair_output_name}.h5'
         json_name = f'{stair_output_name}.json'
 
-        print(' json file is ', json_name)
-        print('hdf5 file is ', input_hdf5)
-
         if j == 0:
             rc_max = -1.
         else:
             rc_max = stair_rc_list[j-1]
 
         nknots, x_knot, y_knot = knots_wrap(json_name, input_hdf5,rc_max) 
-
-        print('Before processing, x_knot = ', x_knot)
-        print('  and y_knot = ', y_knot)
 
         if j == 0:
             xknots_total = x_knot.copy()
@@ -241,18 +223,8 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
                 xknots_total = np.insert(xknots_total, 0, x_knot[i])
                 yknots_total = np.insert(yknots_total, 0, y_knot[i] + last_y)
 
-            print('After insertion, xknots_total is ', xknots_total)
-            print('After insertion, yknots_total is ', yknots_total)
-
-
-    print(f"Finished staircase run for {common_data['transient_bonds']}")
-    print('Final x_knots are: ', xknots_total)
-    print('Final y_knots are: ', yknots_total)
-
     t_ind, inner_fpt = inner_stair_fpt(json_name, input_hdf5) 
-    print('Computed inner fpt of ', inner_fpt)
     outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
-    print('Computed outer fpt of ', outer_fpt, ' from [', xknots_total[0], ',', xknots_total[-1],"].")
 
     output = []
     output.append([t_ind, inner_fpt,outer_fpt])

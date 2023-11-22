@@ -1,7 +1,22 @@
-git commit 8a1342ecd7c9d839ee044bcdc417ee6a01c7fd94-DIRTY
-entropy of 0 is 3.04654 with count 388
-entropy of 1 is 0 with count 412
-ACCEPTED: g_val 0.720108, g_crit 3.84146, p_val 0.396108
-Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
- In iteration 0 fail_counter = 0 stateCount = 800 flips = 4672 flip rate = 5.84 must be greater than 1 done_flip = 1 done_g = 1
-The size of dist is 11200
+git commit 373e83348c1f6c1e8e840abf928197840ccecebd-DIRTY
+entropy of 0 is 2.52727 with count 357
+entropy of 1 is 0 with count 443
+REJECTED: g_val 9.26289, g_crit 3.84146, p_val 0.00233844
+Working on output_file: /nfs/cptg/u4/jmschofi/students/vignesh/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
+ In iteration 0 fail_counter = 0 stateCount = 800 flips = 7293 flip rate = 9.11625 must be greater than 1 done_flip = 1 done_g = 0
+entropy of 0 is 2.42694 with count 360
+entropy of 1 is 0 with count 440
+REJECTED: g_val 8.01339, g_crit 3.84146, p_val 0.00464328
+Working on output_file: /nfs/cptg/u4/jmschofi/students/vignesh/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
+ In iteration 1 fail_counter = 0 stateCount = 800 flips = 7564 flip rate = 9.455 must be greater than 1 done_flip = 1 done_g = 0
+entropy of 0 is 2.33669 with count 364
+entropy of 1 is 0 with count 436
+REJECTED: g_val 6.48878, g_crit 3.84146, p_val 0.0108558
+Working on output_file: /nfs/cptg/u4/jmschofi/students/vignesh/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
+ In iteration 2 fail_counter = 0 stateCount = 800 flips = 8333 flip rate = 10.4162 must be greater than 1 done_flip = 1 done_g = 0
+entropy of 0 is 2.38172 with count 418
+entropy of 1 is 0 with count 382
+ACCEPTED: g_val 1.62055, g_crit 3.84146, p_val 0.203016
+Working on output_file: /nfs/cptg/u4/jmschofi/students/vignesh/hybridmc/examples/test_st.tmp/hybridmc_1_10_11.h5
+ In iteration 3 fail_counter = 0 stateCount = 800 flips = 8521 flip rate = 10.6512 must be greater than 1 done_flip = 1 done_g = 1
+The size of dist is 30400
