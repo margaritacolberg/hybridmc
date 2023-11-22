@@ -11,6 +11,7 @@ project(hybridmc LANGUAGES CXX)
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options unit_test_framework)
 find_package(HDF5 REQUIRED COMPONENTS CXX)
+find_package(pybind11 REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GetGitRevisionDescription)
