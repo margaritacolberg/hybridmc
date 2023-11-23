@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--json', help='master json input file', default='test_st_morestair.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
-                        default='old')
+                        default='old_2')
 
     args = parser.parse_args()
 

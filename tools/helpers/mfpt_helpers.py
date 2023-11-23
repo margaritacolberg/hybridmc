@@ -13,11 +13,12 @@ from sys import path
 path.append('../')
 from post_processing import minimize, matrix_element
 
+tol, rtol, maxiter = 1e-3, 1e-3, 100
 
 def fpt_write(name):
     # case 1: if name is for an intermediate simulation do nothing
     if len(name.split('_')) == 5:
-        print(f"Skipping {name}: it is an intermediate simulation")
+#        print(f"Skipping {name}: it is an intermediate simulation")
         return
 
     else:
@@ -291,8 +292,7 @@ def integrate_spline(x_knot, y_knot):
     f = lambda x: np.exp(-spline(x_knot, y_knot, x))
 
     for i in range(len(x_knot) - 1):
-        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=1e-6,
-                                           rtol=1e-6)[0])
+        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=tol, rtol=rtol, maxiter=maxiter)[0])
 
     return sum(output)
 
@@ -377,8 +377,7 @@ def integrate_dspline(x_knot, y_knot, ind):
     f = lambda x: -dspline(x_knot, x, ind) * np.exp(-spline(x_knot, y_knot, x))
 
     for i in range(len(x_knot) - 1):
-        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=1e-6,
-                                           rtol=1e-6)[0])
+        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=tol, rtol=rtol, maxiter=maxiter)[0])
 
     return sum(output)
 
@@ -472,7 +471,7 @@ def cdf_at_x(x_knot, y_knot, x, norm, cdf_base):
 
     pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
 
-    pdf_integral = integrate.quadrature(pdf_func, x_knot[x_nearest_idx], x)[0]
+    pdf_integral = integrate.quadrature(pdf_func, x_knot[x_nearest_idx], x, tol=tol, rtol=rtol, maxiter=maxiter)[0]
 
     return cdf_base[x_nearest_idx] + pdf_integral
 
@@ -491,7 +490,7 @@ def fpt_integrand(x_knot, y_knot, x, state, norm):
     # iterate through all the x knot values
     for i, el in enumerate(x_knot):
         # evaluate the integral from the first knot to the current knot of pdf_func
-        res = integrate.quadrature(pdf_func, x_knot[0], el)[0]
+        res = integrate.quadrature(pdf_func, x_knot[0], el, tol=tol, rtol=rtol, maxiter=maxiter)[0]
         # print(f"The integral from {xknots[0]} to {el} is: {res}")
         # append this integral to the database
         cdf_base.append(res)
@@ -515,7 +514,7 @@ def fpt_integrand(x_knot, y_knot, x, state, norm):
 def fpt(x_knot, y_knot, xmin, xmax, state):
     f = lambda x: fpt_integrand(x_knot, y_knot, x, state, norm)
     norm = integrate_spline(x_knot, y_knot)
-    return integrate.quadrature(f, xmin, xmax)
+    return integrate.quadrature(f, xmin, xmax, tol=tol, rtol=rtol, maxiter=maxiter)
 
 
 def fpt_per_bead_pair_old(dist_vec, nknots, min_dist, max_dist, state):
@@ -557,7 +556,7 @@ def KStest(x_knot, y_knot, dist_vec, norm):
 
     cdf_prev = 0.
     for i in range(npoints - 1):
-        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=1e-6, rtol=1e-6)[0] / norm
+        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=tol, rtol=rtol, maxiter=maxiter)[0] / norm
         cdf_i = cdf_prev + integral_val
         cdf.append(cdf_i)
         cdf_prev = cdf_i
