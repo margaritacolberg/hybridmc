@@ -25,24 +25,26 @@ path.append('..')
 from helpers.mfpt_helpers import fpt_write, if_stair, compile_outer_fpt
 
 
-def get_mfpt():
+def get_mfpt(rewrite=False):
+
+    # iterate over all json files in the current directory
     src = '*.json'
     names = []
     for file_path in glob.glob(src):
         file_name = os.path.basename(file_path)
         name = os.path.splitext(file_name)[0]
 
-        json_in = name + '.json'
-        hdf5_in = name + '.h5'
-        csv_out = name + '.csv'
-
-        if os.path.exists(csv_out):
+        if os.path.exists(f"{name}.csv") and not rewrite:
             continue
 
-        names.append((json_in, hdf5_in, 0, csv_out, False))
+        names.append(name)
 
+    # write the mfpt for each json file found in parallel
     with multiprocessing.Pool() as pool:
-        pool.starmap(fpt_write, names)
+       pool.map(fpt_write, names)
+
+    # for name in names:
+    #     fpt_write(name)
 
 
 def compile_mfpts():
@@ -63,11 +65,6 @@ def compile_mfpts():
             bits_i, bits_j, t_ind, _, _ = matrix_element.get_state_data(file_path)
             inner_fpt, outer_fpt = matrix_element.get_fpt(file_path, t_ind)
             layer = file_path.split('_')[1]
-
-            stair_paths = if_stair(file_path, files)
-            if stair_paths:
-                outer_fpt += compile_outer_fpt(stair_paths, t_ind)
-
             output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
 
     output.sort(key=lambda x: x[2])

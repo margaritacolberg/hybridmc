@@ -9,25 +9,61 @@ from scipy import sparse, interpolate, integrate
 from scipy.special import kolmogorov
 from sklearn import utils
 from sys import path
+
 path.append('../')
 from post_processing import minimize, matrix_element
 
 
-def fpt_write(json_in, hdf5_in, nboot, csv_out, layers):
-    try:
-        fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers)
-    except:
-        print(json_in, 'FAILED')
-        raise
+def fpt_write(name):
+    # case 1: if name is for an intermediate simulation do nothing
+    if len(name.split('_')) == 5:
+        print(f"Skipping {name}: it is an intermediate simulation")
+        return
+
+    else:
+        # if name is for a final simulation, check if there are intermediate simulations
+        stair_rc_list = if_stair(name, os.listdir())
+
+        # case 2: if there are intermediate simulations, run the staircase mfpt
+        if len(stair_rc_list) > 0:
+            fpt_write_wrap_stair(name, stair_rc_list)
+
+        # case 3: if there are no intermediate simulations, run the default mfpt
+        else:
+            fpt_write_wrap_default(name)
 
 
-def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
-    print('input json:', json_in)
-    with open(json_in, 'r') as input_json:
+def get_dists(name, t_ind):
+    """
+    Function to load the distances for the transient bond active now
+    Parameters
+    ----------
+    name: str: the name of the simulation
+    t_ind: int: the index of the transient bond active now
+
+    Returns
+    -------
+    np.array: the distances for the transient bond active now
+    """
+    # load the distances for this simulation
+    with h5py.File(f"{name}.h5", 'r') as f:
+        # load only at most 25000 distances
+        max_dist = min([25000, len(f['dist'])])
+        # initially the shape is (25000, nbonds). each column with dists for a transient bond
+        dist = f['dist'][:max_dist]
+    # get the transpose to make each row the dists for a transient bond
+    dist = dist.T
+    # pick out the distances for the transient bond active now
+    dist_t_active = dist[t_ind]
+    return dist_t_active
+
+
+def fpt_write_wrap_default(name, nboot=0):
+    print('input json:', f"{name}.json")
+    with open(f"{name}.json", 'r') as input_json:
         data = json.load(input_json)
 
     rh = data['rh']
-    nknots = 12
 
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']
@@ -44,108 +80,168 @@ def fpt_write_wrap(json_in, hdf5_in, nboot, csv_out, layers):
     else:
         p_ind = []
 
-    with h5py.File(hdf5_in, 'r') as f:
-        dist = f['dist'][:]
-
-    #print('number of distances =', len(dist))
-
-    dist = dist.T
-    nbonds = len(nl_bonds)
-
     # if running layers for entire folding process, run bootstrap samples for
     # a specific transition to determine variance
-    if layers and nboot > 0:
+    if nboot:
         if t_ind == 1 and len(p_ind) == 1 and p_ind[0] == 0:
             run_bootstrap = True
         else:
             run_bootstrap = False
-    # if running one transition only (ie. for testing),
     else:
-        if not layers and nboot > 0:
-            run_bootstrap = True
-        else:
-            run_bootstrap = False
+        run_bootstrap = False
 
     output = []
+
+    # generate for non staircase simulations, the values of the distances within and outside the rc
     t_on = []
     t_off = []
-    for j in range(len(dist[t_ind])):
 
-        if dist[t_ind][j] < rc_transient:
-            t_on.append(dist[t_ind][j])
+    dist_t_active = get_dists(name, t_ind)
+    for j in range(len(dist_t_active)):
+
+        if dist_t_active[j] < rc_transient:
+            t_on.append(dist_t_active[j])
         else:
-            t_off.append(dist[t_ind][j])
+            t_off.append(dist_t_active[j])
 
     t_on = np.array(t_on)
     t_off = np.array(t_off)
 
-    stair = if_stair(csv_out, os.listdir())
-    if not stair:
-        # inner fpt for transient bond turned on
-        fpt_on = fpt_per_bead_pair(t_on, nknots, rh, rc_transient, True)[0]
-        fpt_off = fpt_per_bead_pair(t_off, nknots, rc_transient, np.max(t_off), False)[0]
+    # inner fpt for transient bond turned on
+    fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)[0]
+    fpt_off = fpt_per_bead_pair(t_off, rc_transient, np.max(t_off), False, name)[0]
 
-        output_i = [t_ind, fpt_on, fpt_off]
+    output_i = [t_ind, fpt_on, fpt_off]
 
-        if run_bootstrap:
-            fpt_on_var = fpt_var(t_on, nknots, rh, rc_transient, True, nboot)
-            fpt_off_var = fpt_var(t_off, nknots, rc_transient, np.max(t_off), False, nboot)
-            output_i += [fpt_on_var, fpt_off_var]
+    if run_bootstrap:
+        fpt_on_var = fpt_var(t_on, rh, rc_transient, True, nboot, name)
+        fpt_off_var = fpt_var(t_off, rc_transient, np.max(t_off), False, nboot, name)
+        output_i += [fpt_on_var, fpt_off_var]
 
-        output.append(output_i)
+    output.append(output_i)
 
-        with open(csv_out, 'w') as output_csv:
-            writer = csv.writer(output_csv)
-            writer.writerows(output)
-
-    else:
-
-        xknots_total = []
-        yknots_total = []
-
-        for j in range(len(stair_rc_list)):
-
-            if j > 0:
-                data['stair'] = stair_rc_list[j - 1]
-
-            # So long as the rc is not at the target we append the intermediate rc to the output name
-            if stair_rc_list[j] != stair_rc_list[-1]:
-                stair_output_name = f'{output_name}_{stair_rc_list[j]}'
-            else:
-                stair_output_name = output_name
-
-            input_hdf5 = f'{stair_output_name}.h5'
-            json_name = f'{stair_output_name}.json'
-
-            if j == 0:
-                rc_max = -1.
-            else:
-                rc_max = stair_rc_list[j-1]
-
-            nknots, x_knot, y_knot = knots_wrap(json_name, input_hdf5,rc_max)
-
-            if j == 0:
-                xknots_total = x_knot.copy()
-                yknots_total = y_knot.copy()
-            else:
-                # exclude last x_knot, y_knot
-                l = len(x_knot)
-                last_y = yknots_total[0]
-                for i in range(l-2,-1,-1):
-                    xknots_total = np.insert(xknots_total, 0, x_knot[i])
-                    yknots_total = np.insert(yknots_total, 0, y_knot[i] + last_y)
-
-        t_ind, inner_fpt = inner_stair_fpt(json_name, input_hdf5)
-        outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
-
-        output = []
-        output.append([t_ind, inner_fpt,outer_fpt])
-        csv_name = f'{output_name}.csv'
-        with open(csv_name, 'w') as output_csv:
-            writer = csv.writer(output_csv)
-            writer.writerows(output)
+    with open(f"{name}.csv", 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)
 
 
+def fpt_write_wrap_stair(name, stair_rc_list):
+    print('input json:', f"{name}.json")
+    with open(f"{name}.json", 'r') as input_json:
+        data = json.load(input_json)
+
+    t_bonds = data['transient_bonds']
+    rc_transient = t_bonds[-1][-1]
+
+    # Append the final step rc value and sort in descending order
+    stair_rc_list.append(rc_transient)
+    stair_rc_list.sort(reverse=1)
+
+    # get knots for the whole rc space to make one smooth spline fit across the outer range encapsulating all the rcs
+    xknots_total = []
+    yknots_total = []
+    for j in range(len(stair_rc_list)):
+
+        # So long as the rc is not at the target we append the intermediate rc to the output name
+        if stair_rc_list[j] != stair_rc_list[-1]:
+            stair_output_name = f'{name}_{stair_rc_list[j]}'
+        else:
+            stair_output_name = name
+
+        # if the rc is the outermost rc (step 1), then the maximum rc can be the larget distance in the data file
+        # indicate this by using -1 as the rc_max
+        if j == 0:
+            rc_max = -1.
+
+        # otherwise, the maximum rc is the rc of the previous step
+        else:
+            rc_max = stair_rc_list[j - 1]
+
+        nknots, xknots, yknots = knots_wrap(stair_output_name, rc_max)
+
+        # if this is the first step, then the knots are the total knots that subsequent knots are added
+        if j == 0:
+            xknots_total = xknots.copy()
+            yknots_total = yknots.copy()
+
+        # otherwise, append the new knots to the total knots to build a smooth spline across the entire rc space
+        else:
+            # In the case of the x knots, simply append the new x knots to the total x knots less the first knot
+            # of the total x knots list (this is repeated exactly in the new x knots list as its last value)
+            xknots_total = np.append(xknots, xknots_total[1:])
+
+            # In the case of the y_knot values:
+            # 1. Do the same as the x knots AND
+            # 2. Shift the new y knots by the first y knot value in the total knots list to avoid a discontinuity
+            # in the spline fit at the junction of the two staircase steps
+            yknots_total = np.append(yknots + yknots_total[0], yknots_total[1:])
+
+    t_ind, inner_fpt = inner_stair_fpt(name)
+    outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
+
+    output = []
+    output.append([t_ind, inner_fpt, outer_fpt])
+    csv_name = f'{name}.csv'
+    with open(csv_name, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)
+
+
+def inner_stair_fpt(name):
+    with open(f"{name}.json", 'r') as input_json:
+        data = json.load(input_json)
+
+    rh = data['rh']
+
+    t_bonds = data['transient_bonds']
+    nl_bonds = data['nonlocal_bonds']
+
+    rc_transient = t_bonds[-1][-1]
+
+    # get index of the transient bond in the list of nonlocal bonds
+    t_ind = nl_bonds.index(t_bonds[0])
+
+    t_on = []
+
+    dist_t_active = get_dists(name, t_ind)
+    for j in range(len(dist_t_active)):
+        if dist_t_active[j] < rc_transient:
+            t_on.append(dist_t_active[j])
+
+    t_on = np.array(t_on)
+    fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)[0]
+    return t_ind, fpt_on
+
+
+def knots_wrap(stair_output_name, rc_max):
+    with open(f"{stair_output_name}.json", 'r') as input_json:
+        data = json.load(input_json)
+
+    t_bonds = data['transient_bonds']
+    nl_bonds = data['nonlocal_bonds']
+
+    rc_transient = t_bonds[-1][-1]
+
+    # get index of the transient bond in the list of nonlocal bonds
+    t_ind = nl_bonds.index(t_bonds[0])
+
+    dist_t_active = get_dists(stair_output_name, t_ind)
+
+    t_on = []
+    t_off = []
+
+    for j in range(len(dist_t_active)):
+        if dist_t_active[j] < rc_transient:
+            t_on.append(dist_t_active[j])
+        else:
+            t_off.append(dist_t_active[j])
+
+    t_off = np.array(t_off)
+
+    if rc_max == -1.:
+        rc_max = np.max(t_off)
+
+    return find_knots(t_off, rc_transient, rc_max)
 
 
 def A_matrix(x):
@@ -319,50 +415,107 @@ def minimize_f(x, x_i, y0):
     return min_f
 
 
-def cdf_at_x(x_knot, y_knot, x, norm):
-    output = []
-    f = lambda t: np.exp(-spline(x_knot, y_knot, t))
+def find_nearest(x_array, x_target):
+    """
+    Find the index of the closest value to x_target in x_array
+    Parameters
+    ----------
+    x_array: np.array
+        The array to search
+    x_target: float
 
-    for i in range(len(x_knot) - 1):
-        if (x_knot[i + 1] < x) and (x_knot[i] < x):
-            output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1],
-                                               tol=1e-6, rtol=1e-6)[0])
-        elif (x_knot[i + 1] > x) and (x_knot[i] < x):
-            output.append(integrate.quadrature(f, x_knot[i], x, tol=1e-6,
-                                               rtol=1e-6)[0])
+    Returns
+    -------
+    int
+        The index of the closest value to x_target in x_array
 
-    return sum(output) / norm
+    Examples
+    --------
+    Case 1: the target is in the array
+    >>> x_array = np.array([ 1.8116996 ,  4.3631407 ,  4.72581521,  7.52534446,  9.78622537,
+       10.18616866, 17.61249568, 20.07059104, 28.46182021, 29.39872047,
+       35.45173343, 36.68139581, 46.64677056, 50.90701571, 56.85342466,
+       62.56567633, 80.93815028, 92.66450544, 99.02348267, 99.96312029])
+    >>> x_target = x_array[6]
+    >>> find_nearest(x_array, x_target)
+    5 # The x target 17.612495684496764 lies between 10.186168658934259 and 17.612495684496764
+
+    Case 2: the target is not in the array
+    >>> x_target = 20.0
+    >>> find_nearest(x_array, x_target)
+    6 # The x target 20.0 lies between 17.612495684496764 and 20.070591035714285
+    """
+    # find the index of the closest value to x_target in x less than x_target
+    x_nearest_idx = np.searchsorted(x_array, x_target, side="left") - 1
+
+    # print(f"The x target {x_target} lies between {x_array[x_nearest_idx]} and {x_array[x_nearest_idx + 1]}")
+    return x_nearest_idx
+
+
+def cdf_at_x(x_knot, y_knot, x, norm, cdf_base):
+    """
+    Function to calculate the cdf at a given x value
+    Parameters
+    ----------
+    x_knot: np.array
+    y_knot: np. Array
+    x: float
+    norm: float
+    cdf_base: np.array
+
+    Returns
+    -------
+    float
+        The cdf at x
+    """
+    x_nearest_idx = find_nearest(x_array=x_knot, x_target=x)
+
+    pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
+
+    pdf_integral = integrate.quadrature(pdf_func, x_knot[x_nearest_idx], x)[0]
+
+    return cdf_base[x_nearest_idx] + pdf_integral
 
 
 def fpt_integrand(x_knot, y_knot, x, state, norm):
     if type(state) != bool:
         raise TypeError('the variable state must be bool')
 
-    f = spline(x_knot, y_knot, x)
+    free_energy = spline(x_knot, y_knot, x)
 
-    pdf = np.exp(-f) / norm
+    pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
+    pdf_val = np.exp(-free_energy) / norm
 
+    # create a database of all the integrals over the knot intervals
+    cdf_base = []
+    # iterate through all the x knot values
+    for i, el in enumerate(x_knot):
+        # evaluate the integral from the first knot to the current knot of pdf_func
+        res = integrate.quadrature(pdf_func, x_knot[0], el)[0]
+        # print(f"The integral from {xknots[0]} to {el} is: {res}")
+        # append this integral to the database
+        cdf_base.append(res)
+
+    # iterate through all the x values and find the cdf at each x value; accumulate the cdf values in a list "cdf"
     cdf = []
     for i in range(len(x)):
-        cdf.append(cdf_at_x(x_knot, y_knot, x[i], norm))
-
+        cdf.append(cdf_at_x(x_knot, y_knot, x[i], norm, cdf_base))
+    # convert the list to a numpy array
     cdf = np.array(cdf)
 
-    integrand = 0.0
     if state is True:
         # fpt is inner
-        integrand = cdf * cdf / pdf
+        integrand = cdf * cdf / pdf_val
     else:
-        integrand = (1.0 - cdf) * (1.0 - cdf) / pdf
+        integrand = (1.0 - cdf) * (1.0 - cdf) / pdf_val
 
     return integrand
 
 
 def fpt(x_knot, y_knot, xmin, xmax, state):
     f = lambda x: fpt_integrand(x_knot, y_knot, x, state, norm)
-    norm = integrate_spline(x_knot, y_knot) 
-    return integrate.quadrature(f, xmin, xmax, tol=1e-6, rtol=1e-6,
-                                maxiter=100)
+    norm = integrate_spline(x_knot, y_knot)
+    return integrate.quadrature(f, xmin, xmax)
 
 
 def fpt_per_bead_pair_old(dist_vec, nknots, min_dist, max_dist, state):
@@ -377,7 +530,7 @@ def fpt_per_bead_pair_old(dist_vec, nknots, min_dist, max_dist, state):
     return fpt(x, y, min_dist, max_dist, state)
 
 
-def fpt_var(dist_vec, nknots, min_dist, max_dist, state, nboot):
+def fpt_var(dist_vec, min_dist, max_dist, state, nboot, name):
     sample_size = int(len(dist_vec) / 2)
 
     boot_fpt = []
@@ -385,8 +538,8 @@ def fpt_var(dist_vec, nknots, min_dist, max_dist, state, nboot):
         print('bootstrap round', i)
         boot_fpt_i = utils.resample(dist_vec, n_samples=sample_size,
                                     random_state=i)
-        boot_fpt.append(fpt_per_bead_pair(boot_fpt_i, nknots, min_dist,
-                                          max_dist, state)[0])
+        boot_fpt.append(fpt_per_bead_pair(boot_fpt_i, min_dist,
+                                          max_dist, state, name)[0])
 
     return np.var(boot_fpt, ddof=1)
 
@@ -438,15 +591,16 @@ def KStest(x_knot, y_knot, dist_vec, norm):
     g = 0.
     # print(' Calculate q value using h = ', h, ' Kn = ', Kn, ' devIndex = ', devIndex)
     maxDev = h
-    #print('q is ', q, ' devIndex is ', devIndex, ' maxDev is ', maxDev, ' num knots is ', x_knot.size)
+    # print('q is ', q, ' devIndex is ', devIndex, ' maxDev is ', maxDev, ' num knots is ', x_knot.size)
     devX = dist_vec[devIndex]
 
     return q, maxDev, devX
 
+
 def find_knots(dist_vec, min_dist, max_dist):
-    #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
+    # print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
-    #print('dist_vec is ', dist_vec)
+    # print('dist_vec is ', dist_vec)
 
     q = 0.
     nknots = 4
@@ -457,13 +611,15 @@ def find_knots(dist_vec, min_dist, max_dist):
         y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
-        #print('q is ', q, ' for nknots = ', nknots)
- 
+        # print('q is ', q, ' for nknots = ', nknots)
+
     # make last index zero
-    y = [x - y[-1] for x in y]
+    y -= y[-1]
+
     return nknots, x, y
 
-def fpt_per_bead_pair(dist_vec, nknots, min_dist, max_dist, state):
+
+def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
     dist_vec.sort()
 
     q = 0
@@ -476,40 +632,38 @@ def fpt_per_bead_pair(dist_vec, nknots, min_dist, max_dist, state):
         y = minimize_f(x, dist_vec, y)
 
         norm = integrate_spline(x, y)
-        #print('norm is ', norm)
+        # print('norm is ', norm)
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
         nknots = nknots + 1
 
-    print('Converged for q = ',q, ' for nknots = ', nknots -1, ' with ', len(dist_vec),' distances')
+    print(f"{struc_id}: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
 
     return fpt(x, y, min_dist, max_dist, state)
 
 
-def if_stair(file_path, files):
+def if_stair(ref_sim_id, files):
     """
     Function to check if the file_path has associated staircased steps simulations results. If yes, then the paths of these
     intermediate steps' csv files with their mfpt information are compiled into a list and returned.
 
-    :param file_path: the final step mfpt csv file path
-    :param files: the list of files in this directory
-    :return: list containing all the intermediate staircase mfpt csv files
+    :param file_path: the final step mfpt simulation id
+    :param files: the list of files in directory of interest
+    :return: list[float] containing all the intermediate staircase rc values if they exist
     """
 
     # initialize output list merging all intermediate stair mfpt csv paths
-    merge_paths = []
-    # get the reference simulation id tag
-    ref_sim_id = file_path.rstrip('.csv')
+    stair_rc_list = []
 
-    # loop through csv files in directory
+    # loop through json files in directory
     for file in files:
-        if file.endswith('.csv'):
+        if file.endswith('.json'):
             # obtain simulation tag for this file
-            sim_id = file.rstrip('.csv')
+            sim_id = file.rstrip('.json')
             # if the reference tag and this are the same then add the filepath to the output list
             if ref_sim_id.split('_') == sim_id.split('_')[:-1]:
-                merge_paths.append(file)
+                stair_rc_list.append(float(sim_id.split("_")[-1]))
 
-    return merge_paths
+    return stair_rc_list
 
 
 def compile_outer_fpt(stair_paths, t_ind):

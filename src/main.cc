@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
     }
 
     int numD = dist_writer.get_size();
-    if (numD < 5000)
+    if (numD < p.req_dists)
     {
 	    std::cout << "  Too few distances recorded for convergence: number is now " << numD << std::endl;
     }

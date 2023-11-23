@@ -1,7 +1,0 @@
-git commit 373e83348c1f6c1e8e840abf928197840ccecebd-DIRTY
-entropy of 0 is 1.25781 with count 386
-entropy of 1 is 0 with count 414
-ACCEPTED: g_val 0.9802, g_crit 3.84146, p_val 0.322149
-Working on output_file: /nfs/cptg/u4/jmschofi/students/vignesh/hybridmc/examples/test_st.tmp/hybridmc_1_01_11.h5
- In iteration 0 fail_counter = 0 stateCount = 800 flips = 26226 flip rate = 32.7825 must be greater than 1 done_flip = 1 done_g = 1
-The size of dist is 11200
