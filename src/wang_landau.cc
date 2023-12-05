@@ -113,8 +113,8 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     // get size of distance value array
     int n_rcs = distance_values.size();
     // want integer index of n_rcs of 0.10 (10%), 0.30 (30%) etc
-    double rc_middle = distance_values[int(n_rcs * 0.005)];
-    double rc_outermost = distance_values[int(n_rcs * 0.05 )];
+    double rc_middle = distance_values[int(n_rcs * 0.01)];
+    double rc_outermost = distance_values[int(n_rcs * 0.075 )];
 
     std::cout << "n_rcs: " << n_rcs << " rc_middle: " << rc_middle << " rc_outermost: " << rc_outermost << std::endl;
     std::cout << "True rc " << rc_min << " rc_min: " << distance_values[0] << " rc_max: " << distance_values[n_rcs - 1] << std::endl;

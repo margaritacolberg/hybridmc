@@ -119,7 +119,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         rc_target_percentile = searchsorted(dist_t_active, rc_target) / len(dist_t_active)
 
         # simulation has converged if the rc target percentile is small enough: outer-wall close enough to rc
-        if rc_target_percentile < min_rc_percentile:
+        if min_rc_percentile < rc_target_percentile:
             converged = True
             rc = rc_target
 

@@ -20,8 +20,8 @@
     "del_t": 5.0,
     "nsteps_wl": 1,
     "del_t_wl": 4.0,
-    "gamma": 0.1,
-    "gamma_f": 0.0005,
+    "gamma": 0.01,
+    "gamma_f": 0.00025,
     "write_step": 2,
     "seeds": [3, 1],
     "temp": 1.0,
@@ -36,6 +36,7 @@
     "max_g_test_count": 10000,
     "flip_req": 1.0,
     "WL_sbias": 6.0,
-    "fail_max": 5,
-    "req_dists": 5000
+    "fail_max": 1,
+    "req_dists": 5000,
+    "rc_target_min_percentile": 0.010
 }
