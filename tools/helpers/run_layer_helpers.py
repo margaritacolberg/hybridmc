@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+from numpy import searchsorted
 import h5py
 from .mfpt_helpers import get_dists
 from .data_processing_helpers import update_rc
@@ -82,6 +83,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     data = copy.deepcopy(common_data)
     t_bonds = data['transient_bonds']
     nl_bonds = data['nonlocal_bonds']
+    min_rc_percentile = data["rc_target_min_percentile"]
 
     # get index of the transient bond in the list of nonlocal bonds
     t_ind = nl_bonds.index(t_bonds[0])
@@ -110,18 +112,23 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
 
         # Convergence Check:
 
-        # get the list of distances for the last rc drop simulation
+        # get the list of distances for the last simulation
         dist_t_active = sorted(get_dists(stair_output_name, t_ind))
 
-        # find the rc that corresponds to the 5th percentile of the distances
-        rc_next = round(dist_t_active[int(0.05 * len(dist_t_active))], 2)
+        # Figure out what percentile of this distance vector the rc target lies
+        rc_target_percentile = searchsorted(dist_t_active, rc_target) / len(dist_t_active)
 
-        # check if the simulation converged using the next staircase rc
-        if rc_next < (rc_target+0.5):
+        # simulation has converged if the rc target percentile is small enough: outer-wall close enough to rc
+        if rc_target_percentile < min_rc_percentile:
             converged = True
             rc = rc_target
+
+        # otherwise keep pushing outer-wall in
         else:
-            rc = rc_next
+            # find the rc that corresponds to the 5th percentile of the distance: set as the new rc
+            rc = round(dist_t_active[int(min_rc_percentile * len(dist_t_active))], 2)
+
+        # Go to start of loop again
 
     # do final run with rc = target rc
     # update the rc value for the bonds in the transient_bonds list

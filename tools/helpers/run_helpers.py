@@ -33,7 +33,8 @@ def init_json(args):
                      "WL_sbias": 6.0,
                      "sbias_min": 4.0,
                      "fail_max": 5,
-                     "req_dists": 25000
+                     "req_dists": 25000,
+                     "rc_target_min_percentile": 0.05
                  })
 
     in_queue = Queue()
