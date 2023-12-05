@@ -213,18 +213,27 @@ int main(int argc, char *argv[]) {
     flipping_rate = flips / stateCount;
 
     done_g_test = g_test(config_count,nstates, p.sig_level);
+
     if (flipping_rate > p.flip_req) {
       done_flip = true;
     } else {
-      //std::cout << "flip rate too low" << std::endl;
-      // fail_counter incremented since flip rate too low here
       fail_counter++;
       // check if too many fails have occurred
-      if (fail_counter > p.fail_max) {
+      if (fail_counter >= p.fail_max) {
         std::cout << " Too many fails have occurred." << std::endl;
         // increase the number of steps in trajectory
-        p.nsteps *= 2;
-        std::cout << " Increasing the number of steps in trajectory to " << p.nsteps << std::endl;
+        if (flipping_rate > 0)
+        {
+            p.nsteps = int(p.flip_req * p.nsteps/flipping_rate);
+            if (p.nsteps > 500) p.nsteps = 500;
+        }
+        else
+        {
+            p.nsteps = 500;
+        }
+
+        std::cout << " Will increase the number of steps in trajectory to " << p.nsteps << " time of propagation ="
+                << p.nsteps*p.del_t << " for next iteration." << std::endl;
         // reset fail counter
         fail_counter = 0;
       }
