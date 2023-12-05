@@ -31,6 +31,7 @@ def init_json(args):
     set_defaults(data,
                  defaults={
                      "WL_sbias": 6.0,
+                     "sbias_min": 4.0,
                      "fail_max": 5,
                      "req_dists": 25000
                  })

@@ -1,15 +1,11 @@
 import copy
 import json
 import os
-import csv
 import subprocess
 import sys
 import h5py
-import numpy as np
+from .mfpt_helpers import get_dists
 from .data_processing_helpers import update_rc
-from .mfpt_helpers import find_knots 
-from .mfpt_helpers import fpt
-from .mfpt_helpers import fpt_per_bead_pair
 
 
 def run_sim(data, input_hdf5, output_name, exe):
@@ -84,23 +80,54 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     """
 
     data = copy.deepcopy(common_data)
-    # iterate through the different staircase rc values
-    for j in range(len(stair_rc_list)):
+    t_bonds = data['transient_bonds']
+    nl_bonds = data['nonlocal_bonds']
 
-        # Once we push beads within the largest staircase rc, we can set that rc to be outer wall
-        # We call this boundary the "stair"
-        if j > 0:
-            data['stair'] = stair_rc_list[j - 1]
+    # get index of the transient bond in the list of nonlocal bonds
+    t_ind = nl_bonds.index(t_bonds[0])
 
-        # So long as the rc is not at the target we append the intermediate rc to the output name
-        if stair_rc_list[j] != stair_rc_list[-1]:
-            stair_output_name = f'{output_name}_{stair_rc_list[j]}'
-        else:
-            stair_output_name = output_name
+    # initialize rc at the largest staircase rc value;
+    # and set the target rc to be the smallest staircase rc value
+    rc, rc_target = stair_rc_list[0], stair_rc_list[-1]
+
+    # while the simulation has not converged
+    converged = False
+    while not converged:
+
+        # append rc to output name
+        stair_output_name = f'{output_name}_{rc}'
 
         # update the rc value for the bonds in the transient_bonds list
-        update_rc(data, stair_rc_list[j])
+        update_rc(data, rc)
 
         # run the simulation for this staircase step
         run_sim(data, input_hdf5, stair_output_name, exe)
+
+        # setup input file for next step with new rc: it is the output file from the previous step
         input_hdf5 = f'{stair_output_name}.h5'
+        # set the outer rc for the next step to be the current rc
+        data["stair"] = rc
+
+        # Convergence Check:
+
+        # get the list of distances for the last rc drop simulation
+        dist_t_active = sorted(get_dists(stair_output_name, t_ind))
+
+        # find the rc that corresponds to the 5th percentile of the distances
+        rc_next = round(dist_t_active[int(0.05 * len(dist_t_active))], 2)
+
+        # check if the simulation converged using the next staircase rc
+        if rc_next < (rc_target+0.5):
+            converged = True
+            rc = rc_target
+        else:
+            rc = rc_next
+
+    # do final run with rc = target rc
+    # update the rc value for the bonds in the transient_bonds list
+    update_rc(data, rc)
+    run_sim(data, input_hdf5, output_name, exe)
+    breakpoint()
+
+
+

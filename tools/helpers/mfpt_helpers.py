@@ -36,13 +36,14 @@ def fpt_write(name):
             fpt_write_wrap_default(name)
 
 
-def get_dists(name, t_ind):
+def get_dists(name, t_ind, max_length=25000):
     """
     Function to load the distances for the transient bond active now
     Parameters
     ----------
     name: str: the name of the simulation
     t_ind: int: the index of the transient bond active now
+    max_length: int: the maximum number of distances to load
 
     Returns
     -------
@@ -51,7 +52,7 @@ def get_dists(name, t_ind):
     # load the distances for this simulation
     with h5py.File(f"{name}.h5", 'r') as f:
         # load only at most 25000 distances
-        max_dist = min([25000, len(f['dist'])])
+        max_dist = min([max_length, len(f['dist'])])
         # initially the shape is (25000, nbonds). each column with dists for a transient bond
         dist = f['dist'][:max_dist]
     # get the transpose to make each row the dists for a transient bond
