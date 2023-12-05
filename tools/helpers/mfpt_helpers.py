@@ -10,11 +10,75 @@ from scipy.special import kolmogorov
 from sklearn import utils
 from sys import path
 
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
 path.append('../')
-from post_processing import minimize, matrix_element
+from post_processing import matrix_element
 
 
 # tol, rtol, maxiter = 1e-3, 1e-3, 100
+plot_data = True
+BFGS = True
+
+best_val = np.inf
+best_args = None
+
+import numpy as np
+
+
+def minimize(f, x0, method, jac, ub, lb):
+    global best_args
+    global best_val
+
+    dim = len(x0)
+
+    opt = nlopt.opt(method, dim)
+    obj_f = make_nlopt_f(f, jac)
+    opt.set_min_objective(obj_f)
+
+    if ub is not None:
+        opt.set_upper_bounds(ub)
+
+    if lb is not None:
+        opt.set_lower_bounds(lb)
+
+    # stopping criteria
+    #
+    # function tolerance
+    opt.set_ftol_rel(5e-5)
+    # y-coordinate tolerance
+    opt.set_xtol_rel(5e-5)
+
+    best_args = np.zeros(dim)
+    best_val = np.inf
+
+    try:
+        opt_results = opt.optimize(x0)
+    except:
+        print("Failure: result code = ", opt.last_optimize_result())
+        print('Trying non-derivative COBYLA routine.')
+        print('opt_results are ', opt.last_optimum_value(), ' = ', best_val )
+        print('best yvalues are ', best_args)
+        opt2 = nlopt.opt(nlopt.LN_NELDERMEAD,dim)
+        opt2.set_min_objective(obj_f)
+        opt2.set_ftol_rel(1e-4)
+        opt2.set_xtol_rel(1e-4)
+
+        opt_results = opt2.optimize(best_args)
+
+    return opt_results
+
+
+def make_nlopt_f(f, jac):
+    def nlopt_f(x, grad):
+        if grad.size > 0:
+            grad[:] = jac(x)
+
+        return f(x)
+    return nlopt_f
+
 
 
 def fpt_write(name):
@@ -178,7 +242,16 @@ def fpt_write_wrap_stair(name, stair_rc_list):
             yknots_total = np.append(yknots + yknots_total[0], yknots_total[1:])
 
     t_ind, inner_fpt = inner_stair_fpt(name)
+
     outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
+
+    if plot_data:
+        plot_outer_integrand(xknots_total, yknots_total, name)
+
+
+
+    nknots = len(xknots_total)
+    print(f"Completed fpts for {name} for outer nknots = {nknots - 1} and outer_fpt = {outer_fpt}.")
 
     output = []
     output.append([t_ind, inner_fpt, outer_fpt])
@@ -299,6 +372,9 @@ def integrate_spline(x_knot, y_knot):
 
 
 def fun(x, y, x_i):
+    global best_args
+    global best_val
+
     integral = integrate_spline(x, y)
 
     f = np.sum(spline(x, y, x_i))
@@ -309,6 +385,11 @@ def fun(x, y, x_i):
 
     f += np.log(integral)
 
+    if f < best_val:
+        best_val = f
+        best_args = np.copy(y)
+
+    #print('f = ', f, ' at y = ', y)
     return f
 
 
@@ -410,8 +491,15 @@ def minimize_f(x, x_i, y0):
 
     # min_f2 = optimize.minimize(f, x0=y0, method='BFGS', jac=df,
     # options={'gtol': 0.000001, 'disp': True})
-    min_f = minimize.minimize(f, y0, method=nlopt.LD_LBFGS, jac=df, ub=None,
-                              lb=None)
+
+
+    if BFGS:
+        min_f = minimize(f, y0, method=nlopt.LD_LBFGS, jac=df, ub=None, lb=None)
+    else:
+        ub = np.full(len(x),5.0)
+        lb = np.full(len(x),-5.0)
+        min_f = minimize(f, y0, method=nlopt.LN_COBYLA, jac=None, ub=ub,lb=lb)
+
 
     return min_f
 
@@ -469,6 +557,11 @@ def cdf_at_x(x_knot, y_knot, x, norm, cdf_base):
     float
         The cdf at x
     """
+    if x == x_knot[-1]:
+        return 1.
+    if x == x_knot[0]:
+        return 0.
+
     x_nearest_idx = find_nearest(x_array=x_knot, x_target=x)
 
     pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
@@ -515,11 +608,47 @@ def fpt_integrand(x_knot, y_knot, x, state, norm):
     return integrand
 
 
+
+def plot_outer_integrand(x_knot,y_knot,name):
+    norm = integrate_spline(x_knot, y_knot)
+    x = np.linspace(x_knot[0],x_knot[-1],1000)
+    y_integrand = fpt_integrand(x_knot, y_knot, x, False, norm)
+    pdf_val = np.exp(- spline(x_knot, y_knot,x) ) / norm
+    #bins = np.histogram_bin_edges(pdf_val, bins='auto', range=(x_knot[0], x_knot[-1]))
+    #hist,bin_edges = np.histogram(pdf_val,density=True,bins='fd')
+
+    # create a dictionary and pandas DataFrame
+    my_dict = dict(x=x,y=pdf_val,z=y_integrand)
+    data = pd.DataFrame (my_dict)
+
+    fig, (ax1,ax2) = plt.subplots(1,2)
+
+    #sns.histplot(data=data,x='x',y='y',kde=True,ax=ax1)
+    sns.lineplot(data=data,x='x',y='y',ax=ax1)
+    sns.lineplot(data=data,x='x',y='z',ax=ax2)
+
+    figName = f'{name}.png'
+
+    plt.savefig(figName)
+    #plt.show()
+
+    datName = f'{name}.dat'
+    file_object = open(datName, "w")
+    for i in range(len(x)):
+        print(x[i], pdf_val[i],y_integrand[i], file=file_object)
+    file_object.close()
+
+
+
+
+
+
+
 def fpt(x_knot, y_knot, xmin, xmax, state):
     f = lambda x: fpt_integrand(x_knot, y_knot, x, state, norm)
     norm = integrate_spline(x_knot, y_knot)
-    return integrate.quadrature(f, xmin, xmax, tol=1e-6, rtol=1e-6,
-                                maxiter=100)
+    fval = integrate.quadrature(f, xmin, xmax, tol=1e-6, rtol=1e-6, maxiter=100)
+    return fval
 
 
 def fpt_per_bead_pair_old(dist_vec, nknots, min_dist, max_dist, state):
@@ -602,9 +731,9 @@ def KStest(x_knot, y_knot, dist_vec, norm):
 
 
 def find_knots(dist_vec, min_dist, max_dist):
-    # print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
+    #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
-    # print('dist_vec is ', dist_vec)
+    #print('dist_vec is ', dist_vec)
 
     q = 0.
     nknots = 4
@@ -612,14 +741,10 @@ def find_knots(dist_vec, min_dist, max_dist):
         nknots = nknots + 1
         x = np.linspace(min_dist, max_dist, nknots)
         y = np.zeros(nknots)
-        try:
-            y = minimize_f(x, dist_vec, y)
-        except:
-            breakpoint()
-
+        y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
-        # print('q is ', q, ' for nknots = ', nknots)
+        #print('q is ', q, ' for nknots = ', nknots)
 
     # make last index zero
     y -= y[-1]
@@ -644,7 +769,10 @@ def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
         nknots = nknots + 1
 
-    print(f"{struc_id}: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+    print(f"{struc_id} and state {state}: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+
+    if plot_data and state == False:
+        plot_outer_integrand(x,y,struc_id)
 
     return fpt(x, y, min_dist, max_dist, state)
 

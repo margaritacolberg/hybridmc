@@ -125,7 +125,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
 
         # otherwise keep pushing outer-wall in
         else:
-            # find the rc that corresponds to the 5th percentile of the distance: set as the new rc
+            # find the rc that corresponds to the min_rc_percentile percentile of the distance: set as the new rc
             rc = round(dist_t_active[int(min_rc_percentile * len(dist_t_active))], 2)
 
         # Go to start of loop again
