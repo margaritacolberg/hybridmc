@@ -127,7 +127,5 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     # update the rc value for the bonds in the transient_bonds list
     update_rc(data, rc)
     run_sim(data, input_hdf5, output_name, exe)
-    breakpoint()
-
 
 
