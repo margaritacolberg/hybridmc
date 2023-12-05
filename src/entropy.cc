@@ -104,12 +104,12 @@ bool g_test(std::vector<uint64_t> &config_count, const unsigned int nstates,
       boost::math::quantile(boost::math::complement(chi_dist, sig_level));
 
   if (!(g_val < g_crit)) {
-    std::cout << "REJECTED: g_val " << g_val << ", g_crit " << g_crit
+    std::cout << "Rejected uniform test: g_val " << g_val << ", g_crit " << g_crit
               << ", p_val " << p_val << std::endl;
     return false;
   }
 
-  std::cout << "ACCEPTED: g_val " << g_val << ", g_crit " << g_crit
+  std::cout << "Acceptable uniform test: g_val " << g_val << ", g_crit " << g_crit
             << ", p_val " << p_val << std::endl;
 
   return true;
