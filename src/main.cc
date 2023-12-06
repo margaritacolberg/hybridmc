@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
   CountBond count_bond = {};
 
   System sys(p.nbeads);
+  sys.distanceWrite = true;
 
   std::seed_seq seq(p.seeds.begin(), p.seeds.end());
   Random mt(seq);
@@ -139,6 +140,7 @@ int main(int argc, char *argv[]) {
                       wall_time, iter, dist_writer, dist);
   }
 
+
   // Wang-Landau
   init_update_config(sys.pos, update_config, box, p.transient_bonds);
 
@@ -180,6 +182,7 @@ int main(int argc, char *argv[]) {
     // add this to see to only count bond events in each iteration
     count_bond.formed = 0;
     count_bond.broken = 0;
+    if (dist_writer.get_size() < p.req_dists) sys.distanceWrite = true; // only record distance data if needed
 
     for (unsigned int iter = 0; iter < p.total_iter; iter++) {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
@@ -220,16 +223,17 @@ int main(int argc, char *argv[]) {
       fail_counter++;
       // check if too many fails have occurred
       if (fail_counter >= p.fail_max) {
-        std::cout << " Too many fails have occurred." << std::endl;
+        //std::cout << " Too many fails have occurred." << std::endl;
         // increase the number of steps in trajectory
         if (flipping_rate > 0)
         {
             p.nsteps = int(p.flip_req * p.nsteps/flipping_rate);
-            if (p.nsteps > 500) p.nsteps = 500;
+            if (p.nsteps > 1000) p.nsteps = 1000;
         }
         else
         {
-            p.nsteps = 500;
+            p.nsteps = 1000;
+            std::cout << " Reached maximum number of steps! Increase del_t to get longer trajectories." << std::endl;
         }
 
         std::cout << " Will increase the number of steps in trajectory to " << p.nsteps << " time of propagation ="
@@ -246,7 +250,8 @@ int main(int argc, char *argv[]) {
     }
     else
     {
-	done_distances = true;
+	    done_distances = true;
+	    sys.distanceWrite = false;
     }
 
     std::cout << "Working on output_file: " << output_name << std::endl;

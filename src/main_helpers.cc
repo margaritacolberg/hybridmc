@@ -38,12 +38,12 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
   LOG_DEBUG("New step initialization");
   if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                         p.nnear_max2)) {
-    throw std::runtime_error("local beads overlap");
+    throw std::runtime_error("local beads overlap in initialize_system.");
   }
 
   if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
                            p.transient_bonds, p.permanent_bonds)) {
-    throw std::runtime_error("nonlocal beads overlap");
+    throw std::runtime_error("nonlocal beads overlap in initialize_system");
   }
 
   if (cells.ncell < 4) {
@@ -171,7 +171,7 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
              event_queue, step, p.del_t);
 
     dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
-    dist_writer.append(dist);
+    if (sys.distanceWrite) dist_writer.append(dist);
 
   }
 
@@ -215,9 +215,11 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
     run_step(sys, p, box, update_config, count_bond, wall_time, cells,
              event_queue, step, p.del_t);
-
-    dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
-    dist_writer.append(dist);
+    if (sys.distanceWrite)
+    {
+        dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
+        dist_writer.append(dist);
+    }
 
     if (step % p.write_step == 0) {
       // store the integer of the configuration and the time of the event
@@ -289,7 +291,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
     Cells cells{p.ncell, p.length / p.ncell};
 
     //set max time based on wall_time
-    if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+    if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 

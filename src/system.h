@@ -22,6 +22,9 @@ struct System {
   // entropy of beads
   std::vector<double> s_bias;
 
+  // flag to indicate whether to write distance data
+  bool distanceWrite;
+
   System(unsigned int nbeads)
       : pos(nbeads), vel(nbeads), times(nbeads), counter(nbeads) {}
 };

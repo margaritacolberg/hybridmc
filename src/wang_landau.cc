@@ -25,27 +25,31 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     CountBond count_bond = {};
 
     System sys(p.nbeads);
+    sys.distanceWrite = false;
 
     std::seed_seq seq(p.seeds.begin(), p.seeds.end());
     Random mt(seq);
 
+    //std::cout << " About to initialize positions ... " << std::endl;
     if (input_name.has_value() && std::filesystem::exists(*input_name)) {
+        //std::cout << " Input file for positions is " << *input_name << std::endl;
         read_input(*input_name, sys.pos);
         init_update_config(sys.pos, update_config, box, p.transient_bonds);
         init_s(sys.s_bias, t_bonds);
     } else {
+        //std::cout << " Calling init_pos function." << std::endl;
         init_pos(sys.pos, box, mt, p);
         init_s(sys.s_bias, t_bonds);
     }
 
     if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2)) {
-        throw std::runtime_error("local beads overlap");
+        throw std::runtime_error("local beads overlap at start of wang-landau");
     }
 
     if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
                              p.transient_bonds, p.permanent_bonds)) {
-        throw std::runtime_error("nonlocal beads overlap");
+        throw std::runtime_error("nonlocal beads overlap at start of wang-landau");
     }
 
     //get bead index for transient pair and rc value for it

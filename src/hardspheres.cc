@@ -136,6 +136,7 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     i++;
     tries = 0;
   }
+  std::cout << " Generated random initial unbonded configuration." << std::endl;
 }
 
 // if two nonlocal beads which can form a transient bond happened to reach
