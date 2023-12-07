@@ -29,16 +29,25 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
     init_s(sys.s_bias, t_bonds);
   } else {
 
+    // set flag for random initialization success
     bool found = false;
+    // set the maximum tries for a random initialization to 10
     int max_init_count = 10;
+    // while random initialization not found and 10 attempts not hit, try random init
     while (found == false && max_init_count)
     {
         found = init_pos(sys.pos, box, mt, p);
         max_init_count--;
     };
 
-    //std::cout << " Calling linear chain draw." << std::endl;
-    if (found == false) draw_linear_chain(sys.pos,p);
+    // do linear draw if above procedure failed
+
+    if (found == false) {
+
+        std::cout << " Calling linear chain draw." << std::endl;
+        draw_linear_chain(sys.pos,p);
+
+    }
 
     init_s(sys.s_bias, t_bonds);
   }
@@ -109,12 +118,14 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
 
 void run_step(System &sys, const Param &p, const Box &box,
               UpdateConfig &update_config, CountBond &count_bond,
-              double wall_time, Cells &cells, EventQueue &event_queue,
+              double &wall_time, Cells &cells, EventQueue &event_queue,
               const unsigned int step, double del_t) {
   LOG_DEBUG("step = " << step);
 
   // the current time interval the events are occurring in
   double step_time = step * del_t;
+
+  std::cout << " At start of step " << step << " local clock time is " << sys.times[0] << std::endl;
 
   // while events are occurring in step_time,
   while (!event_queue.empty()) {
@@ -160,11 +171,12 @@ void run_step(System &sys, const Param &p, const Box &box,
 
   // update time
   wall_time = step_time;
+  std::cout << " After propagation, all local clocks at step_time = " << step_time << std::endl;
 }
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double wall_time, unsigned int iter,
+                       double &wall_time, unsigned int iter,
                        DistWriter &dist_writer, std::vector<double> &dist) {
 
   LOG_DEBUG("run_trajectory_eq");
@@ -200,7 +212,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     PosWriter &pos_writer, VelWriter &vel_writer,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
-                    CountBond &count_bond, double wall_time,
+                    CountBond &count_bond, double &wall_time,
                     unsigned int iter) {
 
   LOG_DEBUG("run_trajectory");
@@ -220,6 +232,11 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
     //set max time based on wall_time
     if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+
+     std::cout << " In run_trajectory at wall_time = " << wall_time << " step = " << step
+        << " max_time = " << max_time << " with nsteps = " << p.nsteps
+        << std::endl;
+
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     // to check energy conservation
@@ -289,7 +306,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
-                         CountBond &count_bond, double wall_time,
+                         CountBond &count_bond, double &wall_time,
                          unsigned int iter_wl,
                          bool record_dists,
                          std::vector<double>* dist,
@@ -305,6 +322,10 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
     //set max time based on wall_time
     if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
+
+    std::cout << " In run_trajectory_wl at iter_wl = " << iter_wl << " step = " << step
+        << " max_time = " << max_time << " with nsteps_wl = " << p.nsteps_wl
+        << std::endl;
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
@@ -358,9 +379,9 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
       }
     }
 
-        iter_wl += 1;
-        gamma = 1.0 / double(iter_wl);
-    }
+    iter_wl += 1;
+    gamma = 1.0 / double(iter_wl);
+  }
 }
 
 void from_json(const nlohmann::json &json, Param &p) {

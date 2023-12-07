@@ -73,6 +73,7 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
         // iterate over the 2 states
         for (unsigned int i = 0; i < nstates; i++) {
             // run trajectory to get final state
+            std::cout << " Running wl trajectory for state " << i << " iter_wl = " << iter_wl << std::endl;
             Config state = run_trajectory_wl(sys, mt, p, box, update_config,
                                              count_bond, wall_time, iter_wl);
 
@@ -95,10 +96,12 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
                 //std::cout << " recording " << dist << " sb = " << sys.s_bias[native_ind] << std::endl;
                 distance_values.push_back(distance);
             }
+
+            iter_wl += 1; // keeps time advancing
         }
 
-        iter_wl += 1;
-        gamma = 1.0 / double(iter_wl);
+        //iter_wl += 1;
+        gamma = 1.0 / double(iter_wl/nstates);
     }
 
     //sort distance vector
