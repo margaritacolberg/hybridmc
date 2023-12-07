@@ -440,4 +440,5 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.flip_req = json["flip_req"];
     p.fail_max = json["fail_max"];
     p.req_dists = json["req_dists"];
+    p.nsteps_max = json["nsteps_max"];
 }

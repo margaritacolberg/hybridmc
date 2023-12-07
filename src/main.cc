@@ -226,11 +226,11 @@ int main(int argc, char *argv[]) {
         if (flipping_rate > 0)
         {
             p.nsteps = int(p.flip_req * p.nsteps/flipping_rate) + 1;
-            if (p.nsteps > 1000) p.nsteps = 1000;
+            if (p.nsteps > p.nstep_max) p.nsteps = p.nstep_max;
         }
         else
         {
-            p.nsteps = 1000;
+            p.nsteps = p.nstep_max;
             std::cout << " Reached maximum number of steps! Increase del_t to get longer trajectories." << std::endl;
         }
 

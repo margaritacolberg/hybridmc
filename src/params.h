@@ -56,6 +56,8 @@ struct Param {
   unsigned int ncell;
   // number of time intervals
   unsigned int nsteps;
+  // upper limit for nsteps
+  unsigned int nsteps_max;
   unsigned int nsteps_eq;
   // step at which to write output to file
   unsigned int write_step;
