@@ -118,14 +118,15 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
 
 void run_step(System &sys, const Param &p, const Box &box,
               UpdateConfig &update_config, CountBond &count_bond,
-              double &wall_time, Cells &cells, EventQueue &event_queue,
+              Cells &cells, EventQueue &event_queue,
               const unsigned int step, double del_t) {
   LOG_DEBUG("step = " << step);
 
+  double zero_time = 0.0;
   // the current time interval the events are occurring in
   double step_time = step * del_t;
 
-  std::cout << " At start of step " << step << " local clock time is " << sys.times[0] << std::endl;
+//  std::cout << " At start of step " << step << " local clock time is " << sys.times[0] << std::endl;
 
   // while events are occurring in step_time,
   while (!event_queue.empty()) {
@@ -136,7 +137,7 @@ void run_step(System &sys, const Param &p, const Box &box,
     if (std::visit(
             [=](auto &&ev) {
               // check for monotonically increasing event times
-              assert(ev.t >= wall_time);
+              assert(ev.t >= zero_time);
               return ev.t > step_time;
             },
             event))
@@ -147,11 +148,10 @@ void run_step(System &sys, const Param &p, const Box &box,
     // process collision or cell crossing event
     std::visit(
         [&](auto &&ev) {
-          wall_time = ev.t;
-          LOG_DEBUG("wall time " << wall_time << " Queue Size is " << event_queue.size());
+          zero_time = ev.t;
+          LOG_DEBUG("wall time " << zero_time << " Queue Size is " << event_queue.size());
           process_event(ev, sys, p, box, event_queue, cells, update_config,
                         count_bond);
-          //if (wall_time > 15.1) {exit(0);}
         },
         event);
   }
@@ -169,14 +169,11 @@ void run_step(System &sys, const Param &p, const Box &box,
   assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
                              p.transient_bonds, p.permanent_bonds));
 
-  // update time
-  wall_time = step_time;
-  std::cout << " After propagation, all local clocks at step_time = " << step_time << std::endl;
 }
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double &wall_time, unsigned int iter,
+                       unsigned int iter,
                        DistWriter &dist_writer, std::vector<double> &dist) {
 
   LOG_DEBUG("run_trajectory_eq");
@@ -185,14 +182,14 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
+    //set max time
     if (step != 0) {max_time = (step * p.del_t) + 0.001;}
 
-    LOG_DEBUG("max_time = " << max_time << " wall_time = " << wall_time);
+    LOG_DEBUG("max_time = " << max_time);
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
 
     dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
@@ -212,7 +209,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     PosWriter &pos_writer, VelWriter &vel_writer,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
-                    CountBond &count_bond, double &wall_time,
+                    CountBond &count_bond,
                     unsigned int iter) {
 
   LOG_DEBUG("run_trajectory");
@@ -230,12 +227,12 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
+    //set max time
     if (step != 0) {max_time = (step * p.del_t) + 0.001;}
 
-     std::cout << " In run_trajectory at wall_time = " << wall_time << " step = " << step
+/*     std::cout << " step = " << step
         << " max_time = " << max_time << " with nsteps = " << p.nsteps
-        << std::endl;
+        << std::endl;*/
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
@@ -243,7 +240,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
     const double tot_E_before =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
     if (sys.distanceWrite)
     {
@@ -306,7 +303,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
-                         CountBond &count_bond, double &wall_time,
+                         CountBond &count_bond,
                          unsigned int iter_wl,
                          bool record_dists,
                          std::vector<double>* dist,
@@ -314,25 +311,24 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
   LOG_DEBUG("run_trajectory_wl");
 
-  for (unsigned int step = iter_wl * p.nsteps_wl;
-       step < (iter_wl + 1) * p.nsteps_wl; step++) {
+  for (unsigned int step = iter_wl * p.nsteps_wl; step < (iter_wl + 1) * p.nsteps_wl; step++) {
 
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
+    //set max time
     if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
 
-    std::cout << " In run_trajectory_wl at iter_wl = " << iter_wl << " step = " << step
+/*    std::cout << " In run_trajectory_wl at iter_wl = " << iter_wl << " step = " << step
         << " max_time = " << max_time << " with nsteps_wl = " << p.nsteps_wl
-        << std::endl;
+        << std::endl;*/
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     const double tot_E_before =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t_wl);
 
     if (record_dists) {
@@ -342,11 +338,14 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
     const double tot_E_during =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
+
     if (E_diff >= 1e-6) {
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
+
   }
 
   return update_config.config;
@@ -360,9 +359,9 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
 
   // amount by which entropy is adjusted
   double gamma = p.gamma;
+  // initialize iteration counter at 0
   unsigned int iter_wl = 0;
   unsigned int native_ind = nstates - 1;
-  double wall_time = 0.0;
   bool record_dists = true;
 
   while (gamma > p.gamma_f) {
@@ -370,17 +369,19 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
     for (unsigned int i = 0; i < nstates; i++) {
       // run trajectory to get final state
       Config state = run_trajectory_wl(sys, mt, p, box, update_config,
-                                       count_bond, wall_time, iter_wl, record_dists, &dist, &dist_writer);
+                                       count_bond, iter_wl, record_dists, &dist, &dist_writer);
 
       if (state == 0) {
         s_bias[native_ind] -= gamma;
       } else {
         s_bias[native_ind] += gamma;
       }
-    }
 
-    iter_wl += 1;
-    gamma = 1.0 / double(iter_wl);
+      // update the iteration counter
+      iter_wl += 1;
+    }
+    // normalized gamma updated
+    gamma = double(nstates) / double(iter_wl);
   }
 }
 

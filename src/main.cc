@@ -126,7 +126,6 @@ int main(int argc, char *argv[]) {
     sys.counter[i] = 0.0;
   }
 
-  double wall_time = 0.0;
   UpdateConfig update_config_eq;
 
   p_eq.nsteps = p.nsteps_eq;
@@ -137,7 +136,7 @@ int main(int argc, char *argv[]) {
 
   for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
     run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
-                      wall_time, iter, dist_writer, dist);
+                      iter, dist_writer, dist);
   }
 
 
@@ -173,7 +172,6 @@ int main(int argc, char *argv[]) {
       sys.counter[i] = 0.0;
     }
 
-    wall_time = 0.0;
 
     // reset configuration count
     store_config_int.clear();
@@ -187,7 +185,7 @@ int main(int argc, char *argv[]) {
     for (unsigned int iter = 0; iter < p.total_iter; iter++) {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
                      pos_writer, vel_writer, config_writer, dist_writer,
-                     store_config, store_config_int, count_bond, wall_time,
+                     store_config, store_config_int, count_bond,
                      iter);
     }
 

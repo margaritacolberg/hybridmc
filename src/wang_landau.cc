@@ -67,15 +67,14 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     double gamma = p.gamma;
     unsigned int iter_wl = 0;
     unsigned int native_ind = nstates - 1;
-    double wall_time = 0.0;
 
     while (gamma > p.gamma_f) {
         // iterate over the 2 states
         for (unsigned int i = 0; i < nstates; i++) {
             // run trajectory to get final state
-            std::cout << " Running wl trajectory for state " << i << " iter_wl = " << iter_wl << std::endl;
+            //std::cout << " Running wl trajectory for state " << i << " iter_wl = " << iter_wl << std::endl;
             Config state = run_trajectory_wl(sys, mt, p, box, update_config,
-                                             count_bond, wall_time, iter_wl);
+                                             count_bond, iter_wl);
 
             if (state == 0) {
                 sys.s_bias[native_ind] -= gamma;
@@ -108,8 +107,8 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     std::sort(distance_values.begin(), distance_values.end());
 
     //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
-//    std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
-//    std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
+    //std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
+    //std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
 
     // create return vector
     std::vector<double> return_info;
