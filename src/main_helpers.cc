@@ -30,13 +30,15 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
   } else {
 
     bool found = false;
-    while (found == false)
+    int max_init_count = 10;
+    while (found == false && max_init_count)
     {
         found = init_pos(sys.pos, box, mt, p);
+        max_init_count--;
     };
 
     //std::cout << " Calling linear chain draw." << std::endl;
-    //draw_linear_chain(sys.pos,p);
+    if (found == false) draw_linear_chain(sys.pos,p);
 
     init_s(sys.s_bias, t_bonds);
   }
