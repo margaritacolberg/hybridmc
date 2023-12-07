@@ -1089,7 +1089,12 @@ bool check_local_dist(const std::vector<Vec3> &pos_trial, const Box &box,
     box.mindist(dx, dy, dz);
 
     if (!check_bond(near_min2, near_max2, dx, dy, dz)) {
-      LOG_DEBUG("nearest neighbors " << i << " and " << i + 1 << " overlap");
+      LOG_DEBUG("check_local_dist: nearest neighbors " << i << " and " << i + 1 << " overlap");
+      std::cerr << " check_local_dist: nearest neighbors " << i << " and " << i + 1
+            << " overlap with dx = " << dx << " dy = " << dy << " dz = " << dz
+        << std::endl << " position " << i << " is " << pos_trial[i].x << " " << pos_trial[i].y << " " << pos_trial[i].z
+        << std::endl << " position " << i+1 << " is " << pos_trial[i+1].x << " " << pos_trial[i+1].y << " " << pos_trial[i+1].z
+        << std::endl;
       return false;
     }
   }
