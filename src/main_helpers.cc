@@ -125,6 +125,8 @@ void run_step(System &sys, const Param &p, const Box &box,
   // the current time interval the events are occurring in
   double step_time = step * del_t;
 
+  std::cout << " At start of step " << step << " local clock time is " << sys.times[0] << std::endl;
+
   // while events are occurring in step_time,
   while (!event_queue.empty()) {
     // access the minimum time to the next collision, and the indices and
@@ -169,6 +171,7 @@ void run_step(System &sys, const Param &p, const Box &box,
 
   // update time
   wall_time = step_time;
+  std::cout << " After propagation, all local clocks at step_time = " << step_time << std::endl;
 }
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
@@ -320,7 +323,7 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
     //set max time based on wall_time
     if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
 
-    std::cout << " In run_trajectory_wl at wall_time = " << wall_time << " step = " << step
+    std::cout << " In run_trajectory_wl at iter_wl = " << iter_wl << " step = " << step
         << " max_time = " << max_time << " with nsteps_wl = " << p.nsteps_wl
         << std::endl;
 
@@ -376,9 +379,9 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
       }
     }
 
-        iter_wl += 1;
-        gamma = 1.0 / double(iter_wl);
-    }
+    iter_wl += 1;
+    gamma = 1.0 / double(iter_wl);
+  }
 }
 
 void from_json(const nlohmann::json &json, Param &p) {
