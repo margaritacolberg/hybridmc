@@ -32,14 +32,46 @@ void unit_sphere(Random &mt, double &x, double &y, double &z) {
   z = 1 - 2 * (v * v + w * w);
 }
 
+void draw_linear_chain(std::vector<Vec3> &pos, const Param &p)
+{
+
+    // location of the first bead
+    pos[0].x = 0.0;
+    pos[0].y = 0.0;
+    pos[0].z = 0.0;
+    const unsigned int nbeads = pos.size();
+    double length = p.near_min + 0.5*(p.near_max - p.near_min);
+    Vec3 dr(0.0,0.0,0.0);
+    for (unsigned int j=1;j<nbeads;j++)
+    {
+        if (j%2)
+        {
+            dr.x = 0.0;
+            dr.y = length;
+            dr.z = 0.0;
+        }
+        else
+        {
+            dr.x = length;
+            dr.y = 0.0;
+            dr.z = 0.0;
+        }
+        pos[j].x = pos[j-1].x + dr.x;
+        pos[j].y = pos[j-1].y + dr.y;
+        pos[j].z = pos[j-1].z + dr.z;
+
+    }
+}
+
+
 // initial positions of all beads
-void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
+bool init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p) {
   const unsigned int nbeads = pos.size();
   std::uniform_real_distribution<> uniform_near(0.0, 1.0);
 
   if (pos.size() < 1)
-    return;
+    return true;
 
   // location of the first bead
   pos[0].x = 0.0;
@@ -54,8 +86,9 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
 
   while (i < nbeads) {
     if (!(tries++ < p.tries)) {
-      throw std::logic_error(
-          "number of tries exceeded while placing bead in box");
+      std::cout << " Initialization error with random placement for particle " << i << " after " << tries << " attempts." << std::endl;
+      std::cout << " Starting chain again." << std::endl;
+      return false;
     }
 
     // calculate the x-, y- and z-coordinates of a point that lies on the
@@ -137,6 +170,7 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     tries = 0;
   }
   std::cout << " Generated random initial unbonded configuration." << std::endl;
+  return true;
 }
 
 // if two nonlocal beads which can form a transient bond happened to reach

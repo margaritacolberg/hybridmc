@@ -20,13 +20,24 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
   if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
     // overwrite existing entries in pos and s_bias vectors with read-in values
     // from hdf5 file
+    std::cout << " Reading in snapshot " << *snapshot_name << std::endl;
     read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
   } else if (input_name && std::filesystem::exists(*input_name)) {
+    std::cout << "Reading in input file " << *input_name << std::endl;
     read_input(*input_name, sys.pos);
     init_update_config(sys.pos, update_config, box, p.transient_bonds);
     init_s(sys.s_bias, t_bonds);
   } else {
-    init_pos(sys.pos, box, mt, p);
+
+    bool found = false;
+    while (found == false)
+    {
+        found = init_pos(sys.pos, box, mt, p);
+    };
+
+    //std::cout << " Calling linear chain draw." << std::endl;
+    //draw_linear_chain(sys.pos,p);
+
     init_s(sys.s_bias, t_bonds);
   }
 }

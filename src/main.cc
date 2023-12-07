@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
   bool done_distances = false;
   int fail_counter = 0;
 
-
+  std::cout << " Starting convergence loop with Sbias values = " << sys.s_bias[0] << " " << sys.s_bias[1] << std::endl;
   // the BIIIIIIIG loop
   while (!done_g_test or !done_flip or !done_distances){
     // reset bead clocks, counters and wall time
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
         // increase the number of steps in trajectory
         if (flipping_rate > 0)
         {
-            p.nsteps = int(p.flip_req * p.nsteps/flipping_rate);
+            p.nsteps = int(p.flip_req * p.nsteps/flipping_rate) + 1;
             if (p.nsteps > 1000) p.nsteps = 1000;
         }
         else

@@ -28,8 +28,9 @@ using Random = std::mt19937;
 
 void unit_sphere(Random &mt, double &x, double &y, double &z);
 
-void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
+bool init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p);
+void draw_linear_chain(std::vector<Vec3> &pos, const Param &p);
 
 void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
                         const Box &box, const NonlocalBonds &transient_bonds);

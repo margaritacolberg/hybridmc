@@ -37,6 +37,6 @@
     "flip_req": 1.0,
     "WL_sbias": 6.0,
     "fail_max": 1,
-    "req_dists":5000,
+    "req_dists": 5000,
     "rc_target_min_percentile": 0.025
 }
