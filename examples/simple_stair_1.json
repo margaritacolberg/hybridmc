@@ -17,7 +17,7 @@
     "ncell": 5,
     "nsteps": 10,
     "nsteps_eq": 100,
-    "del_t": 0.2,
+    "del_t": 1.0,
     "nsteps_wl": 2,
     "del_t_wl": 2.0,
     "gamma": 0.1,
