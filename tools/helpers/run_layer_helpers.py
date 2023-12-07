@@ -59,8 +59,9 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     """
     Run staircase simulations for a given transition:
 
-    Until the outer-wall is close enough to the rc target, run simulations with the outer-wall moving in each time
-    by a distance determined by the distance distribution of the transient bond of interest in the last simulation.
+    Use rc values in stair_rc_list to define staircase potential for this transition.
+    Pipe each of the steps to run_sim and use results to eventually push beads together within a
+    distance of rc -- their target bonding rc.
 
     This function returns nothing, instead it will produce files for each staircase step. The final step
     output files will look like the normal non-staircase files but the intermediate outputs will have
@@ -72,7 +73,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     input_hdf5: str: name of the input hdf5 file
     output_name: str: name of the output file
     exe: str: path to the HMC executable
-    stair_rc_list: list: The first value is the outer rc for the first step, and the last value is the target rc
+    stair_rc_list: list: list of rc values to define staircase potential for this transition
 
     Returns
     -------
@@ -119,20 +120,20 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
 
         # simulation has converged if the rc target percentile is small enough: outer-wall close enough to rc
         if min_rc_percentile < rc_target_percentile:
-            rc = rc_target
             converged = True
-
+            rc = rc_target
 
         # otherwise keep pushing outer-wall in
-        elif rc == rc_target:
+        else:
             # find the rc that corresponds to the min_rc_percentile percentile of the distance: set as the new rc
             rc = round(dist_t_active[int(min_rc_percentile * len(dist_t_active))], 1)
-            converged = True
+            if rc == rc_target:
+                converged = True
 
-        # Else, Go to start of loop again
+        # Go to start of loop again
 
     # do final run with rc = target rc
-    # update the rc value for the bonds in the transient_bonds list and run the last simualtion
+    # update the rc value for the bonds in the transient_bonds list
     update_rc(data, rc)
     run_sim(data, input_hdf5, output_name, exe)
 
