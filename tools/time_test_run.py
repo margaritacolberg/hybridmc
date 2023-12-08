@@ -1,9 +1,17 @@
 from functools import wraps
 import time
-import run
-import argparse
 import json
 import csv
+import argparse
+import shutil
+import argparse
+import os
+from helpers.run_helpers import init_json
+from post_processing import diff_s_bias, avg_s_bias, mfpt
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 def timeit(func):
     @wraps(func)
@@ -39,13 +47,9 @@ def test_runtimes(file_path, new_values):
     data = update_json_data(data, new_values)
     save_json_data(data, 'runtime_test.json')
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--json', help='master json input file', default='runtime_test.json')
-    parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
-    parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
-                        default='old_2')
-
-    args = parser.parse_args()
+    args = {}
+    args['json'] = 'runtime_test.json'
+    args['exe'] = "../release/hybridmc"
 
     return hmc(args)
 
@@ -55,24 +59,67 @@ def hmc(args):
     """
     Simple function that runs main
     """
-    return run.main(args)
+
+    file_name = os.path.basename(args["json"])
+    dir_name = os.path.splitext(file_name)[0]
+
+    # Change directory name to suit the new temp working directory.
+    # add ../ to the path to indicate its use from a directory one more level down.
+    (args['json'], args['exe']) = ("../" + path for path in (args["json"], args["exe"]))
+
+    # Create dictionary that will have arguments passed to init_json
+    init_json_args = {"json": args["json"], "seed_increment": 1, "exe": args["exe"]}
+
+    nproc = os.cpu_count()
+    if os.getenv('SLURM_CPUS_PER_TASK'):
+        nproc = os.getenv('SLURM_CPUS_PER_TASK')
+
+    init_json_args["nproc"] = nproc
+
+    # create a temporary directory to run the simulations
+    tmp_dir_name = f'{dir_name}.tmp'
+    if not os.path.isdir(tmp_dir_name):
+        os.mkdir(tmp_dir_name)
+
+    # move into the temporary directory
+    os.chdir(tmp_dir_name)
+
+    # run the simulations for the layers
+    init_json(init_json_args)
+
+    # Move up from the directory with simulation results
+    os.chdir("../")
+
+    # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
+    shutil.rmtree(tmp_dir_name, ignore_errors=True, onerror=None)
 
 
-if __name__ == '__main__':
+def time_test(name):
+
     nbeads = [30, 40]
     del_t = [1, 2, 3, 4, 5]
-
     times = [[], [], []]
-
     for nbead in nbeads:
         for dt in del_t:
-            time = test_runtimes('time_test.json', {'nbeads': nbead, 'del_t': dt})
-            times[0].append(nbead), times[1].append(dt), times[2].append(time)
+            run_time = test_runtimes(f'{name}.json', {'nbeads': nbead, 'del_t': dt})
+            times[0].append(nbead), times[1].append(dt), times[2].append(round(run_time, 2))
 
-    with open('time_test.csv', 'w') as f:
+    with open(f'{name}_time_test.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['nbeads', 'del_t', 'time'])
         writer.writerows(zip(*times))
+
+    df = pd.read_csv(f'{name}_time_test.csv')
+    fig, ax = plt.subplots()
+
+    sns.scatterplot(data=df[df["nbeads"] == 30], x="del_t", y="time", ax=ax, label="30")
+    sns.scatterplot(data=df[df["nbeads"] == 40], x="del_t", y="time", ax=ax, label="40")
+
+    fig.savefig(f'{name}_time_test.png')
+
+
+if __name__ == '__main__':
+    time_test('time_test')
 
 
 
