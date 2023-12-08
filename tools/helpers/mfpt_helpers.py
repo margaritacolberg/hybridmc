@@ -769,7 +769,10 @@ def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
         nknots = nknots + 1
 
-    print(f"{struc_id} and state {state}: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+    if state:
+        print(f"{struc_id} inner fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+    else:
+        print(f"{struc_id} outer fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
 
     if plot_data and state == False:
         plot_outer_integrand(x,y,struc_id)
