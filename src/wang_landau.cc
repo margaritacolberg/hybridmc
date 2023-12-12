@@ -122,8 +122,9 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     double rc_middle = distance_values[int(n_rcs * 0.01)];
     double rc_outermost = distance_values[int(n_rcs * 0.075 )];
 
-    std::cout << "n_rcs: " << n_rcs << " rc_middle: " << rc_middle << " rc_outermost: " << rc_outermost << std::endl;
-    std::cout << "True rc " << rc_min << " rc_min: " << distance_values[0] << " rc_max: " << distance_values[n_rcs - 1] << std::endl;
+    //std::cout << "n_rcs: " << n_rcs << " rc_middle: " << rc_middle << " rc_outermost: " << rc_outermost << std::endl;
+    std::cout << "True rc " << rc_min << " rc_min: " << distance_values[0] << " rc_max: " << distance_values[n_rcs - 1]
+            << " dS = " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
 
     return_info.push_back(rc_middle);
     return_info.push_back(rc_outermost);
