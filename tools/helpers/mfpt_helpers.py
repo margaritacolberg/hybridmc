@@ -773,15 +773,16 @@ def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
         q, maxDev, devX = KStest(x, y, dist_vec, norm)
         nknots = nknots + 1
 
+    fpt_val = fpt(x, y, min_dist, max_dist, state)
     if state:
-        print(f"{struc_id} inner fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+        print(f"{struc_id} inner fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances: fpt{fpt_val}")
     else:
-        print(f"{struc_id} outer fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
+        print(f"{struc_id} outer fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances: fpt{fpt_val}")
 
     if plot_data or write_data and state == False:
         plot_outer_integrand(x,y,struc_id)
 
-    return fpt(x, y, min_dist, max_dist, state)
+    return fpt_val
 
 
 def if_stair(ref_sim_id, files):

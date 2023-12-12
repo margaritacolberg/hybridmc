@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
   bool done_distances = false;
   int fail_counter = 0;
 
+
   std::cout << " Starting convergence loop with Sbias values = " << sys.s_bias[0] << " " << sys.s_bias[1] << std::endl;
   // the BIIIIIIIG loop
   while (!done_g_test or !done_flip or !done_distances){
@@ -180,7 +181,12 @@ int main(int argc, char *argv[]) {
     // add this to see to only count bond events in each iteration
     count_bond.formed = 0;
     count_bond.broken = 0;
-    if (dist_writer.get_size() < p.req_dists) sys.distanceWrite = true; // only record distance data if needed
+    sys.distanceWrite = false; // default to no distance data storage
+    if (dist_writer.get_size() < p.req_dists)
+    {
+        sys.distanceWrite = true; // only record distance data if needed
+    }
+
 
     for (unsigned int iter = 0; iter < p.total_iter; iter++) {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
