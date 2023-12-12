@@ -630,6 +630,7 @@ def plot_outer_integrand(x_knot,y_knot,name):
     figName = f'{name}.png'
 
     plt.savefig(figName)
+    plt.close()
     #plt.show()
 
     datName = f'{name}.dat'
