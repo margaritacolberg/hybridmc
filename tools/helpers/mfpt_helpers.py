@@ -137,6 +137,7 @@ def fpt_write_wrap_default(name, nboot=0, boot_name=""):
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']
     nl_bonds = data['nonlocal_bonds']
+    max_d = data['req_dists']
 
     rc_transient = t_bonds[-1][-1]
 
@@ -162,7 +163,7 @@ def fpt_write_wrap_default(name, nboot=0, boot_name=""):
     t_on = []
     t_off = []
 
-    dist_t_active = get_dists(name, t_ind)
+    dist_t_active = get_dists(name, t_ind, max_d)
     for j in range(len(dist_t_active)):
 
         if dist_t_active[j] < rc_transient:
@@ -270,6 +271,7 @@ def inner_stair_fpt(name):
 
     t_bonds = data['transient_bonds']
     nl_bonds = data['nonlocal_bonds']
+    max_d = data['req_dists']
 
     rc_transient = t_bonds[-1][-1]
 
@@ -278,7 +280,7 @@ def inner_stair_fpt(name):
 
     t_on = []
 
-    dist_t_active = get_dists(name, t_ind)
+    dist_t_active = get_dists(name, t_ind, max_d)
     for j in range(len(dist_t_active)):
         if dist_t_active[j] < rc_transient:
             t_on.append(dist_t_active[j])
@@ -294,13 +296,14 @@ def knots_wrap(stair_output_name, rc_max):
 
     t_bonds = data['transient_bonds']
     nl_bonds = data['nonlocal_bonds']
+    max_d = data['req_dists']
 
     rc_transient = t_bonds[-1][-1]
 
     # get index of the transient bond in the list of nonlocal bonds
     t_ind = nl_bonds.index(t_bonds[0])
 
-    dist_t_active = get_dists(stair_output_name, t_ind)
+    dist_t_active = get_dists(stair_output_name, t_ind, max_d)
 
     t_on = []
     t_off = []

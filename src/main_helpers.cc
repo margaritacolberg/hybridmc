@@ -192,10 +192,10 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
     run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
 
-    dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
-    if (sys.distanceWrite) dist_writer.append(dist);
-
   }
+
+  dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
+  if (sys.distanceWrite) dist_writer.append(dist);
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2));
@@ -319,10 +319,6 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
     //set max time
     if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
 
-/*    std::cout << " In run_trajectory_wl at iter_wl = " << iter_wl << " step = " << step
-        << " max_time = " << max_time << " with nsteps_wl = " << p.nsteps_wl
-        << std::endl;*/
-
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     const double tot_E_before =
@@ -331,10 +327,6 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
     run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t_wl);
 
-    if (record_dists) {
-      dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, *dist);
-      dist_writer->append(*dist);
-    }
 
     const double tot_E_during =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
@@ -346,7 +338,14 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
       throw std::runtime_error("energy is not conserved");
     }
 
+    if (step % p.write_step == 0 and record_dists) {
+      dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, *dist);
+      dist_writer->append(*dist);
+    }
+
   }
+
+
 
   return update_config.config;
 }

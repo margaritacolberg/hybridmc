@@ -134,13 +134,12 @@ int main(int argc, char *argv[]) {
   initialize_pos(sys, mt, p_eq, box, update_config_eq, input_name,
                  snapshot_name, t_bonds);
 
+  sys.distanceWrite = false; // don't write distance data during equilibration step since states aren't equally likely
   for (unsigned int iter = 0; iter < p_eq.total_iter; iter++) {
     run_trajectory_eq(sys, mt, p_eq, box, update_config_eq, count_bond,
                       iter, dist_writer, dist);
   }
 
-
-  // Wang-Landau
   init_update_config(sys.pos, update_config, box, p.transient_bonds);
 
   for (unsigned int i = 0; i < p.nbeads; i++) {
@@ -148,6 +147,7 @@ int main(int argc, char *argv[]) {
     sys.counter[i] = 0.0;
   }
 
+// Wang-Landau
   wang_landau_process(sys, mt, p, box, update_config, count_bond, nstates, sys.s_bias, dist_writer, dist);
 
   const hsize_t mem_dims[1] = {sys.s_bias.size()};
@@ -164,7 +164,9 @@ int main(int argc, char *argv[]) {
   int fail_counter = 0;
 
 
-  std::cout << " Starting convergence loop with Sbias values = " << sys.s_bias[0] << " " << sys.s_bias[1] << std::endl;
+  int current_distances = dist_writer.get_size();
+  std::cout << " Starting convergence loop with Sbias values = "
+        << sys.s_bias[0] << " " << sys.s_bias[1] << " recorded distances = " << current_distances << std::endl;
   // the BIIIIIIIG loop
   while (!done_g_test or !done_flip or !done_distances){
     // reset bead clocks, counters and wall time
@@ -182,9 +184,12 @@ int main(int argc, char *argv[]) {
     count_bond.formed = 0;
     count_bond.broken = 0;
     sys.distanceWrite = false; // default to no distance data storage
-    if (dist_writer.get_size() < p.req_dists)
+    current_distances = dist_writer.get_size();
+    if (current_distances < p.req_dists)
     {
         sys.distanceWrite = true; // only record distance data if needed
+        std::cout << " Recording distances since size  = " << current_distances
+                    << "  req_dists = " << p.req_dists << std::endl;
     }
 
 

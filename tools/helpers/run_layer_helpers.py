@@ -110,6 +110,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         # set the outer rc for the next step to be the current rc
         data["stair"] = rc
 
+
         # Convergence Check:
 
         # get the list of distances for the last simulation
