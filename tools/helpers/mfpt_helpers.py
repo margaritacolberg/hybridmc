@@ -19,7 +19,8 @@ from post_processing import matrix_element
 
 
 # tol, rtol, maxiter = 1e-3, 1e-3, 100
-plot_data = True
+plot_data = False
+write_data = True
 BFGS = True
 
 best_val = np.inf
@@ -245,7 +246,7 @@ def fpt_write_wrap_stair(name, stair_rc_list):
 
     outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
 
-    if plot_data:
+    if plot_data or write_data:
         plot_outer_integrand(xknots_total, yknots_total, name)
 
 
@@ -621,23 +622,25 @@ def plot_outer_integrand(x_knot,y_knot,name):
     my_dict = dict(x=x,y=pdf_val,z=y_integrand)
     data = pd.DataFrame (my_dict)
 
-    fig, (ax1,ax2) = plt.subplots(1,2)
+    if plot_data:
+        fig, (ax1,ax2) = plt.subplots(1,2)
 
-    #sns.histplot(data=data,x='x',y='y',kde=True,ax=ax1)
-    sns.lineplot(data=data,x='x',y='y',ax=ax1)
-    sns.lineplot(data=data,x='x',y='z',ax=ax2)
+        #sns.histplot(data=data,x='x',y='y',kde=True,ax=ax1)
+        sns.lineplot(data=data,x='x',y='y',ax=ax1)
+        sns.lineplot(data=data,x='x',y='z',ax=ax2)
 
-    figName = f'{name}.png'
+        figName = f'{name}.png'
 
-    plt.savefig(figName)
-    plt.close()
+        plt.savefig(figName)
+        plt.close()
     #plt.show()
 
-    datName = f'{name}.dat'
-    file_object = open(datName, "w")
-    for i in range(len(x)):
-        print(x[i], pdf_val[i],y_integrand[i], file=file_object)
-    file_object.close()
+    if write_data:
+        datName = f'{name}.dat'
+        file_object = open(datName, "w")
+        for i in range(len(x)):
+            print(x[i], pdf_val[i],y_integrand[i], file=file_object)
+        file_object.close()
 
 
 
@@ -758,7 +761,7 @@ def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
 
     q = 0
     nknots = 5
-    while q < 0.95 and nknots < 18:
+    while q < 0.7 and nknots < 18:
         x = np.linspace(min_dist, max_dist, nknots)
         # initial guess for y-coordinates of knots8
         y = np.zeros(nknots)
@@ -775,7 +778,7 @@ def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
     else:
         print(f"{struc_id} outer fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances.")
 
-    if plot_data and state == False:
+    if plot_data or write_data and state == False:
         plot_outer_integrand(x,y,struc_id)
 
     return fpt(x, y, min_dist, max_dist, state)
