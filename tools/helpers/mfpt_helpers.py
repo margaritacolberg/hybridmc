@@ -5,7 +5,9 @@ import os
 import h5py
 import nlopt
 import numpy as np
+import copy
 from scipy import sparse, interpolate, integrate
+from scipy import stats
 from scipy.special import kolmogorov
 from sklearn import utils
 from sys import path
@@ -19,9 +21,14 @@ from post_processing import matrix_element
 
 
 # tol, rtol, maxiter = 1e-3, 1e-3, 100
-plot_data = False
+plot_data = True
 write_data = True
 BFGS = True
+
+#Adaptive_KS = True
+Adaptive_KS = False
+q_cut = 0.925
+Verbose_Convergence = True
 
 best_val = np.inf
 best_args = None
@@ -630,6 +637,7 @@ def plot_outer_integrand(x_knot,y_knot,name):
 
         #sns.histplot(data=data,x='x',y='y',kde=True,ax=ax1)
         sns.lineplot(data=data,x='x',y='y',ax=ax1)
+
         sns.lineplot(data=data,x='x',y='z',ax=ax2)
 
         figName = f'{name}.png'
@@ -644,11 +652,6 @@ def plot_outer_integrand(x_knot,y_knot,name):
         for i in range(len(x)):
             print(x[i], pdf_val[i],y_integrand[i], file=file_object)
         file_object.close()
-
-
-
-
-
 
 
 def fpt(x_knot, y_knot, xmin, xmax, state):
@@ -683,7 +686,109 @@ def fpt_var(dist_vec, min_dist, max_dist, state, nboot, name):
 
     return np.var(boot_fpt, ddof=1)
 
+def chisquare_fit(x_knot, y_knot, dist_vec, norm):
+    # assumes dist_vec is sorted and norm is calculated beforehand
+    # Make discrete probability by integrating pdf over numK equal probability intervals
+    # Perform chi^2 test on interval counts, assuming dof = the number of knot parameters
+    #
+    pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
+    numK = 500
+    numPoints = dist_vec.size
+    if (numPoints < 5*numK):
+        numK = numPoints/5
 
+    indices = np.linspace(0, numPoints, numK + 1, dtype=np.int64)
+    Expected = np.zeros(numK)
+    Observed = np.zeros(numK)
+    for i in range(numK):
+        first_index = indices[i]
+        second_index = indices[i + 1]
+        if i == numK - 1:
+            second_index = numPoints - 1
+
+        # distance values at evenly-spaced probability intervals of 1/numK
+        x_i = dist_vec[first_index]
+        x_f = dist_vec[second_index]
+
+        Observed[i] = (second_index - first_index)
+        Expected[i] = integrate.quadrature(pdf_func, x_i, x_f, tol=1e-6, rtol=1e-6,maxiter=100)[0] * (numPoints-1)
+        #print('range [', x_i, ',', x_f, ']. Expected[i] = ', Expected[i], ' percentiles = ', Observed[i])
+
+    norm_p = np.sum(Observed)
+    norm_e = np.sum(Expected)
+    # must normalized expected results so that the counts agree to suitable precision for stats.chisquare
+    Expected = Expected * norm_p / norm_e
+
+    statistic, pval = stats.chisquare(f_obs=Observed, f_exp=Expected, ddof=x_knot.size)
+    if Verbose_Convergence:
+        print('      Chi-squared statistic: ', statistic, 'p-value:', pval, ' numK = ',numK, ' num knots = ', x_knot.size)
+    # return probability that the statistic would arise by chance given the pdf
+    return pval
+
+def KuipersTest(x_knot, y_knot, dist_vec, norm):
+    f = lambda t: np.exp(-spline(x_knot, y_knot, t))
+
+    npoints = len(dist_vec)
+    # print("In KStest with npoints = ", npoints)
+    cdf = []
+    cdf.append(0.)
+
+    ecdfs = np.arange(npoints + 1, dtype=float) / npoints
+
+    cdf_prev = 0.
+    for i in range(npoints - 1):
+        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=1e-6, rtol=1e-6)[0] / norm
+        cdf_i = cdf_prev + integral_val
+        cdf.append(cdf_i)
+        cdf_prev = cdf_i
+
+    cdf.append(1.0)
+    cdf = np.array(cdf)
+
+
+    g = q = 0.0
+    h1 = -np.inf
+    h2 = -np.inf
+
+    devIndex1 = -1
+    devIndex2 = -1
+    b = np.sqrt(npoints)
+    for i in range(npoints):
+        d1 = cdf[i] - ecdfs[i]
+
+        if (d1 > h1):
+            devIndex1 = i
+            h1= d1
+
+        d2 = ecdfs[i+1] - cdf[i]
+        if (d2 > h2):
+            devIndex2 = i
+            h2 = d2
+
+    h = h1 + h2
+    d = b * h + 0.155 * h + 0.24 * h / b
+    a = 2 * d * d
+
+    for i in range(1,201):
+        term = (4.0 * a * i * i - 2.0) * np.exp(-a * i * i)
+        q += term
+        if np.abs(term) <= g:
+            break
+        else:
+            g = np.abs(term)/1000.
+
+    maxDev = h
+    devIndex = devIndex1
+    if np.abs(d1) < np.abs(d2):
+        devIndex = devIndex2
+
+    devX = dist_vec[devIndex]
+
+    #print(' h1 = ', h1, ' h2 = ', h2, ' for Kuipers test')
+    if Verbose_Convergence:
+        print('Kuipers test: q=', q, ' refining devX =', devX, ' num knots is ', x_knot.size)
+
+    return q, maxDev, devX
 def KStest(x_knot, y_knot, dist_vec, norm):
     f = lambda t: np.exp(-spline(x_knot, y_knot, t))
 
@@ -724,33 +829,94 @@ def KStest(x_knot, y_knot, dist_vec, norm):
         if (d > h):
             devIndex = i
             h = d
-    Kn = b * h
+
     d = b * h + 0.12 * h + 0.11 * h / b
     q = kolmogorov(d)
-    a = -2 * d * d
-    g = 0.
+
     # print(' Calculate q value using h = ', h, ' Kn = ', Kn, ' devIndex = ', devIndex)
     maxDev = h
-    # print('q is ', q, ' devIndex is ', devIndex, ' maxDev is ', maxDev, ' num knots is ', x_knot.size)
     devX = dist_vec[devIndex]
+    if Verbose_Convergence:
+        print('Adaptive KS: q =', q, ' devX = ', devX, ' num knots is ', x_knot.size)
 
     return q, maxDev, devX
 
-
 def find_knots(dist_vec, min_dist, max_dist):
+    #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
+    dist_vec.sort()
+
+    q = 0.
+    q_best = 0.
+    nknots = 5
+    x = np.linspace(min_dist, max_dist,nknots)
+    y = np.zeros(nknots)
+
+
+    while q < q_cut and x.size < 18:
+
+        y = minimize_f(x, dist_vec, y)
+        norm = integrate_spline(x, y)
+
+        if Adaptive_KS:
+            #  Use maximum deviation in KS test to position knots
+            q, maxDev, devX = KStest(x,y,dist_vec,norm)
+        else:
+            # Use Kuipers test to refine knot positions:  supposedly more sensitive to tails of density
+            q, maxDev, devX = KuipersTest(x, y, dist_vec, norm)
+
+        if q > q_best:
+            q_best = q
+            x_best = copy.deepcopy(x)
+            y_best = copy.deepcopy(y)
+
+
+        if q < q_cut:
+
+            x_new = copy.deepcopy(x)
+            x_new = np.append(x_new,devX)
+            x_new.sort()
+
+            # check to see if devX is already one of the knots
+            u, c = np.unique(x_new, return_counts=True)
+            dup = u[c > 1]
+            if len(dup)>0:
+                if Verbose_Convergence:
+                    print(' Adaptive process abandoned since suggested knot position ', devX, ' duplicated in array ', x_new)
+
+                nknots = x.size
+                x = np.linspace(min_dist, max_dist, nknots)
+                y = np.zeros(nknots)
+            else:
+                y_new = spline(x,y,x_new)
+                x = x_new
+                y= y_new
+
+    nknots = x_best.size
+    q_chi = chisquare_fit(x_best, y_best, dist_vec, norm)
+    if q_chi < 0.05:
+        if Verbose_Convergence:
+            print('Warning: chi-squared test value of q = ', q_chi , ' lies below generally accepted threshold.')
+            print('    xmin = ', min_dist, ' xmax = ',max_dist)
+
+    y_best -= y_best[-1]
+    return nknots, x_best, y_best
+def find_knots_old(dist_vec, min_dist, max_dist):
     #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
     #print('dist_vec is ', dist_vec)
 
     q = 0.
     nknots = 4
-    while q < 0.95 and nknots < 18:
+    while q < q_cut and nknots < 18:
         nknots = nknots + 1
         x = np.linspace(min_dist, max_dist, nknots)
         y = np.zeros(nknots)
         y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)
-        q, maxDev, devX = KStest(x, y, dist_vec, norm)
+        if chisquared_gof:
+            q = chisquare_fit(x, y, dist_vec, norm)
+        else:
+            q, maxDev, devX = KStest(x, y, dist_vec, norm)
         #print('q is ', q, ' for nknots = ', nknots)
 
     # make last index zero
@@ -762,28 +928,16 @@ def find_knots(dist_vec, min_dist, max_dist):
 def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
     dist_vec.sort()
 
-    q = 0
-    nknots = 5
-    while q < 0.7 and nknots < 18:
-        x = np.linspace(min_dist, max_dist, nknots)
-        # initial guess for y-coordinates of knots8
-        y = np.zeros(nknots)
+    nknots, xb,yb = find_knots(dist_vec,min_dist, max_dist)
+    fpt_val = fpt(xb, yb, min_dist, max_dist, state)
 
-        y = minimize_f(x, dist_vec, y)
-
-        norm = integrate_spline(x, y)
-        # print('norm is ', norm)
-        q, maxDev, devX = KStest(x, y, dist_vec, norm)
-        nknots = nknots + 1
-
-    fpt_val = fpt(x, y, min_dist, max_dist, state)
     if state:
-        print(f"{struc_id} inner fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances: fpt{fpt_val}")
+        print(f"{struc_id} inner fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt{fpt_val}")
     else:
-        print(f"{struc_id} outer fpt: Converged for q = {q} for nknots = {nknots - 1}  with {len(dist_vec)} distances: fpt{fpt_val}")
+        print(f"{struc_id} outer fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt{fpt_val}")
 
     if plot_data or write_data and state == False:
-        plot_outer_integrand(x,y,struc_id)
+        plot_outer_integrand(xb,yb,struc_id)
 
     return fpt_val
 
