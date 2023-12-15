@@ -27,7 +27,7 @@ BFGS = True
 
 #Adaptive_KS = True
 Adaptive_KS = False
-q_cut = 0.925
+q_cut = 0.2
 Verbose_Convergence = True
 
 best_val = np.inf
@@ -376,8 +376,7 @@ def integrate_spline(x_knot, y_knot):
     f = lambda x: np.exp(-spline(x_knot, y_knot, x))
 
     for i in range(len(x_knot) - 1):
-        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], tol=1e-6,
-                                           rtol=1e-6)[0])
+        output.append(integrate.quadrature(f, x_knot[i], x_knot[i + 1], maxiter=55,tol=1e-6,rtol=1e-6)[0])
 
     return sum(output)
 
@@ -505,10 +504,12 @@ def minimize_f(x, x_i, y0):
 
 
     if BFGS:
+        ub = np.full(len(x),10.0)
+        lb = np.full(len(x),-10.0)
         min_f = minimize(f, y0, method=nlopt.LD_LBFGS, jac=df, ub=None, lb=None)
     else:
-        ub = np.full(len(x),5.0)
-        lb = np.full(len(x),-5.0)
+        ub = np.full(len(x),10.0)
+        lb = np.full(len(x),-10.0)
         min_f = minimize(f, y0, method=nlopt.LN_COBYLA, jac=None, ub=ub,lb=lb)
 
 
@@ -577,7 +578,7 @@ def cdf_at_x(x_knot, y_knot, x, norm, cdf_base):
 
     pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
 
-    pdf_integral = integrate.quadrature(pdf_func, x_knot[x_nearest_idx], x, tol=1e-6, rtol=1e-6)[0]
+    pdf_integral = integrate.quadrature(pdf_func, x_knot[x_nearest_idx], x, maxiter=55,tol=1e-3, rtol=1e-3)[0]
 
     return cdf_base[x_nearest_idx] + pdf_integral
 
@@ -596,8 +597,8 @@ def fpt_integrand(x_knot, y_knot, x, state, norm):
     # iterate through all the x knot values
     for i, el in enumerate(x_knot):
         # evaluate the integral from the first knot to the current knot of pdf_func
-        res = integrate.quadrature(pdf_func, x_knot[0], el, tol=1e-6, rtol=1e-6,
-                                   maxiter=100)[0]
+        res = integrate.quadrature(pdf_func, x_knot[0], el, tol=1e-3, rtol=1e-3,
+                                   maxiter=90)[0]
 
         # print(f"The integral from {xknots[0]} to {el} is: {res}")
         # append this integral to the database
@@ -657,7 +658,7 @@ def plot_outer_integrand(x_knot,y_knot,name):
 def fpt(x_knot, y_knot, xmin, xmax, state):
     f = lambda x: fpt_integrand(x_knot, y_knot, x, state, norm)
     norm = integrate_spline(x_knot, y_knot)
-    fval = integrate.quadrature(f, xmin, xmax, tol=1e-6, rtol=1e-6, maxiter=100)
+    fval = integrate.quadrature(f, xmin, xmax, tol=1e-3, rtol=1e-3, maxiter=100)
     return fval
 
 
@@ -711,7 +712,7 @@ def chisquare_fit(x_knot, y_knot, dist_vec, norm):
         x_f = dist_vec[second_index]
 
         Observed[i] = (second_index - first_index)
-        Expected[i] = integrate.quadrature(pdf_func, x_i, x_f, tol=1e-6, rtol=1e-6,maxiter=100)[0] * (numPoints-1)
+        Expected[i] = integrate.quadrature(pdf_func, x_i, x_f, tol=1e-3, rtol=1e-3,maxiter=95)[0] * (numPoints-1)
         #print('range [', x_i, ',', x_f, ']. Expected[i] = ', Expected[i], ' percentiles = ', Observed[i])
 
     norm_p = np.sum(Observed)
@@ -737,7 +738,7 @@ def KuipersTest(x_knot, y_knot, dist_vec, norm):
 
     cdf_prev = 0.
     for i in range(npoints - 1):
-        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=1e-6, rtol=1e-6)[0] / norm
+        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], maxiter=65,tol=1e-3, rtol=1e-3)[0] / norm
         cdf_i = cdf_prev + integral_val
         cdf.append(cdf_i)
         cdf_prev = cdf_i
@@ -802,7 +803,7 @@ def KStest(x_knot, y_knot, dist_vec, norm):
 
     cdf_prev = 0.
     for i in range(npoints - 1):
-        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], tol=1e-6, rtol=1e-6)[0] / norm
+        integral_val = integrate.quadrature(f, dist_vec[i], dist_vec[i + 1], maxiter=62,tol=1e-3, rtol=1e-3)[0] / norm
         cdf_i = cdf_prev + integral_val
         cdf.append(cdf_i)
         cdf_prev = cdf_i
@@ -841,10 +842,15 @@ def KStest(x_knot, y_knot, dist_vec, norm):
 
     return q, maxDev, devX
 
+def find_nearest_value(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx, array[idx]
 def find_knots(dist_vec, min_dist, max_dist):
     #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
 
+    delta_x = (max_dist - min_dist) / 20.
     q = 0.
     q_best = 0.
     nknots = 5
@@ -869,8 +875,16 @@ def find_knots(dist_vec, min_dist, max_dist):
             x_best = copy.deepcopy(x)
             y_best = copy.deepcopy(y)
 
+        i_nearest, x_nearest = find_nearest_value(x, devX)
+
+        if x_nearest != devX:
+            i_lower = find_nearest(x, devX)
+            #print('devX = ', devX, ' is in interval [', x[i_lower], ',', x[i_lower + 1], ']')
+            devX = x[i_lower] + 0.5 * (x[i_lower + 1] - x[i_lower])
+
 
         if q < q_cut:
+            print('Will place knot at ', devX)
 
             x_new = copy.deepcopy(x)
             x_new = np.append(x_new,devX)

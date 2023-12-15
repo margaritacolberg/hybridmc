@@ -14,15 +14,15 @@ plot_data = True
 write_data = True
 BFGS = True
 chisquared_gof = True
-q_cut = 0.9
-Adaptive_KS = False
+q_cut = 0.2
+Adaptive_KS = True
 
 best_val = np.inf
 best_args = None
 
 
 
-numPoints = 1001
+numPoints = 2001
 numK = 100
 mu, sigma = 10.0, 1 # mean and standard deviation
 gamma = 1.5
@@ -261,10 +261,12 @@ def minimize_f(x, x_i, y0):
 
 
     if BFGS:
+        ub = np.full(len(x),10.0)
+        lb = np.full(len(x),-10.0)
         min_f = minimize(f, y0, method=nlopt.LD_LBFGS, jac=df, ub=None, lb=None)
     else:
-        ub = np.full(len(x),5.0)
-        lb = np.full(len(x),-5.0)
+        ub = np.full(len(x),10.0)
+        lb = np.full(len(x),-10.0)
         min_f = minimize(f, y0, method=nlopt.LN_COBYLA, jac=None, ub=ub,lb=lb)
 
 
@@ -462,10 +464,17 @@ def chisquare_fit(x_knot, y_knot, dist_vec, norm):
     # return probability that the statistic would arise by chance given the pdf
     return pval
 
+
+def find_nearest_value(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx, array[idx]
+
 def find_knots(dist_vec, min_dist, max_dist):
     #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
 
+    delta_x = (max_dist - min_dist)/20.
     q = 0.
     q_best = 0.
     nknots = 5
@@ -490,6 +499,18 @@ def find_knots(dist_vec, min_dist, max_dist):
             x_best = copy.deepcopy(x)
             y_best = copy.deepcopy(y)
 
+        i_nearest, x_nearest = find_nearest_value(x,devX)
+
+        if x_nearest != devX:
+            i_lower = find_nearest(x,devX)
+            print('devX = ', devX, ' is in interval [',x[i_lower],',',x[i_lower+1],']')
+
+            interval = x[i_lower+1] - x[i_lower]
+            if abs(devX - x_nearest) < 0.01*interval:
+                print(' devX is too near a knot so placing at mid-interval')
+                devX = x[i_lower] + 0.5*(x[i_lower+1] - x[i_lower])
+
+            print('Will place knot at ', devX)
 
         if q < q_cut:
 
@@ -528,8 +549,12 @@ def plot_data(x_knot,y_knot,dist_vec):
         fig, ax1 = plt.subplots(1,1)
         sns.kdeplot(data=dist_vec)
         #sns.histplot(data=data,x='x',y='dist_vec',kde=True,ax=ax1)
-        ax1.hist(dist_vec,density=True,bins=1000)
+        nbins = int(dist_vec.size/50)
+        ax1.hist(dist_vec,density=True,bins=nbins)
         sns.lineplot(data=data,x='x',y='y',ax=ax1)
+
+        yvals = np.exp(-spline(x_knot,y_knot,x_knot))/norm
+        plt.scatter(x_knot,yvals)
 
         figName = f'{name}.png'
 
