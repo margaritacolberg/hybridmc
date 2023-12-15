@@ -696,7 +696,7 @@ def chisquare_fit(x_knot, y_knot, dist_vec, norm):
     numK = 500
     numPoints = dist_vec.size
     if (numPoints < 5*numK):
-        numK = numPoints/5
+        numK = int(numPoints/5)
 
     indices = np.linspace(0, numPoints, numK + 1, dtype=np.int64)
     Expected = np.zeros(numK)
@@ -884,7 +884,8 @@ def find_knots(dist_vec, min_dist, max_dist):
 
 
         if q < q_cut:
-            print('Will place knot at ', devX)
+            if Verbose_Convergence:
+                print('Will place knot at ', devX)
 
             x_new = copy.deepcopy(x)
             x_new = np.append(x_new,devX)
