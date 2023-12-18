@@ -14,6 +14,7 @@
 import csv
 import json
 import numpy as np
+from collections import OrderedDict
 from sys import path
 path.append('..')
 from helpers.data_processing_helpers import format_bits
@@ -73,9 +74,12 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
             if not bits_out in work_list:
                 work_list.append(bits_out)
 
+    # sort by the level (number of bits in key), then by integer index of converted binary key
+    avg_sorted = OrderedDict(sorted(avg_s_bias.items(), key=lambda t: (int(t[0], 2).bit_count(), int(t[0], 2))))
     with open(output_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
-        writer.writerows(sorted(avg_s_bias.items()))
+        writer.writerows(avg_sorted.items())
+        #writer.writerows(sorted(avg_s_bias.items()))
 
 
 if __name__ == '__main__':
