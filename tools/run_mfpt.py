@@ -28,10 +28,6 @@ def main(args):
     file_name = os.path.basename(args.json)
     dir_name = os.path.splitext(file_name)[0]
 
-    if os.path.isdir(dir_name):
-        print(f'{dir_name} already exists; saved as old version with given version code')
-        os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
-
     # Change directory name to suit the new temp working directory.
     # add ../ to the path to indicate its use from a directory one more level down.
     (args.json, args.exe) = ("../" + path for path in (args.json, args.exe))
@@ -45,22 +41,8 @@ def main(args):
 
     init_json_args["nproc"] = nproc
 
-    # create a temporary directory to run the simulations
-    tmp_dir_name = f'{dir_name}.tmp'
-    if not os.path.isdir(tmp_dir_name):
-        os.mkdir(tmp_dir_name)
-
-    # move into the temporary directory
-    os.chdir(tmp_dir_name)
-
-    # run the simulations for the layers
-    #init_json(init_json_args)
-
-    # Obtain the differences in the sbias for each transition
-    #diff_s_bias.get_diff_sbias()
-
-    # Obtain the average sbias for each bonding state
-    #avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
+    # move into the directory
+    os.chdir(dir_name)
 
     # Obtain the mfpt for each bonding state
     mfpt.get_mfpt()
@@ -70,9 +52,6 @@ def main(args):
 
     # Move up from the directory with simulation results
     os.chdir("../")
-
-    # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
-    os.rename(src=tmp_dir_name, dst=dir_name)
 
 
 if __name__ == '__main__':

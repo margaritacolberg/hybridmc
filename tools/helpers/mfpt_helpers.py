@@ -25,9 +25,9 @@ plot_data = True
 write_data = True
 BFGS = True
 
-#Adaptive_KS = True
+Adaptive = False
 Adaptive_KS = False
-q_cut = 0.2
+q_cut = 0.5
 Verbose_Convergence = True
 
 best_val = np.inf
@@ -863,48 +863,66 @@ def find_knots(dist_vec, min_dist, max_dist):
         y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)
 
-        if Adaptive_KS:
-            #  Use maximum deviation in KS test to position knots
-            q, maxDev, devX = KStest(x,y,dist_vec,norm)
-        else:
-            # Use Kuipers test to refine knot positions:  supposedly more sensitive to tails of density
-            q, maxDev, devX = KuipersTest(x, y, dist_vec, norm)
-
-        if q > q_best:
-            q_best = q
-            x_best = copy.deepcopy(x)
-            y_best = copy.deepcopy(y)
-
-        i_nearest, x_nearest = find_nearest_value(x, devX)
-
-        if x_nearest != devX:
-            i_lower = find_nearest(x, devX)
-            #print('devX = ', devX, ' is in interval [', x[i_lower], ',', x[i_lower + 1], ']')
-            devX = x[i_lower] + 0.5 * (x[i_lower + 1] - x[i_lower])
 
 
-        if q < q_cut:
-            if Verbose_Convergence:
-                print('Will place knot at ', devX)
-
-            x_new = copy.deepcopy(x)
-            x_new = np.append(x_new,devX)
-            x_new.sort()
-
-            # check to see if devX is already one of the knots
-            u, c = np.unique(x_new, return_counts=True)
-            dup = u[c > 1]
-            if len(dup)>0:
-                if Verbose_Convergence:
-                    print(' Adaptive process abandoned since suggested knot position ', devX, ' duplicated in array ', x_new)
-
-                nknots = x.size
-                x = np.linspace(min_dist, max_dist, nknots)
-                y = np.zeros(nknots)
+        if Adaptive:
+            if Adaptive_KS:
+                #  Use maximum deviation in KS test to position knots
+                q, maxDev, devX = KStest(x,y,dist_vec,norm)
             else:
-                y_new = spline(x,y,x_new)
+                # Use Kuipers test to refine knot positions:  supposedly more sensitive to tails of density
+                q, maxDev, devX = KuipersTest(x, y, dist_vec, norm)
+
+            if q > q_best:
+                q_best = q
+                x_best = copy.deepcopy(x)
+                y_best = copy.deepcopy(y)
+
+            i_nearest, x_nearest = find_nearest_value(x, devX)
+
+            if x_nearest != devX:
+                i_lower = find_nearest(x, devX)
+                #print('devX = ', devX, ' is in interval [', x[i_lower], ',', x[i_lower + 1], ']')
+                devX = x[i_lower] + 0.5 * (x[i_lower + 1] - x[i_lower])
+
+
+            if q < q_cut:
+                if Verbose_Convergence:
+                    print('Will place knot at ', devX)
+
+                x_new = copy.deepcopy(x)
+                x_new = np.append(x_new,devX)
+                x_new.sort()
+
+                # check to see if devX is already one of the knots
+                u, c = np.unique(x_new, return_counts=True)
+                dup = u[c > 1]
+                if len(dup)>0:
+                    if Verbose_Convergence:
+                        print(' Adaptive process abandoned since suggested knot position ', devX, ' duplicated in array ', x_new)
+
+                    nknots = x.size
+                    x = np.linspace(min_dist, max_dist, nknots)
+                    y = np.zeros(nknots)
+                else:
+                    y_new = spline(x,y,x_new)
+                    x = x_new
+                    y= y_new
+        else:
+            q, maxDev, devX = KuipersTest(x, y, dist_vec, norm)
+            if q > q_best:
+                q_best = q
+                x_best = copy.deepcopy(x)
+                y_best = copy.deepcopy(y)
+
+            if q < q_cut:
+                x_new = np.linspace(min_dist, max_dist, nknots+1)
+                y_new = spline(x, y, x_new)
                 x = x_new
-                y= y_new
+                y = y_new
+                nknots = x.size
+
+
 
     nknots = x_best.size
     q_chi = chisquare_fit(x_best, y_best, dist_vec, norm)
