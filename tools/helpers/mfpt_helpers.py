@@ -21,8 +21,8 @@ from post_processing import matrix_element
 
 
 # tol, rtol, maxiter = 1e-3, 1e-3, 100
-plot_data = True
-write_data = True
+plot_data = False
+write_data = False
 BFGS = True
 
 Adaptive = False
