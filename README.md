@@ -88,8 +88,7 @@ pip install .
 
 ### Run Program
 
-For any protein with or without staircase potentials, use `run.py`; for
-non-staircase crambin folding, use `run.py` or `crambin.sh`.
+Simply run the python executable run.py --json JSON_NAME.json
 
 The json files for running the examples (for example test.json) in the examples directory
 have the following parameters:
@@ -172,9 +171,11 @@ have the following parameters:
 
 ### Calculate Entropy
 
-To get biased entropy of each state, use `diff_s_bias.py`, followed by
+To get biased entropy of each state manually, use `diff_s_bias.py`, followed by
 `avg_s_bias.py`. To get biased entropy of each state which includes the
 staircase potential, use `diff_s_bias_stair.py`, followed by `avg_s_bias.py`.
+
+But this is done automatically when run.py is executed.
 
 To find which transition gives smallest entropy difference, use
 `min_diff_s_bias.py`. To get percent error for the entropy of one transition,
@@ -182,10 +183,12 @@ use `get_error_s_bias.py`.
 
 ### Calculate MFPT
 
-To calculate MFPT for a single transition, use `mfpt.py`. To calculate MFPT for
+To calculate MFPT for a single transition manually, use `mfpt.py`. To calculate MFPT for
 all transitions in current dir, use `run_mfpt.py`. To combine the MFPT for each
 step of staircase into a single MFPT for the transition, use
 `mfpt_for_stair.py`.
+
+Again, as with the entropy, this is done automatically when run.py is executed.
 
 ### Rerun Files
 
