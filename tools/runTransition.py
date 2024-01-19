@@ -45,7 +45,7 @@ def get_transition_data(output_name, exe_name, data, input_hdf5, stair_bp, stair
     os.mkdir(iter_output_name)
     os.chdir(iter_output_name)
 
-    data['seeds'] = [i + 1 for i in data['seeds']]
+    data['seeds'] = [seed + i for seed in data['seeds']]
 
     run_TransitionProcess(exe_name, data, input_hdf5, output_name, stair_bp, stair_rc_list)
 
@@ -112,10 +112,7 @@ def main(args):
     # run_TransitionSerial(json_name=args.json, exe_name=args.exe)
 
     # compile all data into a summary csv file
-    #get_error.summarize_transition()
-
-    # get error for the rate_constant as well
-    #get_error.compute_error('summary_data.csv')
+    get_error.summarize_transition()
 
 
 if __name__ == '__main__':
