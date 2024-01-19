@@ -9,12 +9,8 @@
 import argparse
 from helpers.data_processing_helpers import *
 from helpers.run_layer_helpers import run_sim, run_stairs
-from post_processing import diff_s_bias, mfpt
+from post_processing import diff_s_bias, mfpt, get_error
 import multiprocessing as mp
-import glob
-from pandas import read_csv
-from csv import DictWriter
-import numpy as np
 
 
 def post_processing():
@@ -109,63 +105,26 @@ def run_TransitionSerial(json_name, exe_name, n_iterations=2):
         get_transition_data(output_name, exe_name, data, input_hdf5, stair_bp, stair_rc_list, i)
 
 
-def summarize_transition():
-    # define patterns for diff s bias and mfpt files
-    src_bias, src_mfpt = '*/diff_s_bias.csv', '*/mfpt.csv'
-
-    # intitialize lists to hold sbias and mfpts for the transition
-    diff_sbias = []
-    inner_mfpts = []
-    outer_mfpts = []
-
-    # average diff_s_bias compilation
-    for csv_file in glob.glob(src_bias):
-        sbias_data = read_csv(csv_file, header=None)
-        diff_sbias.append(sbias_data.iloc[0, 2])
-
-    # mfpt compilation
-    for csv_file in glob.glob(src_mfpt):
-        mfpts_data = read_csv(csv_file)
-        inner_mfpts.append(mfpts_data.iloc[:, 3].values[0])
-        outer_mfpts.append(mfpts_data.iloc[:, 4].values[0])
-
-    # put values together in a list of dictionaries
-    output = [
-        {'ID': 'sbias', 'vals': diff_sbias},
-        {'ID': 'inner_mfpts', 'vals': inner_mfpts},
-        {'ID': 'outer_mfpts', 'vals': outer_mfpts}
-    ]
-
-    # for each dict in output find relevant stats
-    for data in output:
-        data['count'], data['mean'], data['var'] = len(data['vals']), np.mean(data['vals']), np.var(data['vals'])
-        data['percent_rel_e'] = 100 * data['var'] / data['mean']
-        data.pop('vals')
-
-    # write the dict with stats to a csv file
-    csv_name = 'summary_data.csv'
-    with open(csv_name, 'w') as output_csv:
-        writer = DictWriter(output_csv, fieldnames=output[0].keys())
-        writer.writeheader()
-        writer.writerows(output)
-
-    print('Completed compiling and writing transition stats for sbias and mfpt')
-
-
 def main(args):
     # obtain mfpt and sbias value by running MD simulation for the transition
-    run_TransitionMulti(json_name=args.json, exe_name=args.exe)
+    run_TransitionMulti(json_name=args.json, exe_name=args.exe, n_iterations=args.n_iterations)
 
     # run_TransitionSerial(json_name=args.json, exe_name=args.exe)
 
     # compile all data into a summary csv file
-    summarize_transition()
+    #get_error.summarize_transition()
+
+    # get error for the rate_constant as well
+    #get_error.compute_error('summary_data.csv')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', help='master json input file', default='hybridmc_3_1000000110_1010000110.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../../../release/hybridmc")
+    parser.add_argument('--n_iterations', help='number of iterations to run the transition for averaging',
+                        type=int, default=100)
+
     args = parser.parse_args()
 
     main(args)
