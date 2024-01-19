@@ -14,6 +14,10 @@ from helpers.run_layer_helpers import run_sim, run_stairs
 from post_processing import diff_s_bias, avg_s_bias, mfpt
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
+import glob
+from pandas import read_csv
+import csv
+import numpy as np
 
 
 def run_Transition(args):
@@ -24,8 +28,8 @@ def run_Transition(args):
 
     output_name = input_json_name.strip('.json')
     input_hdf5 = f'{output_name}.h5'
-    #stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
-    stair_bp, stair_rc_list = 0, [0]
+    stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
+    #stair_bp, stair_rc_list = 0, [0]
 
     # since we are moving into new directory within the loop, change input hdf5 path and exe accordingly
     input_hdf5 = f'../{input_hdf5}'
@@ -52,7 +56,7 @@ def run_Transition(args):
 
 def run_TransitionProcess(args, data, input_hdf5, output_name, stair_bp, stair_rc_list):
     if stair_bp and stair_rc_list:
-        run_stairs(data, input_hdf5, args.exe, stair_rc_list)
+        run_stairs(data, input_hdf5, output_name, args.exe, stair_rc_list)
 
     else:
         run_sim(data, input_hdf5, output_name, args.exe)
@@ -71,10 +75,41 @@ def post_processing():
     # put together the mfpts in one file
     mfpt.compile_mfpts()
 
+def compute_averages():
+    src_bias, src_mfpt = '*/diff_s_bias.csv', '*/mfpt.csv'
+
+    diff_sbias = []
+    inner_mfpts = []
+    outer_mfpts = []
+    # average diff_s_bias
+    for csv_file in glob.glob(src_bias):
+        sbias_data = read_csv(csv_file, header=None)
+        diff_sbias.append(sbias_data.iloc[0, 2])
+
+    for csv_file in glob.glob(src_mfpt):
+        mfpts_data = read_csv(csv_file)
+        inner_mfpts.append(mfpts_data.iloc[:, 3].values[0])
+        outer_mfpts.append(mfpts_data.iloc[:, 4].values[0])
+
+    output = []
+    for data in [diff_sbias, inner_mfpts, outer_mfpts]:
+        mean, var = np.mean(data), np.var(data)
+        percent_rel_e = 100 * var / mean
+        output.append([mean, var, percent_rel_e])
+
+
+    csv_name = 'summary_data.csv'
+    with open(csv_name, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        writer.writerows(output)
+
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--json', help='master json input file', default='hybridmc_3_0000011100_0010011100.json')
+    parser.add_argument('--json', help='master json input file', default='hybridmc_3_1000000110_1010000110.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../../../release/hybridmc")
     args = parser.parse_args()
 

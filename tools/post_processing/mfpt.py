@@ -25,6 +25,7 @@ path.append('..')
 from helpers.mfpt_helpers import fpt_write, if_stair, compile_outer_fpt
 
 
+
 def get_mfpt(rewrite=False):
 
     # iterate over all json files in the current directory
