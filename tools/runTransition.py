@@ -16,7 +16,7 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 import glob
 from pandas import read_csv
-import csv
+from csv import DictWriter
 import numpy as np
 
 
@@ -86,22 +86,33 @@ def compute_averages():
         sbias_data = read_csv(csv_file, header=None)
         diff_sbias.append(sbias_data.iloc[0, 2])
 
+    # for mfpt
     for csv_file in glob.glob(src_mfpt):
         mfpts_data = read_csv(csv_file)
         inner_mfpts.append(mfpts_data.iloc[:, 3].values[0])
         outer_mfpts.append(mfpts_data.iloc[:, 4].values[0])
 
-    output = []
-    for data in [diff_sbias, inner_mfpts, outer_mfpts]:
-        mean, var = np.mean(data), np.var(data)
-        percent_rel_e = 100 * var / mean
-        output.append([mean, var, percent_rel_e])
+    # put values together in a list of dictionaries
+    output = [
+        {'ID': 'sbias', 'vals': diff_sbias},
+        {'ID': 'inner_mfpts', 'vals': inner_mfpts},
+        {'ID': 'outer_mfpts', 'vals': outer_mfpts}
+    ]
 
+    # for each dict in output find relevant stats
+    for data in output:
+        data['count'], data['mean'], data['var'] = len(data['vals']), np.mean(data['vals']), np.var(data['vals'])
+        data['percent_rel_e'] = 100 * data['var'] / data['mean']
+        data.pop('vals')
 
+    # write the dict with stats to a csv file
     csv_name = 'summary_data.csv'
     with open(csv_name, 'w') as output_csv:
-        writer = csv.writer(output_csv)
+        writer = DictWriter(output_csv, fieldnames=output[0].keys())
+        writer.writeheader()
         writer.writerows(output)
+
+    print()
 
 
 
@@ -113,4 +124,5 @@ if __name__ == '__main__':
     parser.add_argument('--exe', help='hybridmc executable', default="../../../release/hybridmc")
     args = parser.parse_args()
 
-    run_Transition(args)
+    #run_Transition(args)
+    compute_averages()
