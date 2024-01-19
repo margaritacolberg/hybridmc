@@ -25,6 +25,25 @@ path.append('..')
 from helpers.mfpt_helpers import fpt_write, if_stair, compile_outer_fpt
 
 
+def get_mfpt_serial(rewrite=False):
+
+    # iterate over all json files in the current directory
+    src = '*.json'
+    names = []
+    for file_path in glob.glob(src):
+        file_name = os.path.basename(file_path)
+        name = os.path.splitext(file_name)[0]
+
+        if os.path.exists(f"{name}.csv") and not rewrite:
+            continue
+
+        names.append(name)
+
+    # write the mfpt for each json file found serially
+
+    for name in names:
+         fpt_write(name)
+
 
 def get_mfpt(rewrite=False):
 
@@ -43,9 +62,6 @@ def get_mfpt(rewrite=False):
     # write the mfpt for each json file found in parallel
     with multiprocessing.Pool() as pool:
        pool.map(fpt_write, names)
-
-    # for name in names:
-    #     fpt_write(name)
 
 
 def compile_mfpts():
