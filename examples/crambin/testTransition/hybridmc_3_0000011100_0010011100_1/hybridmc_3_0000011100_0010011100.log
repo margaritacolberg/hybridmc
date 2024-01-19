@@ -1,0 +1,143 @@
+git commit 3e1ea11ea1c3606e92d737881ed11a4cb9adfd02-DIRTY
+Reading in input file ../hybridmc_3_0000011100_0010011100.h5
+ Starting convergence loop with Sbias values = 3 2.57707 recorded distances = 1000
+ Recording distances since size  = 1000  req_dists = 5000
+entropy of 0 is 0.422934 with count 100
+entropy of 1 is 0 with count 100
+Acceptable uniform test: g_val 0, g_crit 2.70554, p_val 1
+  Too few distances recorded for convergence: number is now 1200
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 0 fail_counter = 0 stateCount = 200 flips = 432 flip rate = 2.16 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 1200  req_dists = 5000
+entropy of 0 is 0.322598 with count 90
+entropy of 1 is 0 with count 110
+Acceptable uniform test: g_val 2.00335, g_crit 2.70554, p_val 0.156952
+  Too few distances recorded for convergence: number is now 1400
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 1 fail_counter = 0 stateCount = 200 flips = 430 flip rate = 2.15 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 1400  req_dists = 5000
+entropy of 0 is 0.382671 with count 106
+entropy of 1 is 0 with count 94
+Acceptable uniform test: g_val 0.720433, g_crit 2.70554, p_val 0.396002
+  Too few distances recorded for convergence: number is now 1600
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 2 fail_counter = 0 stateCount = 200 flips = 435 flip rate = 2.175 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 1600  req_dists = 5000
+entropy of 0 is 0.402673 with count 102
+entropy of 1 is 0 with count 98
+Acceptable uniform test: g_val 0.0800053, g_crit 2.70554, p_val 0.77729
+  Too few distances recorded for convergence: number is now 1800
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 3 fail_counter = 0 stateCount = 200 flips = 420 flip rate = 2.1 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 1800  req_dists = 5000
+entropy of 0 is 0.402673 with count 100
+entropy of 1 is 0 with count 100
+Acceptable uniform test: g_val 0, g_crit 2.70554, p_val 1
+  Too few distances recorded for convergence: number is now 2000
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 4 fail_counter = 0 stateCount = 200 flips = 425 flip rate = 2.125 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 2000  req_dists = 5000
+entropy of 0 is 0.312429 with count 91
+entropy of 1 is 0 with count 109
+Acceptable uniform test: g_val 1.62219, g_crit 2.70554, p_val 0.202786
+  Too few distances recorded for convergence: number is now 2200
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 5 fail_counter = 0 stateCount = 200 flips = 441 flip rate = 2.205 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 2200  req_dists = 5000
+entropy of 0 is 0.262387 with count 95
+entropy of 1 is 0 with count 105
+Acceptable uniform test: g_val 0.500209, g_crit 2.70554, p_val 0.479409
+  Too few distances recorded for convergence: number is now 2400
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 6 fail_counter = 0 stateCount = 200 flips = 441 flip rate = 2.205 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 2400  req_dists = 5000
+entropy of 0 is 0.212346 with count 95
+entropy of 1 is 0 with count 105
+Acceptable uniform test: g_val 0.500209, g_crit 2.70554, p_val 0.479409
+  Too few distances recorded for convergence: number is now 2600
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 7 fail_counter = 0 stateCount = 200 flips = 465 flip rate = 2.325 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 2600  req_dists = 5000
+entropy of 0 is 0.232348 with count 102
+entropy of 1 is 0 with count 98
+Acceptable uniform test: g_val 0.0800053, g_crit 2.70554, p_val 0.77729
+  Too few distances recorded for convergence: number is now 2800
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 8 fail_counter = 0 stateCount = 200 flips = 504 flip rate = 2.52 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 2800  req_dists = 5000
+entropy of 0 is 0.182307 with count 95
+entropy of 1 is 0 with count 105
+Acceptable uniform test: g_val 0.500209, g_crit 2.70554, p_val 0.479409
+  Too few distances recorded for convergence: number is now 3000
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 9 fail_counter = 0 stateCount = 200 flips = 428 flip rate = 2.14 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 3000  req_dists = 5000
+entropy of 0 is 0.292753 with count 111
+entropy of 1 is 0 with count 89
+Acceptable uniform test: g_val 2.4249, g_crit 2.70554, p_val 0.119421
+  Too few distances recorded for convergence: number is now 3200
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 10 fail_counter = 0 stateCount = 200 flips = 524 flip rate = 2.62 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 3200  req_dists = 5000
+entropy of 0 is 0.312756 with count 102
+entropy of 1 is 0 with count 98
+Acceptable uniform test: g_val 0.0800053, g_crit 2.70554, p_val 0.77729
+  Too few distances recorded for convergence: number is now 3400
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 11 fail_counter = 0 stateCount = 200 flips = 440 flip rate = 2.2 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 3400  req_dists = 5000
+entropy of 0 is 0.342765 with count 103
+entropy of 1 is 0 with count 97
+Acceptable uniform test: g_val 0.180027, g_crit 2.70554, p_val 0.67135
+  Too few distances recorded for convergence: number is now 3600
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 12 fail_counter = 0 stateCount = 200 flips = 445 flip rate = 2.225 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 3600  req_dists = 5000
+entropy of 0 is 0.252521 with count 91
+entropy of 1 is 0 with count 109
+Acceptable uniform test: g_val 1.62219, g_crit 2.70554, p_val 0.202786
+  Too few distances recorded for convergence: number is now 3800
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 13 fail_counter = 0 stateCount = 200 flips = 447 flip rate = 2.235 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 3800  req_dists = 5000
+entropy of 0 is 0.362968 with count 111
+entropy of 1 is 0 with count 89
+Acceptable uniform test: g_val 2.4249, g_crit 2.70554, p_val 0.119421
+  Too few distances recorded for convergence: number is now 4000
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 14 fail_counter = 0 stateCount = 200 flips = 434 flip rate = 2.17 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 4000  req_dists = 5000
+entropy of 0 is 0.433083 with count 107
+entropy of 1 is 0 with count 93
+Acceptable uniform test: g_val 0.980802, g_crit 2.70554, p_val 0.322001
+  Too few distances recorded for convergence: number is now 4200
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 15 fail_counter = 0 stateCount = 200 flips = 466 flip rate = 2.33 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 4200  req_dists = 5000
+entropy of 0 is 0.342838 with count 91
+entropy of 1 is 0 with count 109
+Acceptable uniform test: g_val 1.62219, g_crit 2.70554, p_val 0.202786
+  Too few distances recorded for convergence: number is now 4400
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 16 fail_counter = 0 stateCount = 200 flips = 435 flip rate = 2.175 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 4400  req_dists = 5000
+entropy of 0 is 0.453285 with count 111
+entropy of 1 is 0 with count 89
+Acceptable uniform test: g_val 2.4249, g_crit 2.70554, p_val 0.119421
+  Too few distances recorded for convergence: number is now 4600
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 17 fail_counter = 0 stateCount = 200 flips = 412 flip rate = 2.06 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 4600  req_dists = 5000
+entropy of 0 is 0.543529 with count 109
+entropy of 1 is 0 with count 91
+Acceptable uniform test: g_val 1.62219, g_crit 2.70554, p_val 0.202786
+  Too few distances recorded for convergence: number is now 4800
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 18 fail_counter = 0 stateCount = 200 flips = 396 flip rate = 1.98 must be greater than 1 done_flip = 1 done_g = 1
+ Recording distances since size  = 4800  req_dists = 5000
+entropy of 0 is 0.483457 with count 94
+entropy of 1 is 0 with count 106
+Acceptable uniform test: g_val 0.720433, g_crit 2.70554, p_val 0.396002
+Working on output_file: /nfs/cptg/u4/vrajesh/Documents/Margarita_project/hybridmc/examples/crambin.tmp/testTransition/hybridmc_3_0000011100_0010011100_1/hybridmc_3_0000011100_0010011100.h5
+ In iteration 19 fail_counter = 0 stateCount = 200 flips = 370 flip rate = 1.85 must be greater than 1 done_flip = 1 done_g = 1
+The size of dist is 5000
