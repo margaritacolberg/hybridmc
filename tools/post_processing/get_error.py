@@ -1,6 +1,5 @@
 import glob
-from csv import DictWriter, writer
-
+from csv import DictWriter
 import numpy as np
 from pandas import read_csv
 
