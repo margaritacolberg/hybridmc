@@ -114,7 +114,7 @@ def main(args):
     # run_TransitionSerial(json_name=args.json, exe_name=args.exe)
 
     # compile all data into a summary csv file
-    get_error.summarize_transition()
+    get_error.summarize_transition(D_mean=0.0403, D_std_perc=5)
 
 
 if __name__ == '__main__':

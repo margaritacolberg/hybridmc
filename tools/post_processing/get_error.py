@@ -4,7 +4,7 @@ import numpy as np
 from pandas import read_csv
 
 
-def summarize_transition():
+def summarize_transition(D_mean=0.0403, D_std_perc=5):
     # define patterns for diff s bias and mfpt files
     src_bias, src_mfpt = '*/diff_s_bias.csv', '*/mfpt.csv'
 
@@ -40,7 +40,7 @@ def summarize_transition():
         data.pop('vals')
 
     # obtain the rate constant (K) summary data
-    K_mean, K_std, K_lower_conf, K_upper_conf = compute_K_summary(output)
+    K_mean, K_std, K_lower_conf, K_upper_conf = compute_K_summary(output, D_mean=D_mean, D_std_perc=D_std_perc)
 
     # add the rate constant information to the output as well
     output.append({
@@ -49,7 +49,7 @@ def summarize_transition():
         'mean': K_mean, 'std': K_std,
         'percent_rel_e': 100 * K_std / K_mean,
         'conf_int': f'{K_lower_conf}, {K_upper_conf}'
-         })
+    })
 
     # write the dict with stats to a csv file
     csv_name = 'summary_data.csv'
@@ -67,10 +67,16 @@ def get_values(output, ID):
             return el['mean'], el['std']
 
 
-def compute_K_summary(summary_data, D_mean=0.046, D_std=0.0023, eps=3):
+def compute_rate_constant(D, eps, rel_population, inner_mfpt, outer_mfpt):
+    return D * (1 + np.exp(-eps) * rel_population) / (outer_mfpt + np.exp(-eps) * rel_population * inner_mfpt)
+
+
+def compute_K_summary(summary_data, D_mean=0.0403, D_std_perc=5, eps=3):
     rel_population, rel_population_std = get_values(summary_data, 'relative_population')
     inner_mfpt, inner_mfpt_std = get_values(summary_data, 'inner_mfpts')
     outer_mfpt, outer_mfpt_std = get_values(summary_data, 'outer_mfpts')
+
+    D_std = D_mean * D_std_perc / 100
 
     # rate constant K
     K = compute_rate_constant(D_mean, eps, rel_population, inner_mfpt, outer_mfpt)
@@ -105,13 +111,18 @@ def compute_K_summary(summary_data, D_mean=0.046, D_std=0.0023, eps=3):
     return K, K_std, K_lower_conf, K_upper_conf
 
 
-def compute_rate_constant(D, eps, rel_population, inner_mfpt, outer_mfpt):
-    return D * (1 + np.exp(-eps) * rel_population) / (outer_mfpt + np.exp(-eps) * rel_population * inner_mfpt)
-
-
-def main():
-    summarize_transition()
+def main(args):
+    summarize_transition(args.D_mean, args.D_std_perc)
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--D_mean', type=float, default = 0.046, help='mean diffusion rate')
+    parser.add_argument('--D_std_perc', type=float, default=5.0, help='percent error in the diffusion rate')
+
+    args = parser.parse_args()
+
+    main(args)

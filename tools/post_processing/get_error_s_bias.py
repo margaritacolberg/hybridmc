@@ -96,6 +96,7 @@ def get_s_bias(data, output_name, exe, hdf5_in, seed_increment, i):
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument('json', help='json input file')
     parser.add_argument('exe', help='hybridmc executable')
