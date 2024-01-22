@@ -15,6 +15,16 @@ import numpy as np
 import re
 from itertools import combinations
 
+def get_diff_sbias_pair(base_file):
+    src = f'{base_file}*.h5'
+    bits = []
+    s_bias = []
+    duplicate_s_bias = {}
+    for file_path in glob.glob(src):
+        match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]))',
+                          file_path)
+        bits_in = match.group('bits_in')
+        bits_out = match.group('bits_out')
 
 def get_diff_sbias(out_csv='diff_s_bias.csv'):
     src = 'hybridmc_*.h5'

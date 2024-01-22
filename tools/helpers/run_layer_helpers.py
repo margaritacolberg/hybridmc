@@ -29,7 +29,7 @@ def run_sim(data, input_hdf5, output_name, exe):
 
     # Exit if this trajectory has already been run
     if os.path.exists(hdf5_name):
-        print(f"Simulation results for {data['config_in']} to {data['config_out']} transition already generated")
+        print(f"Simulation results for transition already generated")
         return
 
     # Create json file input for the HMC program to run this trajectory

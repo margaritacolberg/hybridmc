@@ -18,6 +18,7 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <numeric>
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,

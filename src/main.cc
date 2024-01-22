@@ -11,6 +11,30 @@
 #include "main_helpers.h"
 namespace po = boost::program_options;
 
+void mean_stdev(const std::vector<double> v,double& mean, double& stdev)
+{
+    int nterms = v.size();
+    if (nterms == 0)
+    {
+        mean = 0.0;
+        stdev = 0.0;
+    }
+    else if (nterms == 1)
+    {
+        mean = v[0];
+        stdev = 0.0;
+    }
+    else
+    {
+        double sum = std::accumulate(v.begin(), v.end(), 0.0);
+        mean = sum / nterms;
+        std::vector<double> diff(v.size());
+        std::transform(v.begin(), v.end(), diff.begin(), [mean](double x) { return x - mean; });
+        double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+        stdev = std::sqrt(sq_sum / (nterms - 1.0) );
+    }
+}
+
 int main(int argc, char *argv[]) {
   // restart program from point of interruption
   // see Prus, 2002, Boost.Program_options doc
@@ -167,6 +191,9 @@ int main(int argc, char *argv[]) {
   int current_distances = dist_writer.get_size();
   std::cout << " Starting convergence loop with Sbias values = "
         << sys.s_bias[0] << " " << sys.s_bias[1] << " recorded distances = " << current_distances << std::endl;
+
+  std::vector<double> Sbias_array; // store all converged values according to g-test
+
   // the BIIIIIIIG loop
   while (!done_g_test or !done_flip or !done_distances){
     // reset bead clocks, counters and wall time
@@ -225,6 +252,10 @@ int main(int argc, char *argv[]) {
     flipping_rate = flips / stateCount;
 
     done_g_test = g_test(config_count,nstates, p.sig_level);
+    if (done_g_test)
+    {
+        Sbias_array.push_back(sys.s_bias[0]);
+    }
 
     if (flipping_rate > p.flip_req) {
       done_flip = true;
@@ -274,7 +305,17 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  double mean_s = 0.0;
+  double stdev_s = 0.0;
+  mean_stdev(Sbias_array, mean_s, stdev_s);
+
   std::cout << "The size of dist is " << dist_writer.get_size() << std::endl;
+  std::cout << " Average s_bias is " << mean_s << "  standard deviation = " << stdev_s << " for "
+            << Sbias_array.size() << " values." << std::endl;
+
+  // store mean of all converged S_bias differences
+  //
+  dataset_s_bias.write(&mean_s, H5::PredType::NATIVE_DOUBLE, mem_space);
   file.close();
 
   std::filesystem::rename(output_name + ".tmp", output_name);
