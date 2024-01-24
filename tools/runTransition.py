@@ -35,7 +35,7 @@ def run_TransitionProcess(exe_name, data, input_hdf5, output_name, stair_bp, sta
     os.chdir('../')
 
 
-def get_transition_data(output_name, exe_name, data, input_hdf5, stair_bp, stair_rc_list, i):
+def get_transition_data(output_name, input_name, exe_name, data, input_hdf5, stair_bp, stair_rc_list, i):
     iter_output_name = f'{output_name}_{i}'
     if os.path.isdir(iter_output_name):
         print(f'{iter_output_name} already exists; saved as old version with given version code')
@@ -46,7 +46,9 @@ def get_transition_data(output_name, exe_name, data, input_hdf5, stair_bp, stair
     os.chdir(iter_output_name)
 
     # since we are moving into new directory within the loop, change input hdf5 path and exe accordingly
-    if input_hdf5 is not None: input_hdf5 = f'../{input_hdf5}'
+    if input_hdf5 is not None:
+        input_hdf5 = f'../{input_name}'
+
     exe_name = f'../{exe_name}'
 
     data['seeds'] = [seed + i for seed in data['seeds']]
@@ -56,20 +58,20 @@ def get_transition_data(output_name, exe_name, data, input_hdf5, stair_bp, stair
 
 # create class to call for multiprocessing purposes
 class OutputDataMulti(object):
-    def __init__(self, exe_name, data, input_hdf5, output_name, stair_bp, stair_rc_list):
+    def __init__(self, exe_name, data, input_name, output_name, stair_bp, stair_rc_list):
         self.exe_name = exe_name
         self.data = data
-        self.input_hdf5 = input_hdf5
+        self.input_hdf5= input_name
         self.output_name = output_name
         self.stair_bp = stair_bp
         self.stair_rc_list = stair_rc_list
 
     def __call__(self, i):
-        return get_transition_data(self.output_name, self.exe_name, self.data, self.input_hdf5, self.stair_bp,
+        return get_transition_data(self.output_name, self.input_hdf5, self.exe_name, self.data, self.input_hdf5, self.stair_bp,
                                    self.stair_rc_list, i)
 
 
-def run_TransitionMulti(json_name, exe_name, n_iterations=4):
+def run_TransitionMulti(json_name, input_name, exe_name, n_iterations=2):
     input_json_name = os.path.basename(json_name)
     with open(input_json_name, 'r') as input_json:
         data = json.load(input_json)
@@ -82,7 +84,8 @@ def run_TransitionMulti(json_name, exe_name, n_iterations=4):
 
     # otherwise set the input hdf5
     else:
-        input_hdf5 = f'{output_name}.h5'
+        #input_hdf5 = f'{output_name}.h5'
+        input_hdf5 = input_name
 
     stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
 
@@ -93,13 +96,22 @@ def run_TransitionMulti(json_name, exe_name, n_iterations=4):
     print('Done Running all the simulation iterations')
 
 
-def run_TransitionSerial(json_name, exe_name, n_iterations=2):
+def run_TransitionSerial(json_name, input_name, exe_name, n_iterations=2):
     input_json_name = os.path.basename(json_name)
     with open(input_json_name, 'r') as input_json:
         data = json.load(input_json)
 
-    output_name = input_json_name.strip('.json')
-    input_hdf5 = f'{output_name}.h5'
+    output_name = input_json_name.strip('.json')   # input hdf5 is None if zeroth layer transition
+
+    if output_name.split('_')[1] == '0':
+        input_hdf5 = None
+
+    # otherwise set the input hdf5
+    else:
+        #input_hdf5 = f'{output_name}.h5'
+        input_hdf5 = input_name
+        #input_hdf5 = f'{output_name}.h5'
+
     stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
 
     # loop here with all the different seeds
@@ -109,18 +121,20 @@ def run_TransitionSerial(json_name, exe_name, n_iterations=2):
 
 def main(args):
     # obtain mfpt and sbias value by running MD simulation for the transition
-    run_TransitionMulti(json_name=args.json, exe_name=args.exe, n_iterations=args.n_iterations)
+    run_TransitionMulti(json_name=args.json, input_name=args.input, exe_name=args.exe, n_iterations=args.n_iterations)
 
     # run_TransitionSerial(json_name=args.json, exe_name=args.exe)
 
     # compile all data into a summary csv file
-    get_error.summarize_transition(D_mean=0.0403, D_std_perc=5)
+    get_error.summarize_transition(D_mean=0.0394, D_std_perc=1)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', help='master json input file', default='hybridmc_0_0000000000_0000000001.json')
+    parser.add_argument('--input', help='master h5 input file', default=None)
     parser.add_argument('--exe', help='hybridmc executable', default="../../../release/hybridmc")
+
     parser.add_argument('--n_iterations', help='number of iterations to run the transition for averaging',
                         type=int, default=100)
 
