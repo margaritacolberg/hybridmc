@@ -61,22 +61,24 @@ class OutputDataMulti(object):
     def __init__(self, exe_name, data, input_name, output_name, stair_bp, stair_rc_list):
         self.exe_name = exe_name
         self.data = data
-        self.input_hdf5= input_name
+        self.input_hdf5 = input_name
         self.output_name = output_name
         self.stair_bp = stair_bp
         self.stair_rc_list = stair_rc_list
 
     def __call__(self, i):
-        return get_transition_data(self.output_name, self.input_hdf5, self.exe_name, self.data, self.input_hdf5, self.stair_bp,
+        return get_transition_data(self.output_name, self.input_hdf5, self.exe_name, self.data, self.input_hdf5,
+                                   self.stair_bp,
                                    self.stair_rc_list, i)
 
 
 def run_TransitionMulti(json_name, input_name, exe_name, n_iterations=2):
     input_json_name = os.path.basename(json_name)
-    with open(input_json_name, 'r') as input_json:
-        data = json.load(input_json)
+    data = extract_json(input_json_name)
 
     output_name = input_json_name.strip('.json')
+
+    data = process_json(data, output_name)
 
     # input hdf5 is None if zeroth layer transition
     if output_name.split('_')[1] == '0':
@@ -84,7 +86,7 @@ def run_TransitionMulti(json_name, input_name, exe_name, n_iterations=2):
 
     # otherwise set the input hdf5
     else:
-        #input_hdf5 = f'{output_name}.h5'
+        # input_hdf5 = f'{output_name}.h5'
         input_hdf5 = input_name
 
     stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
@@ -96,21 +98,41 @@ def run_TransitionMulti(json_name, input_name, exe_name, n_iterations=2):
     print('Done Running all the simulation iterations')
 
 
-def run_TransitionSerial(json_name, input_name, exe_name, n_iterations=2):
-    input_json_name = os.path.basename(json_name)
+def extract_json(input_json_name):
     with open(input_json_name, 'r') as input_json:
         data = json.load(input_json)
+    return data
 
-    output_name = input_json_name.strip('.json')   # input hdf5 is None if zeroth layer transition
+
+def process_json(input_data, output_name):
+    # obtain the bits in and bits out strings for the transition
+    bitstring_in = output_name.split('_')[2]
+    bitstring_out = output_name.split('_')[3]
+    input_data["permanent_bonds"] = bonds_from_bitstring(bitstring_in, input_data["nonlocal_bonds"])
+
+    input_data["transient_bonds"] = bonds_from_bitstring(bitstring_subtract(bitstring_out, bitstring_in), input_data["nonlocal_bonds"])
+
+    input_data['config_in'] = int(bitstring_in, 2)
+    input_data['config_out'] = int(bitstring_out, 2)
+
+    return input_data
+
+
+
+def run_TransitionSerial(json_name, input_name, exe_name, n_iterations=2):
+    input_json_name = os.path.basename(json_name)
+    data = extract_json(input_json_name)
+
+    output_name = input_json_name.strip('.json')  # input hdf5 is None if zeroth layer transition
 
     if output_name.split('_')[1] == '0':
         input_hdf5 = None
 
     # otherwise set the input hdf5
     else:
-        #input_hdf5 = f'{output_name}.h5'
+        # input_hdf5 = f'{output_name}.h5'
         input_hdf5 = input_name
-        #input_hdf5 = f'{output_name}.h5'
+        # input_hdf5 = f'{output_name}.h5'
 
     stair_bp, stair_rc_list = stair_check(data, output_name, input_hdf5)
 
@@ -131,8 +153,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--json', help='master json input file', default='hybridmc_0_0000000000_0000000001.json')
-    parser.add_argument('--input', help='master h5 input file', default=None)
+    parser.add_argument('--input', help='master h5 input file', default='hybridmc_3_0011100000_0011110000.h5')
+    parser.add_argument('--json', help='master json input file', default='hybridmc_4_0011110000_0011110010.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../../../release/hybridmc")
 
     parser.add_argument('--n_iterations', help='number of iterations to run the transition for averaging',
