@@ -147,8 +147,17 @@ def main(args):
 
     # run_TransitionSerial(json_name=args.json, exe_name=args.exe)
 
+    # set some more default values for parameters in case they are not provided in json file
+    data = extract_json(args.json)
+    set_defaults(data,
+                 defaults={
+                     "D_mean": 0.0394,
+                     "D_std_perc": 1,
+                     "eps": 3
+                 })
+
     # compile all data into a summary csv file
-    get_error.summarize_transition(D_mean=0.0394, D_std_perc=1)
+    get_error.summarize_transition(D_mean=data["D_mean"], D_std_perc=data["D_std_perc"], eps=data["eps"])
 
 
 if __name__ == '__main__':

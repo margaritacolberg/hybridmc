@@ -137,6 +137,17 @@ def bitstring_subtract(bitstring_out, bitstring_in):
 
 
 def set_defaults(data, defaults):
+    """
+    Function to set default key: values pairs to the data dictionary in case the key does not exist.
+    Parameters
+    ----------
+    data: Dict: The main data directory
+    defaults: Dict: Contains default key: value pairs to add to data.
+
+    Returns
+    -------
+    None
+    """
     for el in defaults.items():
         data.setdefault(*el)
 
