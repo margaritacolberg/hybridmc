@@ -70,13 +70,70 @@ def stairs_rcval_check(bond_pair, stair_rcs, nonlocal_bonds):
 
 
 def bits_to_bonds(bits, nonlocal_bonds):
+    """
+    function to convert bits to bonds
+    Parameters
+    ----------
+    bits: iterable of bool
+    nonlocal_bonds: List[List]: List of all the possible nonlocal bonds
+
+    Returns
+    -------
+    List of bits pattern described bonds
+
+    """
+    # obtain index of the turned on bonds (postion of every bits = 1)
     bits = [i for i, bit in enumerate(bits) if bit]
+
+    # Filter out bonds with indices in bits from nonlocal bonds (these are on)
     bonds = [nonlocal_bonds[i] for i in bits]
     return bonds
 
 
 def format_bits(bits):
     return ''.join(map(lambda x: '1' if x else '0', bits))
+
+
+def bonds_from_bitstring(bitstring, nonlocal_bonds):
+    """
+    Uses bitstring as a mask to extract relevant bonds from the list of all bonds in nonlocal bonds
+
+    Example: if bitstring = '001', nonlocal_bonds = [[1,2], [3,4], [5,6]]
+    result = [[5,6]]
+
+    Parameters
+    ----------
+    bitstring: str: String specifying mask to extract relevant bonds from in nonlocal bonds
+    nonlocal_bonds: list: List of all non-local bonds
+
+    Returns
+    -------
+    Extracted all bonds specified by bitstring in a list
+
+    """
+
+    return bits_to_bonds((int(el) for el in bitstring), nonlocal_bonds)
+
+
+def bitstring_subtract(bitstring_out, bitstring_in):
+    """
+    Subtracts the bitstrings given (out - in). It is an element by element subtraction.
+    Each string in the bistrings represents a bit (0 or 1)
+
+    Parameters
+    ----------
+    bitstring_out
+    bitstring_in
+
+    Returns
+    -------
+    The subtracted bitstring
+    """
+    result = ''
+    for i in range(len(bitstring_out)):
+        result += str(int(bitstring_out[i]) - int(bitstring_in[i]))
+
+    return result
 
 
 def set_defaults(data, defaults):
