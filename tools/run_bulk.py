@@ -11,8 +11,8 @@ import os
 from helpers.run_helpers import init_json
 from post_processing import diff_s_bias, avg_s_bias, mfpt
 
-
 idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+
 
 def main(args):
     file_name = os.path.basename(args.json)

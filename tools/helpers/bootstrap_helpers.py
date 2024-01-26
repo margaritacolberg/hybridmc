@@ -18,6 +18,11 @@ class ConfigBoot:
 
     Upon initialization, this class stores the bootstrapping result which you can get using bootstrap_result.
 
+    Attributes:
+        s_bias: float: The s_bias for the original simulation run for config_set
+        config_set: List: The set of configurations from the original simulation run
+        bootstrap_result: The bootstrapping result
+
     Methods:
         compute_bootstrapping(**kwargs): This value for bootstrap result can be updated with other parameters.
 
