@@ -1,11 +1,12 @@
+import csv
 import os
 import h5py
 import numpy as np
 from scipy.stats import bootstrap
-from pandas import read_csv
+import csv
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == '__main__' and (__package__ is None or __package__ == ''):
     from data_processing_helpers import set_defaults
 
 else:
@@ -126,9 +127,18 @@ class ConfigBoot:
         plt.show()
 
     def write_bootstrap(self, csv_name):
-        csv_input = read_csv(csv_name)
-        csv_input['Confidence'] = str(self.bootstrap_result.confidence_interval)
-        csv_input.to_csv(csv_name, index=False)
+        with open(csv_name, 'r') as fread:
+            reader = csv.reader(fread)
+            diff_data = list(reader)
+
+        with open(csv_name, 'w') as fwrite:
+            if len(diff_data[0]) == 3:
+                diff_data[0].append(self.bootstrap_result.confidence_interval)
+            elif len(diff_data[0]) == 4:
+                diff_data[0][3] = self.bootstrap_result.confidence_interval
+
+            writer = csv.writer(fwrite)
+            writer.writerow(diff_data[0])
 
 
 def main(args):
