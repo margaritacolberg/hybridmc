@@ -20,8 +20,9 @@ class ConfigBoot:
     Upon initialization, this class stores the bootstrapping result which you can get using bootstrap_result.
 
     Attributes:
-        s_bias: float: The s_bias for the original simulation run for config_set
-        config_set: List: The set of configurations from the original simulation run
+        simulation_name: str: Basename to the HDF5 file containing the simulation data. Used by default even if sbias and config set given manually
+        s_bias: optional float: The s_bias for the original simulation run for config_set in case simulation name not given
+        config_set: optional List: The set of configurations from the original simulation run in case simulation name not given
         bootstrap_result: The bootstrapping result
 
     Methods:
