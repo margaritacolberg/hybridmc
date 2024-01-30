@@ -166,9 +166,7 @@ class StairConfigBoot(ConfigBoot):
         return stair_s_bias(stair_sbias_list)
 
     def _set_configs(self):
-
-
-
+        pass
 
 
 def main(args):
