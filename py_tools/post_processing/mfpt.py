@@ -7,8 +7,6 @@
 # (fpt) corresponds to the first time at which two beads at a distance r > rc
 # diffuse to rc, and the inner fpt corresponds to beads located at r < rc
 #
-# example of how to run:
-# python ../tools/mfpt.py hybridmc_0_000_001.json hybridmc_0_000_001.h5 10 hybridmc_0_000_001.csv --layers=True
 #
 # note that in the above example, hybridmc_0_000_001.json is the json file for
 # the last step of the staircase (ie. where the width of the step is between rh
@@ -20,9 +18,8 @@ import re
 import glob
 from . import matrix_element
 import multiprocessing
-from sys import path
-path.append('..')
-from helpers.mfpt_helpers import fpt_write, if_stair, compile_outer_fpt
+
+from ..helpers.mfpt_helpers import fpt_write
 
 
 def get_mfpt_serial(rewrite=False):

@@ -20,14 +20,15 @@
 
 import argparse
 import os
-from helpers.run_helpers import init_json
-from post_processing import diff_s_bias, avg_s_bias, mfpt
+from py_tools.helpers.run_helpers import init_json
+from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
 
 
 def main(args):
     file_name = os.path.basename(args.json)
     dir_name = os.path.splitext(file_name)[0]
 
+    # Check if target directory already exists. Modify name if needed
     if os.path.isdir(dir_name):
         print(f'{dir_name} already exists; saved as old version with given version code')
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
@@ -56,23 +57,25 @@ def main(args):
     # run the simulations for the layers
     init_json(init_json_args)
 
-    # Obtain the differences in the sbias for each transition
-    diff_s_bias.get_diff_sbias()
-
-    # Obtain the average sbias for each bonding state
-    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
-
-    # Obtain the mfpt for each bonding state
-    mfpt.get_mfpt()
-
-    # put together the mfpts in one file
-    mfpt.compile_mfpts()
+    # Calculate diff sbias, avg sbias and mfpt using simulation results
+    post_processing(args.json)
 
     # Move up from the directory with simulation results
     os.chdir("../")
 
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)
+
+
+def post_processing(json_name):
+    # Obtain the differences in the sbias for each transition
+    diff_s_bias.get_diff_sbias()
+    # Obtain the average sbias for each bonding state
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=json_name)
+    # Obtain the mfpt for each bonding state
+    mfpt.get_mfpt()
+    # put together the mfpts in one file
+    mfpt.compile_mfpts()
 
 
 if __name__ == '__main__':

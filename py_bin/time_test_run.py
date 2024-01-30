@@ -6,8 +6,8 @@ import argparse
 import shutil
 import argparse
 import os
-from helpers.run_helpers import init_json
-from post_processing import diff_s_bias, avg_s_bias, mfpt
+from py_tools.helpers.run_helpers import init_json
+from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd

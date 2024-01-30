@@ -15,6 +15,7 @@ import numpy as np
 import re
 from itertools import combinations
 
+
 def get_diff_sbias_pair(base_file):
     src = f'{base_file}*.h5'
     bits = []
@@ -25,6 +26,7 @@ def get_diff_sbias_pair(base_file):
                           file_path)
         bits_in = match.group('bits_in')
         bits_out = match.group('bits_out')
+
 
 def get_diff_sbias(out_csv='diff_s_bias.csv'):
     src = 'hybridmc_*.h5'
@@ -58,15 +60,12 @@ def get_diff_sbias(out_csv='diff_s_bias.csv'):
         if bits[i] in duplicate_s_bias.keys():
             duplicate_s_bias[bits[i]].append(s_bias[i])
 
-    for key, value in duplicate_s_bias.items():
-        exp_s = []
-
-        for i in range(1, len(value) + 1):
-            [exp_s.append(np.exp(sum(j))) for j in combinations(value, i)]
+    for key, stair_sbias_list in duplicate_s_bias.items():
+        sbias = stair_s_bias(stair_sbias_list)
 
         for i in range(len(bits)):
             if key == bits[i]:
-                s_bias[i] = np.log(np.sum(exp_s))
+                s_bias[i] = sbias
 
     output = []
     for i in range(len(bits)):
@@ -77,9 +76,16 @@ def get_diff_sbias(out_csv='diff_s_bias.csv'):
         output.sort()  # sort the list by the bits in column
         writer.writerows(output)
 
+    print("Done writing diff s_bias output")
+
+
+def stair_s_bias(stair_sbias_list):
+    exp_s = []
+    for i in range(1, len(stair_sbias_list) + 1):
+        [exp_s.append(np.exp(sum(j))) for j in combinations(stair_sbias_list, i)]
+    return np.log(np.sum(exp_s))
+
 
 if __name__ == '__main__':
     import os
-
-    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
     get_diff_sbias(out_csv='diff_s_bias_sort.csv')

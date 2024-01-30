@@ -20,13 +20,14 @@
 
 import argparse
 import os
-from helpers.run_helpers import init_json
-from post_processing import diff_s_bias, avg_s_bias, mfpt
+from py_tools.helpers.run_helpers import init_json
+from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
 
 
 def main(args):
     file_name = os.path.basename(args.json)
     dir_name = os.path.splitext(file_name)[0]
+
 
     # Change directory name to suit the new temp working directory.
     # add ../ to the path to indicate its use from a directory one more level down.
@@ -41,17 +42,12 @@ def main(args):
 
     init_json_args["nproc"] = nproc
 
-    # move into the directory
     os.chdir(dir_name)
 
-    # Obtain the mfpt for each bonding state
-    mfpt.get_mfpt()
 
-    # put together the mfpts in one file
-    mfpt.compile_mfpts()
+    # Obtain the average sbias for each bonding state
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=args.json)
 
-    # Move up from the directory with simulation results
-    os.chdir("../")
 
 
 if __name__ == '__main__':

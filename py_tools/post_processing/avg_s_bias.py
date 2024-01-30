@@ -15,10 +15,7 @@ import csv
 import json
 import numpy as np
 from collections import OrderedDict
-from sys import path
-path.append('..')
-from helpers.data_processing_helpers import format_bits
-
+from ..helpers.data_processing_helpers import format_bits
 
 
 def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv'):
@@ -79,7 +76,8 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
     with open(output_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
         writer.writerows(avg_sorted.items())
-        #writer.writerows(sorted(avg_s_bias.items()))
+
+    print("Done writing avg s_bias output")
 
 
 if __name__ == '__main__':

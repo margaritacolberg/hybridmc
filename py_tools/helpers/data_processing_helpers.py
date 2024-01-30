@@ -1,6 +1,8 @@
 import sys
 import os
 import json
+
+import h5py
 import wang_landau as WL
 
 
@@ -136,6 +138,11 @@ def bitstring_subtract(bitstring_out, bitstring_in):
     return result
 
 
+def extract_sbias(file_path):
+    with h5py.File(file_path, 'r') as f:
+        return f['s_bias'][0]
+
+
 def set_defaults(data, defaults):
     """
     Function to set default key: values pairs to the data dictionary in case the key does not exist.
@@ -233,4 +240,3 @@ def get_mcMoves(data: dict):
     mcMoves: int: number of monte-carlo moves to make
     """
     return round(1000 * 1 - (len(data['permanent_bonds']) / len(data['nonlocal_bonds'])))
-

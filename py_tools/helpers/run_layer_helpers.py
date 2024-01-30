@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 from numpy import searchsorted
-import h5py
 from .mfpt_helpers import get_dists
 from .data_processing_helpers import update_rc
 

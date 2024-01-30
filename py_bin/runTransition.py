@@ -7,9 +7,9 @@
 # note that run.py creates a new dir which it enters to generate the output
 
 import argparse
-from helpers.data_processing_helpers import *
-from helpers.run_layer_helpers import run_sim, run_stairs
-from post_processing import diff_s_bias, mfpt, get_error
+from py_tools.helpers.data_processing_helpers import *
+from py_tools.helpers.run_layer_helpers import run_sim, run_stairs
+from py_tools.post_processing import diff_s_bias, mfpt, get_error
 import multiprocessing as mp
 
 
@@ -57,7 +57,7 @@ def get_transition_data(output_name, input_name, exe_name, data, input_hdf5, sta
 
 
 # create class to call for multiprocessing purposes
-class OutputDataMulti(object):
+class OutputDataMulti:
     def __init__(self, exe_name, data, input_name, output_name, stair_bp, stair_rc_list):
         self.exe_name = exe_name
         self.data = data
@@ -110,13 +110,13 @@ def process_json(input_data, output_name):
     bitstring_out = output_name.split('_')[3]
     input_data["permanent_bonds"] = bonds_from_bitstring(bitstring_in, input_data["nonlocal_bonds"])
 
-    input_data["transient_bonds"] = bonds_from_bitstring(bitstring_subtract(bitstring_out, bitstring_in), input_data["nonlocal_bonds"])
+    input_data["transient_bonds"] = bonds_from_bitstring(bitstring_subtract(bitstring_out, bitstring_in),
+                                                         input_data["nonlocal_bonds"])
 
     input_data['config_in'] = int(bitstring_in, 2)
     input_data['config_out'] = int(bitstring_out, 2)
 
     return input_data
-
 
 
 def run_TransitionSerial(json_name, input_name, exe_name, n_iterations=2):
