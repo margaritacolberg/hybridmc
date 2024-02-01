@@ -80,6 +80,7 @@ class Boot:
                 f"{self.bootstrap_result.confidence_interval.high}")
 
     def __call__(self):
+        make_dataclass('')
         return self.bootstrap_result, self.config_set, self.s_bias
 
     def _get_config_from_h5(self, h5_file_name=None):
@@ -283,20 +284,6 @@ def main(params):
     bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name, s_bias=params.s_bias,
                                        config_set=params.config_set, n_boots=20, confidence_level=0.95)
     print(bootstrap_result)
-
-
-class BootstrapOutput:
-    def __init__(self, input_array, confidence_level=0.95):
-        self.input_array = input_array
-        self.confidence_level = confidence_level
-        self.mean = input_array.mean()
-        self.standard_error = input_array.std()
-
-        self.input_array.sort()
-
-        self.confidence_interval_high = np.quantile(self.input_array, (1 + self.confidence_level) / 2)
-
-        self.confidence_interval_low = np.quantile(self.input_array, (1 - self.confidence_level) / 2)
 
 
 if __name__ == '__main__':
