@@ -3,10 +3,9 @@ from dataclasses import make_dataclass
 
 import h5py
 from scipy.stats import bootstrap
-from scipy.stats._common import ConfidenceInterval
 import csv
 import matplotlib.pyplot as plt
-from sklearn.utils import resample
+
 
 import numpy as np
 
@@ -21,13 +20,16 @@ else:
     from .mfpt_helpers import if_stair
 
 
-class Boot:
+class ConfigBoot:
     def __init__(self, simulation_name=None, s_bias=None, config_set=None, **bootstrap_kwargs):
         """
-        Parent class for bootstrapping. This allows you to specify the parameters of the bootstrapping procedure.
+        Class for bootstrapping configurations. This allows you to specify bootstrapping procedure parameters.
+        used to obtain bootstrapping result for simulation run s_bias value using a single trajectory result.
 
-        Child classes must specify the statistic for bootstrapping. While the configuration can be redefined,
-        this class will automatically be using the h5 file provided to set the sample set.
+        Upon initialization, this class stores the bootstrapping result which you can get using bootstrap_result.
+
+        This class works for a single transition result with full functionality for a single transition result without
+        any staircase potential.
 
         The s_bias and config_set parameters are ignored if the simulation name has been provided. The manual
         override for these two only works if you do not specify the simulation name.
@@ -35,9 +37,16 @@ class Boot:
         Parameters
         ----------
         simulation_name: str: Basename to the HDF5 file containing the simulation data
+
         s_bias: float: The s_bias for the simulation run given manually. ignored if simulation_name provided
+
         config_set: array: An array of integers representing the configurations explored. Ignored if simulation_name given
+
         bootstrap_kwargs: dict: Keyword arguments for the bootstrapping procedure
+
+        Returns:
+        _________
+        The bootstrapping result, configuration array, the s_bias value in a dataclass
         """
 
         # check if s_bias and config_set provided
@@ -61,10 +70,10 @@ class Boot:
         set_defaults(self.bootstrap_kwargs, dict(confidence_level=0.9,
                                                  random_state=np.random.default_rng()))
 
-        # initialize result for bootstrap_result
+        # initialize bootstrap result
         self.bootstrap_result = None
 
-        # compute bootstrap
+        # compute bootstrap result
         self.compute_bootstrap(**self.bootstrap_kwargs)
 
     def __repr__(self):
@@ -80,32 +89,46 @@ class Boot:
                 f"{self.bootstrap_result.confidence_interval.high}")
 
     def __call__(self):
-        make_dataclass('')
-        return self.bootstrap_result, self.config_set, self.s_bias
+        fields = ['bootstrap_result', 'config_set', 's_bias']
+        BootstrapInfo = make_dataclass('BootstrapInfo', fields)
+        return BootstrapInfo(bootstrap_result=self.bootstrap_result,
+                             config_set=self.config_set[0], s_bias=self.s_bias)
 
-    def _get_config_from_h5(self, h5_file_name=None):
+    @staticmethod
+    def _get_config_from_h5(h5_file_name):
         """
         Function to load the config counts for the iteration of the simulation and the sbias value for it
         """
-
-        # if a manual sim_name provided, use it
-        if h5_file_name:
-            sim_name = h5_file_name
-        else:
-            # initialize sim file name with the simulation name
-            sim_name = self.simulation_name
-
         # load the distances for this simulation
-        with h5py.File(f"{sim_name}.h5", 'r') as f:
+        with h5py.File(f"{h5_file_name}.h5", 'r') as f:
             total_configs = int(f['config_count'][-1].sum())
             return f['config']['int'][-total_configs:], f['s_bias'][0]
 
     def _set_configs(self):
-        self.config_set, self.s_bias = self._get_config_from_h5()
-        self.config_set = (self.config_set,)
+        """
+        Sets the configuration bitstring list in a form compatible with the scipy bootstrap method,
+        Also sets the s_bias value.
+        """
+        config_set, self.s_bias = self._get_config_from_h5(self.simulation_name)
+        self.config_set = (config_set,)
+
+    @staticmethod
+    def sbias_from_config_estimator(config_data, s_bias):
+        """
+
+        Parameters
+        ----------
+        config_data: List[int]: The list of configurations (0,1) visited during simulation.
+        s_bias: float: The s_bias value simulation found to have based on the original configuration.
+
+        Returns
+        -------
+
+        """
+        return float(s_bias) + np.log(config_data.sum() / (config_data.size - config_data.sum()))
 
     def _s_bias_estimator(self, config_data):
-        pass
+        return self.sbias_from_config_estimator(config_data, self.s_bias)
 
     def compute_bootstrap(self, **kwargs):
         set_defaults(kwargs, dict(confidence_level=0.9,
@@ -115,7 +138,7 @@ class Boot:
                                           statistic=self._s_bias_estimator,
                                           **kwargs)
 
-    def __bootstrap_hist(self, **kwargs):
+    def bootstrap_hist(self, **kwargs):
         fig, ax = plt.subplots()
         ax.hist(self.bootstrap_result.bootstrap_distribution, **kwargs)
         ax.set_title('Bootstrap Distribution')
@@ -123,48 +146,10 @@ class Boot:
         ax.set_ylabel('frequency')
         plt.show()
 
-    def bootstrap_hist(self, **kwargs):
+    def get_base_simulation_id(self):
+        return '_'.join(os.path.basename(self.simulation_name).split('_')[:4])
 
-        return self.__bootstrap_hist(**kwargs)
-
-
-class ConfigBoot(Boot):
-    """
-    SubClass of Boot, used to obtain bootstrapping result for simulation run s_bias value (using a single trajectory result).
-
-    Upon initialization, this class stores the bootstrapping result which you can get using bootstrap_result.
-
-    This class works for a single transition result with full functionality for a single transition result.
-
-    Attributes:
-        simulation_name: str: Basename to the HDF5 file containing the simulation data. Used by default even if sbias and config set given manually
-        s_bias: optional float: The s_bias for the original simulation run for config_set in case simulation name not given
-        config_set: optional List: The set of configurations from the original simulation run in case simulation name not given
-        bootstrap_result: The bootstrapping result
-
-    Methods:
-        compute_bootstrapping(**kwargs): This value for bootstrap result can be updated with other parameters.
-
-        boostrap_hist(**kwargs): View a histogram of the results of the bootstrapping.
-
-        write_bootstrapping(csv_name): Write out the results of the bootstrapping to a csv_file.
-
-    Returns:
-            The bootstrapping result, configuration array, the s_bias value as a tuple.
-
-    """
-
-    def __init__(self, simulation_name=None, s_bias=None, config_set=None, **bootstrap_kwargs):
-        super().__init__(simulation_name, s_bias, config_set, **bootstrap_kwargs)
-
-    @staticmethod
-    def sbias_from_config_estimator(config_data, s_bias):
-        return s_bias + np.log(config_data.sum() / (config_data.size - config_data.sum()))
-
-    def _s_bias_estimator(self, config_data):
-        return self.sbias_from_config_estimator(config_data, self.s_bias)
-
-    def __write_bootstrap(self, csv_name):
+    def write_bootstrap(self, csv_name):
         with open(csv_name, 'r') as fread:
             reader = csv.reader(fread)
             diff_data = list(reader)
@@ -174,12 +159,13 @@ class ConfigBoot(Boot):
                 diff_data[0].append(self.bootstrap_result.confidence_interval)
             elif len(diff_data[0]) == 4:
                 diff_data[0][3] = self.bootstrap_result.confidence_interval
+            else:
+                # Obtain the input and output configs for the simulation as first two columns and boostrap result as
+                # the third if csv file found not to have this info already.
+                diff_data[0] = self.get_base_simulation_id()[2:4] + [self.bootstrap_result.confidence_interval]
 
             writer = csv.writer(fwrite)
             writer.writerow(diff_data[0])
-
-    def write_bootstrap(self, csv_name):
-        return self.__write_bootstrap(csv_name)
 
 
 class StairConfigBoot(ConfigBoot):
@@ -192,98 +178,34 @@ class StairConfigBoot(ConfigBoot):
 
     def _set_configs(self):
 
-        sim_basename = os.path.basename(self.simulation_name)
-        if len(sim_basename.split('_')) == 4:
-            ref_sim_id = sim_basename
-        else:
-            ref_sim_id = '_'.join(sim_basename[:4])
+        ref_sim_id = self.get_base_simulation_id()
 
-        # get the staircase rc values
-        stair_rc_list = if_stair(ref_sim_id, files=os.listdir())
-        # add 0 to indicate the final rc
-        stair_rc_list += [0]
+        # get the staircase rc values and add 0 to indicate the final rc
+        stair_rc_list = if_stair(ref_sim_id, files=os.listdir()) + [0]
 
-        self.s_bias_list = []
-        self.config_set = []
-        for rc in stair_rc_list:
-            # if it is one of the intermediate staircase rc values
-            if rc:
-                file_id = f"{ref_sim_id}_{rc}"
-            # if it is the final step
-            else:
-                file_id = ref_sim_id
+        # Get list of the staircase s_bias values and associated configuration bitstring
+        # if it is one of the intermediate staircase rc values use rc value to find simulation path
+        # else use the basename
 
-            config, s_bias = self._get_config_from_h5(file_id)
+        sim_paths = [f"{ref_sim_id}_{rc}" if rc else ref_sim_id for rc in stair_rc_list]
+        self.config_set, self.s_bias_list = list(zip(*(self._get_config_from_h5(file_id) for file_id in sim_paths)))
 
-            self.config_set.append(config)
-            self.s_bias_list.append(s_bias)
-
+        # Set the sbias as the actual sbias value for the simulation: This is the "mean" sbias here.
         self.s_bias = str(stair_s_bias(self.s_bias_list))
 
-    @staticmethod
-    def resample_MultiDim(dataset, **kwargs):
-        resample_result = []
-        for sample in dataset:
-            # change to array in case sample in data is not an array
-            if not isinstance(sample, np.ndarray):
-                sample = np.array(sample)
-
-            resample_result.append(resample(sample, **kwargs))
-
-        return resample_result
-
-    def __resample_configs(self, n_resamples, **kwargs):
-        return [self.resample_MultiDim(self.config_set, **kwargs) for _ in range(n_resamples)]
-
-    def _s_bias_estimator(self, config_data):
+    def _stair_sbias_estimator(self, config_data):
         stair_sbias_list = []
         for idx, config in enumerate(config_data):
-            stair_sbias_list.append(super().sbias_from_config_estimator(config, self.s_bias_list[idx]))
+            stair_sbias_list.append(self.sbias_from_config_estimator(config, self.s_bias_list[idx]))
 
         return stair_s_bias(stair_sbias_list)
 
-    def stair_bootstrap(self, **kwargs):
-
-        # initialize bootstrap result output class
-        fields = ['mean', 'confidence_interval', 'standard_error']
-        BootstrapResult = make_dataclass("BootstrapResult", fields)
-
-        # prepare resample set
-        data = self.__resample_configs(n_resamples=kwargs['n_boots'])
-
-        # go through each resample set row and find estimated sbias
-        bootstrap_sbias = np.zeros(kwargs['n_boots'])  # initialize sbias result array
-
-        for idx, row in enumerate(data):
-            # calculate the sbias for the row configs
-            bootstrap_sbias[idx] = self._s_bias_estimator(row)
-
-        # Calculate confidence interval
-        ci_l = np.quantile(bootstrap_sbias, (1 - kwargs['confidence_level']) / 2)
-        ci_u = np.quantile(bootstrap_sbias, (1 + kwargs['confidence_level']) / 2)
-
-        # Return summary result
-        return BootstrapResult(
-            confidence_interval=ConfidenceInterval(ci_l, ci_u),
-            mean=np.mean(bootstrap_sbias),
-            standard_error=np.std(bootstrap_sbias, ddof=1, axis=-1)
-        )
-
-    def compute_bootstrap(self, **kwargs):
-
-        set_defaults(kwargs, dict(confidence_level=0.9,
-                                  random_state=np.random.default_rng(),
-                                  n_boots=10
-                                  ))
-
-        self.bootstrap_result = self.stair_bootstrap(data=self.config_set,
-                                                     statistic=self._s_bias_estimator,
-                                                     **kwargs)
+    def _s_bias_estimator(self, *config_data):
+        return self._stair_sbias_estimator(config_data)
 
 
 def main(params):
-    bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name, s_bias=params.s_bias,
-                                       config_set=params.config_set, n_boots=20, confidence_level=0.95)
+    bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name)
     print(bootstrap_result)
 
 
