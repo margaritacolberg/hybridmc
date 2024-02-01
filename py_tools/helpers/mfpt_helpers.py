@@ -976,20 +976,15 @@ def if_stair(ref_sim_id, files, tag='.json'):
     Function to check if the file_path has associated staircased steps simulations results. If yes, then the paths of these
     intermediate steps' csv files with their mfpt information are compiled into a list and returned.
 
-    :param file_path: the final step mfpt simulation id
-    :param files: the list of files in directory of interest
-    :return: list[float] containing all the intermediate staircase rc values if they exist
-
-    Parameters
+    Parameters:
     ----------
     ref_sim_id: str: The reference simulation id to search for in directory
-    files: the list of files in directory of interest
-    file_path: the final step mfpt simulation id
-    tag: the name of the file path type tag to look for
+    files: List[str]: the list of files in directory of interest
+    tag: str: the name of the file path type tag to look for
 
-    Returns
+    Returns:
     ------------
-    :return: list[float] containing all the intermediate staircase rc values if they exist
+    list[float] containing all the intermediate staircase rc values if they exist
     """
 
     # initialize output list merging all intermediate stair mfpt csv paths
