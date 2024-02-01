@@ -111,7 +111,6 @@ class Boot:
         set_defaults(kwargs, dict(confidence_level=0.9,
                                   random_state=np.random.default_rng()))
 
-        self.config_set = np.array(self.config_set)
         self.bootstrap_result = bootstrap(data=self.config_set,
                                           statistic=self._s_bias_estimator,
                                           **kwargs)
@@ -245,39 +244,41 @@ class StairConfigBoot(ConfigBoot):
 
     def stair_bootstrap(self, **kwargs):
 
-        set_defaults(kwargs, dict(confidence_level=0.9,
-                                  random_state=np.random.default_rng(),
-                                  n_boots=10
-                                  ))
+        # initialize bootstrap result output class
+        fields = ['mean', 'confidence_interval', 'standard_error']
+        BootstrapResult = make_dataclass("BootstrapResult", fields)
 
         # prepare resample set
         data = self.__resample_configs(n_resamples=kwargs['n_boots'])
 
         # go through each resample set row and find estimated sbias
-        estimated_sbias_results = np.zeros(kwargs['n_boots'])  # initialize sbias result array
+        bootstrap_sbias = np.zeros(kwargs['n_boots'])  # initialize sbias result array
 
         for idx, row in enumerate(data):
             # calculate the sbias for the row configs
-            estimated_sbias_results[idx] = self._s_bias_estimator(row)
+            bootstrap_sbias[idx] = self._s_bias_estimator(row)
 
-        return estimated_sbias_results
-
-    def compute_bootstrap(self, **kwargs):
-
-        # initialize bootstrap result output class
-        fields = ['mean', 'confidence_interval', 'standard_error']
-        BootstrapResult = make_dataclass("BootstrapResult", fields)
-
-        bootstrap_sbias = self.stair_bootstrap(**kwargs)
-
+        # Calculate confidence interval
         ci_l = np.quantile(bootstrap_sbias, (1 - kwargs['confidence_level']) / 2)
         ci_u = np.quantile(bootstrap_sbias, (1 + kwargs['confidence_level']) / 2)
 
-        self.bootstrap_result = BootstrapResult(
+        # Return summary result
+        return BootstrapResult(
             confidence_interval=ConfidenceInterval(ci_l, ci_u),
             mean=np.mean(bootstrap_sbias),
             standard_error=np.std(bootstrap_sbias, ddof=1, axis=-1)
         )
+
+    def compute_bootstrap(self, **kwargs):
+
+        set_defaults(kwargs, dict(confidence_level=0.9,
+                                  random_state=np.random.default_rng(),
+                                  n_boots=10
+                                  ))
+
+        self.bootstrap_result = self.stair_bootstrap(data=self.config_set,
+                                                     statistic=self._s_bias_estimator,
+                                                     **kwargs)
 
 
 def main(params):
