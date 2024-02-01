@@ -1,6 +1,9 @@
 import os
+from dataclasses import make_dataclass
+
 import h5py
 from scipy.stats import bootstrap
+from scipy.stats._common import ConfidenceInterval
 import csv
 import matplotlib.pyplot as plt
 from sklearn.utils import resample
@@ -67,23 +70,17 @@ class Boot:
     def __repr__(self):
         return (f"Simulation had s_bias: {self.s_bias}\n"
                 f"Standard Error: {self.bootstrap_result.standard_error}\n"
-                f"Confidence interval: {self.confidence_interval_low()} to "
-                f"{self.confidence_interval_high()}")
+                f"Confidence interval: {self.bootstrap_result.confidence_interval.low} to "
+                f"{self.bootstrap_result.confidence_interval.high}")
 
     def __str__(self):
         return (f"Simulation had s_bias: {self.s_bias}\n"
                 f"Standard Error: {self.bootstrap_result.standard_error}\n"
-                f"Confidence interval: {self.confidence_interval_low()} to "
-                f"{self.confidence_interval_high()}")
+                f"Confidence interval: {self.bootstrap_result.confidence_interval.low} to "
+                f"{self.bootstrap_result.confidence_interval.high}")
 
     def __call__(self):
         return self.bootstrap_result, self.config_set, self.s_bias
-
-    def confidence_interval_low(self):
-        return self.bootstrap_result.confidence_interval.low
-
-    def confidence_interval_high(self):
-        return self.bootstrap_result.confidence_interval.high
 
     def _get_config_from_h5(self, h5_file_name=None):
         """
@@ -127,6 +124,7 @@ class Boot:
         plt.show()
 
     def bootstrap_hist(self, **kwargs):
+
         return self.__bootstrap_hist(**kwargs)
 
 
@@ -255,22 +253,30 @@ class StairConfigBoot(ConfigBoot):
         data = self.__resample_configs(n_resamples=kwargs['n_boots'])
 
         # go through each resample set row and find estimated sbias
-        result = np.zeros(kwargs['n_boots'])  # initialize sbias result array
+        estimated_sbias_results = np.zeros(kwargs['n_boots'])  # initialize sbias result array
 
         for idx, row in enumerate(data):
             # calculate the sbias for the row configs
-            result[idx] = self._s_bias_estimator(row)
+            estimated_sbias_results[idx] = self._s_bias_estimator(row)
 
-        self.bootstrap_result = BootstrapOutput(result, kwargs['confidence_level'])
+        return estimated_sbias_results
 
     def compute_bootstrap(self, **kwargs):
-        return self.stair_bootstrap(**kwargs)
 
-    def confidence_interval_low(self):
-        return self.bootstrap_result.confidence_interval_low
+        # initialize bootstrap result output class
+        fields = ['mean', 'confidence_interval', 'standard_error']
+        BootstrapResult = make_dataclass("BootstrapResult", fields)
 
-    def confidence_interval_high(self):
-        return self.bootstrap_result.confidence_interval_high
+        bootstrap_sbias = self.stair_bootstrap(**kwargs)
+
+        ci_l = np.quantile(bootstrap_sbias, (1 - kwargs['confidence_level']) / 2)
+        ci_u = np.quantile(bootstrap_sbias, (1 + kwargs['confidence_level']) / 2)
+
+        self.bootstrap_result = BootstrapResult(
+            confidence_interval=ConfidenceInterval(ci_l, ci_u),
+            mean=np.mean(bootstrap_sbias),
+            standard_error=np.std(bootstrap_sbias, ddof=1, axis=-1)
+        )
 
 
 def main(params):
