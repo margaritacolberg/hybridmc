@@ -21,18 +21,22 @@ else:
 
 
 class ConfigBoot:
+    """
+    Class for bootstrapping configurations. This allows you to specify bootstrapping procedure parameters.
+        used to obtain bootstrapping result for simulation run s_bias value using a single trajectory result.
+
+    This class works for a single transition result with full functionality for a single transition result without
+        any staircase potential.
+
+    """
     def __init__(self, simulation_name=None, s_bias=None, config_set=None, **bootstrap_kwargs):
         """
-        Class for bootstrapping configurations. This allows you to specify bootstrapping procedure parameters.
-        used to obtain bootstrapping result for simulation run s_bias value using a single trajectory result.
+        Initialization routine for ConfigBoot:
 
         Upon initialization, this class stores the bootstrapping result which you can get using bootstrap_result.
 
-        This class works for a single transition result with full functionality for a single transition result without
-        any staircase potential.
-
         The s_bias and config_set parameters are ignored if the simulation name has been provided. The manual
-        override for these two only works if you do not specify the simulation name.
+            override for these two only works if you do not specify the simulation name.
 
         Parameters
         ----------
@@ -150,11 +154,18 @@ class ConfigBoot:
         return '_'.join(os.path.basename(self.simulation_name).split('_')[:4])
 
     def write_bootstrap(self, csv_name):
-        with open(csv_name, 'r') as fread:
-            reader = csv.reader(fread)
-            diff_data = list(reader)
 
-        with open(csv_name, 'w') as fwrite:
+        if os.path.isfile(csv_name):
+            with open(csv_name, 'r') as fread:
+                reader = csv.reader(fread)
+                diff_data = list(reader)
+        else:
+            diff_data = [[]]
+
+        if not len(diff_data):
+            diff_data = [[]]
+
+        with (open(csv_name, 'w') as fwrite):
             if len(diff_data[0]) == 3:
                 diff_data[0].append(self.bootstrap_result.confidence_interval)
             elif len(diff_data[0]) == 4:
@@ -162,7 +173,8 @@ class ConfigBoot:
             else:
                 # Obtain the input and output configs for the simulation as first two columns and boostrap result as
                 # the third if csv file found not to have this info already.
-                diff_data[0] = self.get_base_simulation_id()[2:4] + [self.bootstrap_result.confidence_interval]
+                diff_data[0] = self.get_base_simulation_id().split('_')[2:4] + [self.s_bias,
+                                                                                self.bootstrap_result.confidence_interval]
 
             writer = csv.writer(fwrite)
             writer.writerow(diff_data[0])
@@ -207,13 +219,15 @@ class StairConfigBoot(ConfigBoot):
 def main(params):
     bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name)
     print(bootstrap_result)
+    bootstrap_result.bootstrap_hist()
+    bootstrap_result.write_bootstrap('diff_s_bias_with_error.csv')
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--simulation_name', type=str, default='hybridmc_3_1000000110_1010000110')
+    parser.add_argument('--simulation_name', type=str, default='hybridmc_0_0000000000_0000000001')
     parser.add_argument('--s_bias', type=float, default=0)
     parser.add_argument('--config_set', type=float, default=0)
     parser.add_argument('--output-file', type=str, default='diff_s_bias.csv')
