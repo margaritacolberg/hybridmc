@@ -15,6 +15,7 @@ from sys import path
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from .data_processing_helpers import set_defaults
 
 path.append('../')
 from post_processing import matrix_element
@@ -134,17 +135,33 @@ def get_dists(name, t_ind, max_length=25000):
     return dist_t_active
 
 
-def fpt_write_wrap_default(name, nboot=0, boot_name=""):
+def fpt_write_wrap_default(name):
     print('input json:', f"{name}.json")
     with open(f"{name}.json", 'r') as input_json:
         data = json.load(input_json)
 
     rh = data['rh']
 
+    # set some more default values for parameters in case they are not provided in json file
+    set_defaults(data,
+                 defaults={
+                     "WL_sbias": 6.0,
+                     "sbias_min": 4.0,
+                     "fail_max": 5,
+                     "req_dists": 25000,
+                     "rc_target_min_percentile": 0.10,
+                     "nsteps_max": 1000,
+                     "nboot": 0
+
+                 })
+
+
     t_bonds = data['transient_bonds']
     p_bonds = data['permanent_bonds']
     nl_bonds = data['nonlocal_bonds']
     max_d = data['req_dists']
+    nboot = data['nboot']
+
 
     rc_transient = t_bonds[-1][-1]
 
@@ -159,7 +176,7 @@ def fpt_write_wrap_default(name, nboot=0, boot_name=""):
 
     # if running layers for entire folding process, run bootstrap samples for
     # a specific transition to determine variance
-    if nboot and name == boot_name:
+    if nboot:
         run_bootstrap = True
     else:
         run_bootstrap = False
@@ -182,15 +199,18 @@ def fpt_write_wrap_default(name, nboot=0, boot_name=""):
     t_off = np.array(t_off)
 
     # inner fpt for transient bond turned on
-    fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)[0]
-    fpt_off = fpt_per_bead_pair(t_off, rc_transient, np.max(t_off), False, name)[0]
+    xb_on, yb_on, fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)
+    xb_off, yb_off, fpt_off = fpt_per_bead_pair(t_off, rc_transient, np.max(t_off), False, name)
 
     output_i = [t_ind, fpt_on, fpt_off]
 
     if run_bootstrap:
-        fpt_on_var = fpt_var(t_on, rh, rc_transient, True, nboot, name)
-        fpt_off_var = fpt_var(t_off, rc_transient, np.max(t_off), False, nboot, name)
-        output_i += [fpt_on_var, fpt_off_var]
+        fpt_on_std = fpt_std(t_on, rh, rc_transient, True, nboot, xb_on, yb_on)
+        fpt_off_std = fpt_std(t_off, rc_transient, np.max(t_off), False, nboot, xb_off, yb_off)
+        output_i += [fpt_on_std, fpt_off_std]
+    else:
+        output_i += [0.0, 0.0]
+
 
     output.append(output_i)
 
@@ -198,47 +218,117 @@ def fpt_write_wrap_default(name, nboot=0, boot_name=""):
         writer = csv.writer(output_csv)
         writer.writerows(output)
 
-
-def fpt_write_wrap_stair(name, stair_rc_list):
-    print('input json:', f"{name}.json")
-    with open(f"{name}.json", 'r') as input_json:
+def get_fpt_boot_distances(stair_output_name,boot_index):
+    with open(f"{stair_output_name}.json", 'r') as input_json:
         data = json.load(input_json)
 
     t_bonds = data['transient_bonds']
+    nl_bonds = data['nonlocal_bonds']
+    max_d = data['req_dists']
+
     rc_transient = t_bonds[-1][-1]
 
-    # Append the final step rc value and sort in descending order
-    stair_rc_list.append(rc_transient)
-    stair_rc_list.sort(reverse=1)
+    # get index of the transient bond in the list of nonlocal bonds
+    t_ind = nl_bonds.index(t_bonds[0])
 
+    dist_t_active = get_dists(stair_output_name, t_ind, max_d)
+
+    t_on = []
+    t_off = []
+
+    for j in range(len(dist_t_active)):
+        if dist_t_active[j] < rc_transient:
+            t_on.append(dist_t_active[j])
+        else:
+            t_off.append(dist_t_active[j])
+
+    t_off = np.array(t_off)
+    boot_fpt_i = utils.resample(t_off, random_state=boot_index)
+    return boot_fpt_i
+
+def fpt_outer_std(name, stair_rc_list, xknots_iteration, yknots_iteration, nboot):
+    outer_fpt_array = []
+    for boot in range(nboot):
+        xknots_total = []
+        yknots_total = []
+        for j in range(len(stair_rc_list)):
+            # So long as the rc is not at the target we append the intermediate rc to the output name
+            if stair_rc_list[j] != stair_rc_list[-1]:
+                stair_output_name = f'{name}_{stair_rc_list[j]}'
+            else:
+                stair_output_name = name
+
+            if j == 0:
+                rc_max = -1.
+                # otherwise, the maximum rc is the rc of the previous step
+            else:
+                rc_max = stair_rc_list[j - 1]
+                # if this is the first step, then the knots are the total knots that subsequent knots are added
+
+            dist_vec_j = get_fpt_boot_distances(stair_output_name, boot_index = boot)
+
+            xknots = xknots_iteration[j].copy()
+            yknots = minimize_f(xknots_iteration[j], dist_vec_j, yknots_iteration[j])
+            yknots -= yknots[-1]
+
+            if j == 0:
+                xknots_total = xknots.copy()
+                yknots_total = yknots.copy()
+
+                # otherwise, append the new knots to the total knots to build a smooth spline across the entire rc space
+            else:
+                # In the case of the x knots, simply append the new x knots to the total x knots less the first knot
+                # of the total x knots list (this is repeated exactly in the new x knots list as its last value)
+                xknots_total = np.append(xknots, xknots_total[1:])
+
+                # In the case of the y_knot values:
+                # 1. Do the same as the x knots AND
+                # 2. Shift the new y knots by the first y knot value in the total knots list to avoid a discontinuity
+                # in the spline fit at the junction of the two staircase steps
+                yknots_total = np.append(yknots + yknots_total[0], yknots_total[1:])
+        fpt_boot_val = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
+
+        if plot_data or write_data:
+          plot_outer_integrand(xknots_total, yknots_total, f'{name}.{boot}')
+
+        print(' outer bootstrap ', boot, ' has value ', fpt_boot_val, ' for transition ', name)
+        outer_fpt_array.append(fpt_boot_val)
+
+
+    return np.std(outer_fpt_array)
+
+def fpt_outer_stair(name, stair_rc_list):
     # get knots for the whole rc space to make one smooth spline fit across the outer range encapsulating all the rcs
     xknots_total = []
     yknots_total = []
-    for j in range(len(stair_rc_list)):
 
+    xknots_iteration = []
+    yknots_iteration = []
+    for j in range(len(stair_rc_list)):
         # So long as the rc is not at the target we append the intermediate rc to the output name
         if stair_rc_list[j] != stair_rc_list[-1]:
             stair_output_name = f'{name}_{stair_rc_list[j]}'
         else:
             stair_output_name = name
 
-        # if the rc is the outermost rc (step 1), then the maximum rc can be the larget distance in the data file
+        # if the rc is the outermost rc (step 1), then the maximum rc can be the largest distance in the data file
         # indicate this by using -1 as the rc_max
         if j == 0:
             rc_max = -1.
-
         # otherwise, the maximum rc is the rc of the previous step
         else:
             rc_max = stair_rc_list[j - 1]
+            # if this is the first step, then the knots are the total knots that subsequent knots are added
 
         nknots, xknots, yknots = knots_wrap(stair_output_name, rc_max)
+        xknots_iteration.append(xknots.copy())
+        yknots_iteration.append(yknots.copy())
 
-        # if this is the first step, then the knots are the total knots that subsequent knots are added
         if j == 0:
             xknots_total = xknots.copy()
             yknots_total = yknots.copy()
 
-        # otherwise, append the new knots to the total knots to build a smooth spline across the entire rc space
+            # otherwise, append the new knots to the total knots to build a smooth spline across the entire rc space
         else:
             # In the case of the x knots, simply append the new x knots to the total x knots less the first knot
             # of the total x knots list (this is repeated exactly in the new x knots list as its last value)
@@ -250,20 +340,60 @@ def fpt_write_wrap_stair(name, stair_rc_list):
             # in the spline fit at the junction of the two staircase steps
             yknots_total = np.append(yknots + yknots_total[0], yknots_total[1:])
 
-    t_ind, inner_fpt = inner_stair_fpt(name)
+
 
     outer_fpt = fpt(xknots_total, yknots_total, xknots_total[0], xknots_total[-1], False)[0]
 
+    return xknots_total, yknots_total, xknots_iteration, yknots_iteration, outer_fpt
+
+def fpt_write_wrap_stair(name, stair_rc_list):
+    print('input json:', f"{name}.json")
+    with open(f"{name}.json", 'r') as input_json:
+        data = json.load(input_json)
+
+    set_defaults(data,
+                 defaults={
+                     "WL_sbias": 6.0,
+                     "sbias_min": 4.0,
+                     "fail_max": 5,
+                     "req_dists": 25000,
+                     "rc_target_min_percentile": 0.10,
+                     "nsteps_max": 1000,
+                     "nboot": 0
+
+                 })
+
+    t_bonds = data['transient_bonds']
+    p_bonds = data['permanent_bonds']
+    nl_bonds = data['nonlocal_bonds']
+    max_d = data['req_dists']
+    nboot = data['nboot']
+    rc_transient = t_bonds[-1][-1]
+    rh = data['rh']
+
+    # Append the final step rc value and sort in descending order
+    stair_rc_list.append(rc_transient)
+    stair_rc_list.sort(reverse=1)
+
+    t_ind, xb_on, yb_on, inner_fpt, t_on = inner_stair_fpt(name)
+    x_total, y_total, x_iteration, y_iteration, outer_fpt = fpt_outer_stair(name, stair_rc_list)
+
     if plot_data or write_data:
-        plot_outer_integrand(xknots_total, yknots_total, name)
+        plot_outer_integrand(x_total, y_total, name)
 
-
-
-    nknots = len(xknots_total)
+    nknots = len(x_total)
     print(f"Completed fpts for {name} for outer nknots = {nknots - 1} and outer_fpt = {outer_fpt}.")
 
+    output_i = [t_ind, inner_fpt, outer_fpt]
+    if nboot:
+        fpt_inner_std_val = fpt_std(t_on, rh, rc_transient, True, nboot, xb_on, yb_on)
+        fpt_outer_std_val = fpt_outer_std(name, stair_rc_list, x_iteration, y_iteration, nboot)
+        output_i += [fpt_inner_std_val, fpt_outer_std_val]
+    else:
+        output_i += [0.0, 0.0]
     output = []
-    output.append([t_ind, inner_fpt, outer_fpt])
+    output.append(output_i)
+
     csv_name = f'{name}.csv'
     with open(csv_name, 'w') as output_csv:
         writer = csv.writer(output_csv)
@@ -293,11 +423,11 @@ def inner_stair_fpt(name):
             t_on.append(dist_t_active[j])
 
     t_on = np.array(t_on)
-    fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)[0]
-    return t_ind, fpt_on
+    xb, yb, fpt_on = fpt_per_bead_pair(t_on, rh, rc_transient, True, name)
+    return t_ind, xb, yb, fpt_on, t_on
 
 
-def knots_wrap(stair_output_name, rc_max):
+def knots_wrap(stair_output_name, rc_max, resample=False):
     with open(f"{stair_output_name}.json", 'r') as input_json:
         data = json.load(input_json)
 
@@ -325,6 +455,10 @@ def knots_wrap(stair_output_name, rc_max):
 
     if rc_max == -1.:
         rc_max = np.max(t_off)
+
+    if (resample):
+        boot_fpt_i = utils.resample(t_off)
+        t_off = boot_fpt_i
 
     return find_knots(t_off, rc_transient, rc_max)
 
@@ -671,26 +805,27 @@ def fpt_per_bead_pair_old(dist_vec, nknots, min_dist, max_dist, state):
 
     y = minimize_f(x, dist_vec, y)
 
-    return fpt(x, y, min_dist, max_dist, state)
+    return fpt(x, y, min_dist, max_dist, state)[0]
 
 
-def fpt_var(dist_vec, min_dist, max_dist, state, nboot, name):
-    sample_size = int(len(dist_vec) / 2)
+def fpt_std(dist_vec, min_dist, max_dist, state, nboot, x, y):
+    sample_size = int(len(dist_vec))
 
     boot_fpt = []
     for i in range(nboot):
-        print('bootstrap round', i)
-        boot_fpt_i = utils.resample(dist_vec, n_samples=sample_size,
-                                    random_state=i)
-        boot_fpt.append(fpt_per_bead_pair(boot_fpt_i, min_dist,
-                                          max_dist, state, name)[0])
 
-    return np.var(boot_fpt, ddof=1)
+        boot_fpt_i = utils.resample(dist_vec, random_state=i)
+        fpt_i = fpt_boot(boot_fpt_i, min_dist, max_dist, state, x, y)
+
+        print('bootstrap round', i, ' has fpt = ', fpt_i)
+        boot_fpt.append(fpt_i)
+
+    return np.std(boot_fpt, ddof=1)
 
 def chisquare_fit(x_knot, y_knot, dist_vec, norm):
     # assumes dist_vec is sorted and norm is calculated beforehand
     # Make discrete probability by integrating pdf over numK equal probability intervals
-    # Perform chi^2 test on interval counts, assuming dof = the number of knot parameters
+    # Perform chi^2 test_save on interval counts, assuming dof = the number of knot parameters
     #
     pdf_func = lambda t: np.exp(-spline(x_knot, y_knot, t)) / norm
     numK = 500
@@ -785,9 +920,9 @@ def KuipersTest(x_knot, y_knot, dist_vec, norm):
 
     devX = dist_vec[devIndex]
 
-    #print(' h1 = ', h1, ' h2 = ', h2, ' for Kuipers test')
+    #print(' h1 = ', h1, ' h2 = ', h2, ' for Kuipers test_save')
     if Verbose_Convergence:
-        print('Kuipers test: q=', q, ' refining devX =', devX, ' num knots is ', x_knot.size)
+        print('Kuipers test_save: q=', q, ' refining devX =', devX, ' num knots is ', x_knot.size, ' npoints = ', npoints)
 
     return q, maxDev, devX
 def KStest(x_knot, y_knot, dist_vec, norm):
@@ -846,11 +981,12 @@ def find_nearest_value(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx, array[idx]
+
 def find_knots(dist_vec, min_dist, max_dist):
     #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
     dist_vec.sort()
 
-    delta_x = (max_dist - min_dist) / 20.
+    #delta_x = (max_dist - min_dist) / 20.
     q = 0.
     q_best = 0.
     nknots = 5
@@ -867,10 +1003,10 @@ def find_knots(dist_vec, min_dist, max_dist):
 
         if Adaptive:
             if Adaptive_KS:
-                #  Use maximum deviation in KS test to position knots
+                #  Use maximum deviation in KS test_save to position knots
                 q, maxDev, devX = KStest(x,y,dist_vec,norm)
             else:
-                # Use Kuipers test to refine knot positions:  supposedly more sensitive to tails of density
+                # Use Kuipers test_save to refine knot positions:  supposedly more sensitive to tails of density
                 q, maxDev, devX = KuipersTest(x, y, dist_vec, norm)
 
             if q > q_best:
@@ -928,51 +1064,38 @@ def find_knots(dist_vec, min_dist, max_dist):
     q_chi = chisquare_fit(x_best, y_best, dist_vec, norm)
     if q_chi < 0.05:
         if Verbose_Convergence:
-            print('Warning: chi-squared test value of q = ', q_chi , ' lies below generally accepted threshold.')
+            print('Warning: chi-squared test_save value of q = ', q_chi , ' lies below generally accepted threshold.')
             print('    xmin = ', min_dist, ' xmax = ',max_dist)
 
     y_best -= y_best[-1]
     return nknots, x_best, y_best
-def find_knots_old(dist_vec, min_dist, max_dist):
-    #print('analyzing ', dist_vec.size, ' distances between ', min_dist, ' and ', max_dist)
+
+def find_fixed_knots(dist_vec, x, y):
+    # for fixed knot x values, find best y for data set dist_vec
     dist_vec.sort()
-    #print('dist_vec is ', dist_vec)
-
-    q = 0.
-    nknots = 4
-    while q < q_cut and nknots < 18:
-        nknots = nknots + 1
-        x = np.linspace(min_dist, max_dist, nknots)
-        y = np.zeros(nknots)
-        y = minimize_f(x, dist_vec, y)
-        norm = integrate_spline(x, y)
-        if chisquared_gof:
-            q = chisquare_fit(x, y, dist_vec, norm)
-        else:
-            q, maxDev, devX = KStest(x, y, dist_vec, norm)
-        #print('q is ', q, ' for nknots = ', nknots)
-
-    # make last index zero
+    y = minimize_f(x, dist_vec, y)
     y -= y[-1]
+    return y
 
-    return nknots, x, y
-
-
+def fpt_boot(dist_vec, min_dist, max_dist, state, x, y):
+    yi = find_fixed_knots(dist_vec,x,y)
+    fpt_val = fpt(x, yi, min_dist, max_dist, state)
+    return fpt_val[0]
 def fpt_per_bead_pair(dist_vec, min_dist, max_dist, state, struc_id):
     dist_vec.sort()
 
     nknots, xb,yb = find_knots(dist_vec,min_dist, max_dist)
-    fpt_val = fpt(xb, yb, min_dist, max_dist, state)
+    fpt_val = fpt(xb, yb, min_dist, max_dist, state)[0]
 
     if state:
-        print(f"{struc_id} inner fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt{fpt_val}")
+        print(f"{struc_id} inner fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt = {fpt_val}")
     else:
-        print(f"{struc_id} outer fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt{fpt_val}")
+        print(f"{struc_id} outer fpt: Converged for nknots = {nknots}  with {len(dist_vec)} distances: fpt= {fpt_val}")
 
-    if plot_data or write_data and state == False:
+    if (plot_data or write_data) and state == False:
         plot_outer_integrand(xb,yb,struc_id)
 
-    return fpt_val
+    return xb, yb, fpt_val
 
 
 def if_stair(ref_sim_id, files):

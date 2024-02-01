@@ -71,13 +71,32 @@ void NonlocalBonds::printBonds()
 // write the transient or permanent bead indices to the output file
 void NonlocalBonds::write_hdf5(H5::H5Object &obj,
                                const std::string &name) const {
-  const hsize_t dims[2] = {ij_.size(), 2};
-  H5::DataSpace space(2, dims);
-  H5::Attribute attr =
-      obj.createAttribute(name, H5::PredType::NATIVE_UINT, space);
-  if (!ij_.empty()) {
-    attr.write(H5::PredType::NATIVE_UINT, &ij_[0]);
+
+  int nb = ij_.size();
+
+  BondWrapper *bw = new BondWrapper[nb];
+  for (int k=0;k<nb;k++)
+  {
+        bw[k].i = std::get<0>(ij_[k]);
+        bw[k].j = std::get<1>(ij_[k]);
+        bw[k].rc = std::sqrt(std::get<2>(ij_[k]));
   }
+
+  H5::CompType mtype1( sizeof(BondWrapper) );
+  mtype1.insertMember("bond i", HOFFSET(BondWrapper, i), H5::PredType::NATIVE_UINT32);
+  mtype1.insertMember("bond j", HOFFSET(BondWrapper, j), H5::PredType::NATIVE_UINT32);
+  mtype1.insertMember("rc", HOFFSET(BondWrapper, rc), H5::PredType::NATIVE_DOUBLE);
+
+  const hsize_t dims[1] = {ij_.size()};
+  H5::DataSpace space(1,dims);
+
+  H5::Attribute attribute= obj.createAttribute(name,mtype1,space);
+  if (!ij_.empty())
+  {
+      attribute.write(mtype1,&bw[0]);
+  }
+
+  delete []bw;
 }
 
 void from_json(const nlohmann::json &json, NonlocalBonds &nonlocal_bonds) {

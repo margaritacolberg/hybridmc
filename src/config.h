@@ -19,6 +19,12 @@
 using Config = uint64_t;
 using ConfigInt = std::vector<uint64_t>;
 
+struct BondWrapper {
+    unsigned int i;
+    unsigned int j;
+    double rc;
+};
+
 class NonlocalBonds {
 public:
   using Pairs = std::vector<std::tuple<unsigned int, unsigned int, double>>;

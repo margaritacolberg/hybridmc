@@ -17,7 +17,7 @@ import numpy as np
 from collections import OrderedDict
 from sys import path
 path.append('..')
-from helpers.data_processing_helpers import format_bits
+from tools.helpers.data_processing_helpers import format_bits
 
 
 
@@ -85,6 +85,6 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
 if __name__ == '__main__':
     import os
 
-    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
+    #os.chdir('../test')
 
-    get_avg_sbias('diff_s_bias_sort.csv', '../test.json', output_csv='avg_s_bias_sort.csv')
+    get_avg_sbias('diff_s_bias_sort.csv', '../test_save.json', output_csv='avg_s_bias_sort.csv')
