@@ -1,7 +1,7 @@
 # Copyright (c) 2018-2022 Margarita Colberg
 # SPDX-License-Identifier: BSD-3-Clause
 
-name: build and test
+name: build and test_save
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
 
       - run: sudo apt-get -y -qq update
 
-      - run: sudo apt-get -y -qq install build-essential cmake ninja-build libhdf5-dev libboost-program-options-dev libboost-test-dev libboost-filesystem-dev
+      - run: sudo apt-get -y -qq install build-essential cmake ninja-build libhdf5-dev libboost-program-options-dev libboost-test_save-dev libboost-filesystem-dev
 
       - run: make ${{ matrix.config }}
         env:

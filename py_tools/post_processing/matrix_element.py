@@ -11,7 +11,7 @@ import re
 
 
 def K_elem(csv_in, beta, e_i, e_j, s_i, s_j, t_ind):
-    inner_fpt, outer_fpt = get_fpt(csv_in, t_ind)
+    inner_fpt, outer_fpt, inner_std, outer_std = get_fpt(csv_in, t_ind)
 
     # the final state j has one more bond than the initial state i
     s_bias_diff = s_i - s_j
@@ -26,7 +26,7 @@ def K_elem(csv_in, beta, e_i, e_j, s_i, s_j, t_ind):
 
 
 def dK_elem(csv_in, beta, e_i, e_j, s_i, s_j, i, j, k, t_ind):
-    inner_fpt, outer_fpt = get_fpt(csv_in, t_ind)
+    inner_fpt, outer_fpt, inner_std, outer_std = get_fpt(csv_in, t_ind)
 
     s_bias_diff = s_i - s_j
     eps = e_i - e_j
@@ -61,8 +61,10 @@ def get_fpt(csv_in, t_ind):
             if int(row[0]) == t_ind:
                 inner_fpt = float(row[1])
                 outer_fpt = float(row[2])
+                inner_std = float(row[3])
+                outer_std = float(row[4])
 
-    return inner_fpt, outer_fpt
+    return inner_fpt, outer_fpt, inner_std, outer_std
 
 
 def get_s_bias(csv_in):

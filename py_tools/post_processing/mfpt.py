@@ -77,15 +77,15 @@ def compile_mfpts():
         if re.search('hybridmc_[0-9]+_([01]+)_([01]+).csv', file_path):
 
             bits_i, bits_j, t_ind, int_i, int_j = matrix_element.get_state_data(file_path)
-            inner_fpt, outer_fpt = matrix_element.get_fpt(file_path, t_ind)
+            inner_fpt, outer_fpt, inner_std, outer_std = matrix_element.get_fpt(file_path, t_ind)
             layer = file_path.split('_')[1]
-            output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt])
+            output.append([bits_i, bits_j, layer, inner_fpt, outer_fpt, inner_std, outer_std])
 
     output.sort(key=lambda x: (x[2],int(x[0],2),int(x[1],2)))
     csv_out = 'mfpt.csv'
 
-    output.insert(0, ['state i bits', 'state j bits', 'layer', 'inner fpt',
-                      'outer fpt'])
+    output.insert(0, ['state i bits', ' state j bits', ' layer', ' inner fpt',
+                      ' outer fpt', ' inner std', ' outer std'])
 
     with open(csv_out, 'w') as output_csv:
         writer = csv.writer(output_csv)
