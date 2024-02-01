@@ -220,7 +220,7 @@ def main(params):
     bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name)
     print(bootstrap_result)
     bootstrap_result.bootstrap_hist()
-    bootstrap_result.write_bootstrap('diff_s_bias_with_error.csv')
+    bootstrap_result.write_bootstrap(params.output_file)
 
 
 if __name__ == '__main__':
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--simulation_name', type=str, default='hybridmc_0_0000000000_0000000001')
     parser.add_argument('--s_bias', type=float, default=0)
     parser.add_argument('--config_set', type=float, default=0)
-    parser.add_argument('--output-file', type=str, default='diff_s_bias.csv')
+    parser.add_argument('--output-file', type=str, default='diff_s_bias_with_error.csv')
     args = parser.parse_args()
 
     main(args)
