@@ -5,19 +5,23 @@ import h5py
 from scipy.stats import bootstrap
 import csv
 import matplotlib.pyplot as plt
-
-
+from itertools import combinations
 import numpy as np
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
     from data_processing_helpers import set_defaults
-    from py_tools.post_processing.diff_s_bias import stair_s_bias
     from py_tools.helpers.mfpt_helpers import if_stair
 
 else:
     from .data_processing_helpers import set_defaults
-    from ..post_processing.diff_s_bias import stair_s_bias
     from .mfpt_helpers import if_stair
+
+
+def stair_s_bias(stair_sbias_list):
+    exp_s = []
+    for i in range(1, len(stair_sbias_list) + 1):
+        [exp_s.append(np.exp(sum(j))) for j in combinations(stair_sbias_list, i)]
+    return np.log(np.sum(exp_s))
 
 
 class ConfigBoot:
@@ -29,6 +33,7 @@ class ConfigBoot:
         any staircase potential.
 
     """
+
     def __init__(self, simulation_name=None, s_bias=None, config_set=None, **bootstrap_kwargs):
         """
         Initialization routine for ConfigBoot:
@@ -63,7 +68,7 @@ class ConfigBoot:
         # simulation name is provided
         else:
             # set hdf5 name to retrieve configuration and sbias info if given
-            self.simulation_name = simulation_name
+            self.simulation_name = self.get_base_simulation_id(simulation_name)
             # find the config set and corresponding s_bias value using simulation data file
             self._set_configs()
 
@@ -104,7 +109,7 @@ class ConfigBoot:
         Function to load the config counts for the iteration of the simulation and the sbias value for it
         """
         # load the distances for this simulation
-        with h5py.File(f"{h5_file_name}.h5", 'r') as f:
+        with h5py.File(h5_file_name, 'r') as f:
             total_configs = int(f['config_count'][-1].sum())
             return f['config']['int'][-total_configs:], f['s_bias'][0]
 
@@ -113,7 +118,7 @@ class ConfigBoot:
         Sets the configuration bitstring list in a form compatible with the scipy bootstrap method,
         Also sets the s_bias value.
         """
-        config_set, self.s_bias = self._get_config_from_h5(self.simulation_name)
+        config_set, self.s_bias = self._get_config_from_h5(f"{self.simulation_name}.h5")
         self.config_set = (config_set,)
 
     @staticmethod
@@ -150,10 +155,34 @@ class ConfigBoot:
         ax.set_ylabel('frequency')
         plt.show()
 
-    def get_base_simulation_id(self):
-        return '_'.join(os.path.basename(self.simulation_name).split('_')[:4])
+    @staticmethod
+    def get_base_simulation_id(simulation_name):
+        simulation_name = simulation_name.split('.')[0]
+        return '_'.join(os.path.basename(simulation_name).split('_')[:4])
+
+    def get_diff_sbias_output(self):
+        # Initialize diff_s_bias output
+        diff_data = []
+        # Obtain the input and output configs for the simulation as first two columns
+        diff_data += self.simulation_name.split('_')[2:4]
+
+        # Add the bootstrap result to the diff data output
+        diff_data += [self.s_bias, self.bootstrap_result.standard_error, self.bootstrap_result.confidence_interval.low,
+                      self.bootstrap_result.confidence_interval.high]
+
+        return diff_data
 
     def write_bootstrap(self, csv_name):
+        """
+        Only works for single transition writing.
+        Parameters
+        ----------
+        csv_name: Name of the csv file to write output
+
+        Returns
+        -------
+        None
+        """
 
         if os.path.isfile(csv_name):
             with open(csv_name, 'r') as fread:
@@ -173,8 +202,7 @@ class ConfigBoot:
             else:
                 # Obtain the input and output configs for the simulation as first two columns and boostrap result as
                 # the third if csv file found not to have this info already.
-                diff_data[0] = self.get_base_simulation_id().split('_')[2:4] + [self.s_bias,
-                                                                                self.bootstrap_result.confidence_interval]
+                diff_data[0] = self.get_diff_sbias_output()
 
             writer = csv.writer(fwrite)
             writer.writerow(diff_data[0])
@@ -190,17 +218,15 @@ class StairConfigBoot(ConfigBoot):
 
     def _set_configs(self):
 
-        ref_sim_id = self.get_base_simulation_id()
-
         # get the staircase rc values and add 0 to indicate the final rc
-        stair_rc_list = if_stair(ref_sim_id, files=os.listdir()) + [0]
+        stair_rc_list = if_stair(self.simulation_name, files=os.listdir()) + [0]
 
         # Get list of the staircase s_bias values and associated configuration bitstring
         # if it is one of the intermediate staircase rc values use rc value to find simulation path
         # else use the basename
 
-        sim_paths = [f"{ref_sim_id}_{rc}" if rc else ref_sim_id for rc in stair_rc_list]
-        self.config_set, self.s_bias_list = list(zip(*(self._get_config_from_h5(file_id) for file_id in sim_paths)))
+        sim_paths = [f"{self.simulation_name}_{rc}" if rc else self.simulation_name for rc in stair_rc_list]
+        self.config_set, self.s_bias_list = list(zip(*(self._get_config_from_h5(f"{file_id}.h5") for file_id in sim_paths)))
 
         # Set the sbias as the actual sbias value for the simulation: This is the "mean" sbias here.
         self.s_bias = str(stair_s_bias(self.s_bias_list))

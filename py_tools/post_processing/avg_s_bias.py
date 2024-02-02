@@ -13,9 +13,13 @@
 
 import csv
 import json
-import numpy as np
 from collections import OrderedDict
-from ..helpers.data_processing_helpers import format_bits
+import numpy as np
+
+if __name__ == '__main__' and (__package__ is None or __package__ == ''):
+    from py_tools.helpers.data_processing_helpers import format_bits
+else:
+    from ..helpers.data_processing_helpers import format_bits
 
 
 def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv'):
@@ -25,7 +29,7 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
 
     diff_s_bias = dict()
     for i in range(len(data_csv)):
-        diff_s_bias[(data_csv[i][0], data_csv[i][1])] = float(data_csv[i][2])
+        diff_s_bias[(data_csv[i][0], data_csv[i][1])] = (float(data_csv[i][2]), float(data_csv[i][3]))
 
     with open(structure_sim_json, 'r') as input_json:
         data_json = json.load(input_json)
@@ -61,7 +65,7 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
             bits_out[i] = False
 
             config_out = format_bits(bits_out)
-            diff_s_bias_out = diff_s_bias[(config_out, config_in)]
+            diff_s_bias_out, sigma_diff_s_bias_out = diff_s_bias[(config_out, config_in)]
 
             s_bias_out = s_bias.setdefault(config_out, [])
             s_bias_out.append(diff_s_bias_out + mean_s_bias_in)
@@ -81,8 +85,5 @@ def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv
 
 
 if __name__ == '__main__':
-    import os
 
-    os.chdir('../../examples/test_with_wanglandau_also_cutoff')
-
-    get_avg_sbias('diff_s_bias_sort.csv', '../test.json', output_csv='avg_s_bias_sort.csv')
+    get_avg_sbias('diff_s_bias.csv', '../test.json', output_csv='avg_s_bias_sort.csv')

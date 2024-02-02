@@ -10,10 +10,12 @@
 
 import csv
 import glob
-import h5py
-import numpy as np
 import re
-from itertools import combinations
+
+if __name__ == '__main__' and (__package__ is None or __package__ == ''):
+    from py_tools.helpers.bootstrap_helpers import ConfigBoot, StairConfigBoot
+else:
+    from ..helpers.bootstrap_helpers import ConfigBoot, StairConfigBoot
 
 
 def get_diff_sbias_pair(base_file):
@@ -31,45 +33,37 @@ def get_diff_sbias_pair(base_file):
 def get_diff_sbias(out_csv='diff_s_bias.csv'):
     src = 'hybridmc_*.h5'
 
-    bits = []
-    s_bias = []
-    duplicate_s_bias = {}
+    # Initializations
+    output = []  # The list to write out to csv file, each element is one row of info for each simulation
+    sims = set()  # The set of normal simualations
+    stair_sims = set()  # set of staircase simualtions
 
     for file_path in glob.glob(src):
         match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]+))?\.h5$',
                           file_path)
-        bits_in = match.group('bits_in')
-        bits_out = match.group('bits_out')
 
-        with h5py.File(file_path, 'r') as f:
-            get_s_bias = f['s_bias'][0]
-            if (bits_in, bits_out) not in bits:
-                s_bias.append(get_s_bias)
-            else:
-                # extract entropy from output file for all steps of staircase
-                # potential except last step (each step of staircase has the
-                # same set of bits associated with it, hence why it is
-                # 'duplicate')
-                duplicate_s_bias.setdefault((bits_in, bits_out),
-                                            []).append(get_s_bias)
+        # check if this is a staircase intermediate simualation
+        stair = match.group('stair')
+        simulation_name = ConfigBoot.get_base_simulation_id(file_path)
 
-        if (bits_in, bits_out) not in bits:
-            bits.append((bits_in, bits_out))
+        # add the simulation name to the stair_sims set and the normal ones to the sims set
+        if stair:
+            stair_sims.add(simulation_name)
+        else:
+            sims.add(simulation_name)
 
-    for i in range(len(bits)):
-        if bits[i] in duplicate_s_bias.keys():
-            duplicate_s_bias[bits[i]].append(s_bias[i])
+        # remove all the stair sim names from the sim names set
+        #sims = sims - stair_sims
 
-    for key, stair_sbias_list in duplicate_s_bias.items():
-        sbias = stair_s_bias(stair_sbias_list)
+        # in case this simulation name is a staircased one use StairConfig routine
+        for simulation_name in stair_sims:
+            get_config_info = StairConfigBoot(simulation_name=simulation_name)
+            output.append(get_config_info.get_diff_sbias_output())
 
-        for i in range(len(bits)):
-            if key == bits[i]:
-                s_bias[i] = sbias
-
-    output = []
-    for i in range(len(bits)):
-        output.append([bits[i][0], bits[i][1], s_bias[i]])
+        # In case it is a normal simulation, use Config routine
+        for simulation_name in sims:
+            get_config_info = ConfigBoot(simulation_name=simulation_name)
+            output.append(get_config_info.get_diff_sbias_output())
 
     with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
@@ -79,13 +73,5 @@ def get_diff_sbias(out_csv='diff_s_bias.csv'):
     print("Done writing diff s_bias output")
 
 
-def stair_s_bias(stair_sbias_list):
-    exp_s = []
-    for i in range(1, len(stair_sbias_list) + 1):
-        [exp_s.append(np.exp(sum(j))) for j in combinations(stair_sbias_list, i)]
-    return np.log(np.sum(exp_s))
-
-
 if __name__ == '__main__':
-    import os
-    get_diff_sbias(out_csv='diff_s_bias_sort.csv')
+    get_diff_sbias(out_csv='diff_s_bias_with_error.csv')
