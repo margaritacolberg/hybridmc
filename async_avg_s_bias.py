@@ -1,6 +1,7 @@
 import asyncio
 import csv
 
+
 async def find_paths(start_bitstring, termination_bitstring, current_path, all_paths):
     if start_bitstring == termination_bitstring:
         all_paths.append(current_path.copy())
@@ -27,7 +28,7 @@ async def process_path(path, transition_info):
                 summed_entropy += transition[2]
                 summed_weights += transition[3] ** 2
                 break
-    return (summed_entropy, summed_weights)
+    return summed_entropy, summed_weights
 
 
 async def process_all_paths(all_paths, transition_info):

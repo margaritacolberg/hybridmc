@@ -11,67 +11,71 @@
 import csv
 import glob
 import re
+import asyncio
+import threading
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from multiprocessing import cpu_count
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
-    from py_tools.helpers.bootstrap_helpers import ConfigBoot, StairConfigBoot
+    from py_tools.helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
 else:
-    from ..helpers.bootstrap_helpers import ConfigBoot, StairConfigBoot
+    from ..helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
 
 
-def get_diff_sbias_pair(base_file):
-    src = f'{base_file}*.h5'
-    bits = []
-    s_bias = []
-    duplicate_s_bias = {}
-    for file_path in glob.glob(src):
-        match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]))',
-                          file_path)
-        bits_in = match.group('bits_in')
-        bits_out = match.group('bits_out')
+# Example usage:
 
 
-def get_diff_sbias(out_csv='diff_s_bias.csv'):
-    src = 'hybridmc_*.h5'
-
-    # Initializations
-    output = []  # The list to write out to csv file, each element is one row of info for each simulation
+def classify_sims(src):
     sims = set()  # The set of normal simualations
     stair_sims = set()  # set of staircase simualtions
-
     for file_path in glob.glob(src):
-        match = re.search(r'_(?P<bits_in>[01]+)_(?P<bits_out>[01]+)(?:_(?P<stair>[0-9]+\.[0-9]+))?\.h5$',
+        match = re.search(r'(?P<simulation_name>hybridmc_(\d+)_([01]+)_([01]+))(?:_(?P<stair>[0-9]+\.[0-9]+))?\.h5$',
                           file_path)
 
-        # check if this is a staircase intermediate simualation
-        stair = match.group('stair')
-        simulation_name = ConfigBoot.get_base_simulation_id(file_path)
-
-        # add the simulation name to the stair_sims set and the normal ones to the sims set
-        if stair:
-            stair_sims.add(simulation_name)
+        # add the simulation name to the stair_sims set and the normal ones to the sims set if it is a staircase h5 file
+        if match.group('stair'):
+            stair_sims.add(match.group('simulation_name'))
         else:
-            sims.add(simulation_name)
+            sims.add(match.group('simulation_name'))
 
-        # remove all the stair sim names from the sim names set
-        #sims = sims - stair_sims
+    # remove all the stair sim names from the sim names set
+    sims = sims - stair_sims
+    return sims, stair_sims
 
-        # in case this simulation name is a staircased one use StairConfig routine
-        for simulation_name in stair_sims:
-            get_config_info = StairConfigBoot(simulation_name=simulation_name)
-            output.append(get_config_info.get_diff_sbias_output())
 
-        # In case it is a normal simulation, use Config routine
-        for simulation_name in sims:
-            get_config_info = ConfigBoot(simulation_name=simulation_name)
-            output.append(get_config_info.get_diff_sbias_output())
+# Synchronous wrapper for process_simulation
+def process_simulation(simulation_name, is_stair):
+    print(f"Processing {simulation_name} ...")
+    return StairConfigEntropyDiffBoot(simulation_name).get_diff_sbias_output() if is_stair else \
+        ConfigEntropyDiffBoot(simulation_name).get_diff_sbias_output()
+
+
+def multi_diff_s_bias(out_csv):
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+        # Initializations
+        output = []  # The list to write out to csv file, each element is one row of info for each simulation
+        sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
+
+        # Prepare tasks for all simulations
+        tasks = [executor.submit(process_simulation, sim, is_stair=False) for sim in sims]
+        tasks += [executor.submit(process_simulation, sim, is_stair=True) for sim in stair_sims]
+
+        # Collect results from completed tasks
+        results = [task.result() for task in as_completed(tasks)]
+        output.extend(results)
 
     with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
         output.sort()  # sort the list by the bits in column
         writer.writerows(output)
 
-    print("Done writing diff s_bias output")
+        print("Done writing diff s_bias output")
+
+
+def get_diff_sbias(out_csv='diff_s_bias_with_error.csv'):
+    multi_diff_s_bias(out_csv)
 
 
 if __name__ == '__main__':
-    get_diff_sbias(out_csv='diff_s_bias_with_error.csv')
+    get_diff_sbias()
+

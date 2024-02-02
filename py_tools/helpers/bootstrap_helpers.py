@@ -10,27 +10,22 @@ import numpy as np
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
     from data_processing_helpers import set_defaults
-    from py_tools.helpers.mfpt_helpers import if_stair
 
 else:
-    from .data_processing_helpers import set_defaults
-    from .mfpt_helpers import if_stair
+    from .data_processing_helpers import set_defaults, if_stair
 
 
-def stair_s_bias(stair_sbias_list):
-    exp_s = []
-    for i in range(1, len(stair_sbias_list) + 1):
-        [exp_s.append(np.exp(sum(j))) for j in combinations(stair_sbias_list, i)]
-    return np.log(np.sum(exp_s))
-
-
-class ConfigBoot:
+class ConfigEntropyDiffBoot:
     """
-    Class for bootstrapping configurations. This allows you to specify bootstrapping procedure parameters.
+    Class for providing configuration entropy difference and bootstrapping results to find associated error in it.
+
+    -Allows you to specify bootstrapping procedure parameters.
         used to obtain bootstrapping result for simulation run s_bias value using a single trajectory result.
 
-    This class works for a single transition result with full functionality for a single transition result without
+    -Works for a single transition result with full functionality for a single transition result without
         any staircase potential.
+
+    -Also contains utility functions to help with configuration entropy calculations.
 
     """
 
@@ -42,6 +37,8 @@ class ConfigBoot:
 
         The s_bias and config_set parameters are ignored if the simulation name has been provided. The manual
             override for these two only works if you do not specify the simulation name.
+
+        (Note: s_bias is the biased entropy for each configuration.)
 
         Parameters
         ----------
@@ -208,13 +205,20 @@ class ConfigBoot:
             writer.writerow(diff_data[0])
 
 
-class StairConfigBoot(ConfigBoot):
+class StairConfigEntropyDiffBoot(ConfigEntropyDiffBoot):
     """
-    Subclass of ConfigBoot to provide bootstrapping procedure for a stair configuration
+    Subclass of ConfigEntropyDiffBoot to provide bootstrapping procedure for a stair configuration
     """
 
     def __init__(self, simulation_name=None, s_bias=None, config_set=None, **bootstrap_kwargs):
         super().__init__(simulation_name, s_bias, config_set, **bootstrap_kwargs)
+
+    @staticmethod
+    def stair_s_bias(stair_sbias_list):
+        exp_s = []
+        for i in range(1, len(stair_sbias_list) + 1):
+            [exp_s.append(np.exp(sum(j))) for j in combinations(stair_sbias_list, i)]
+        return np.log(np.sum(exp_s))
 
     def _set_configs(self):
 
@@ -229,24 +233,24 @@ class StairConfigBoot(ConfigBoot):
         self.config_set, self.s_bias_list = list(zip(*(self._get_config_from_h5(f"{file_id}.h5") for file_id in sim_paths)))
 
         # Set the sbias as the actual sbias value for the simulation: This is the "mean" sbias here.
-        self.s_bias = str(stair_s_bias(self.s_bias_list))
+        self.s_bias = str(self.stair_s_bias(self.s_bias_list))
 
     def _stair_sbias_estimator(self, config_data):
         stair_sbias_list = []
         for idx, config in enumerate(config_data):
             stair_sbias_list.append(self.sbias_from_config_estimator(config, self.s_bias_list[idx]))
 
-        return stair_s_bias(stair_sbias_list)
+        return self.stair_s_bias(stair_sbias_list)
 
     def _s_bias_estimator(self, *config_data):
         return self._stair_sbias_estimator(config_data)
 
 
 def main(params):
-    bootstrap_result = StairConfigBoot(simulation_name=params.simulation_name)
-    print(bootstrap_result)
-    bootstrap_result.bootstrap_hist()
-    bootstrap_result.write_bootstrap(params.output_file)
+    entropy_diff_bootstrap = StairConfigEntropyDiffBoot(simulation_name=params.simulation_name)
+    print(entropy_diff_bootstrap)
+    entropy_diff_bootstrap.bootstrap_hist()
+    entropy_diff_bootstrap.write_bootstrap(params.output_file)
 
 
 if __name__ == '__main__':

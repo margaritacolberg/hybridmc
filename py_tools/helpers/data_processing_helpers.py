@@ -240,3 +240,28 @@ def get_mcMoves(data: dict):
     mcMoves: int: number of monte-carlo moves to make
     """
     return round(1000 * 1 - (len(data['permanent_bonds']) / len(data['nonlocal_bonds'])))
+
+
+def if_stair(ref_sim_id, files):
+    """
+    Function to check if the file_path has associated staircased steps simulations results. If yes, then the paths of these
+    intermediate steps' csv files with their mfpt information are compiled into a list and returned.
+
+    :param file_path: the final step mfpt simulation id
+    :param files: the list of files in directory of interest
+    :return: list[float] containing all the intermediate staircase rc values if they exist
+    """
+
+    # initialize output list merging all intermediate stair mfpt csv paths
+    stair_rc_list = []
+
+    # loop through json files in directory
+    for file in files:
+        if file.endswith('.json'):
+            # obtain simulation tag for this file
+            sim_id = file.rstrip('.json')
+            # if the reference tag and this are the same then add the filepath to the output list
+            if ref_sim_id.split('_') == sim_id.split('_')[:-1]:
+                stair_rc_list.append(float(sim_id.split("_")[-1]))
+
+    return stair_rc_list
