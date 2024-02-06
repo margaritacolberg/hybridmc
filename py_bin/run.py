@@ -20,6 +20,8 @@
 
 import argparse
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from py_tools.helpers.run_helpers import init_json
 from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
 
@@ -92,8 +94,5 @@ if __name__ == '__main__':
                         default=1, type=int)
 
     args = parser.parse_args()
-
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     main(args)
