@@ -11,9 +11,7 @@
 import csv
 import glob
 import re
-import asyncio
-import threading
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
@@ -52,6 +50,7 @@ def process_simulation(simulation_name, is_stair):
 
 def multi_diff_s_bias(out_csv):
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+
         # Initializations
         output = []  # The list to write out to csv file, each element is one row of info for each simulation
         sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
@@ -64,12 +63,13 @@ def multi_diff_s_bias(out_csv):
         results = [task.result() for task in as_completed(tasks)]
         output.extend(results)
 
+    # write out the results to csv file
     with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
         output.sort()  # sort the list by the bits in column
         writer.writerows(output)
 
-        print("Done writing diff s_bias output")
+    print("Done writing diff s_bias output")
 
 
 def get_diff_sbias(out_csv='diff_s_bias_with_error.csv'):

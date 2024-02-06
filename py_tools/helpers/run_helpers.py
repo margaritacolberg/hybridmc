@@ -5,6 +5,7 @@
 
 from .init_json_helpers import *
 from multiprocessing import Process, Queue
+from .data_processing_helpers import n_sims
 
 
 def init_json(args):
@@ -15,6 +16,8 @@ def init_json(args):
     nonlocal_bonds = data['nonlocal_bonds']
     nbonds = len(nonlocal_bonds)
     nstates = 2 ** nbonds
+
+    print(f'INIT JSON START: Running {n_sims(nbonds)} simulations')
 
     # use make rc tuple to make each nonlocal bond to be a triplet with rc included in case rc value not already
     # included as a triplet for each bond pair list

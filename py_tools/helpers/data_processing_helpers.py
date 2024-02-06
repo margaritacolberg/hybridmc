@@ -6,6 +6,10 @@ import h5py
 import wang_landau as WL
 
 
+def n_sims(nbonds):
+    return nbonds * 2**(nbonds-1)
+
+
 def make_rc_tuple(nonlocal_bonds, rc):
     """
     Function to produce nonlocal bonds list with each nonlocal bond list element containing the rc as the third

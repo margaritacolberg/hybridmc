@@ -11,79 +11,101 @@
 # example of how to run:
 # python ../tools/avg_s_bias.py ../examples/crambin.json diff_s_bias.csv
 
+import asyncio
 import csv
-import json
-from collections import OrderedDict
+from statsmodels.stats.weightstats import DescrStatsW
 import numpy as np
 
-if __name__ == '__main__' and (__package__ is None or __package__ == ''):
-    from py_tools.helpers.data_processing_helpers import format_bits
-else:
-    from ..helpers.data_processing_helpers import format_bits
+
+async def find_paths(start_bitstring, termination_bitstring, current_path, all_paths):
+    if start_bitstring == termination_bitstring:
+        all_paths.append(current_path.copy())
+        return
+
+    for i in range(len(start_bitstring)):
+        if start_bitstring[i] != termination_bitstring[i]:
+            next_bitstring = start_bitstring[:i] + \
+                             str(int(not int(start_bitstring[i]))) + \
+                             start_bitstring[i + 1:]
+            current_path.append(next_bitstring)
+            await find_paths(next_bitstring, termination_bitstring, current_path, all_paths)
+            current_path.pop()
 
 
-def get_avg_sbias(diff_sbias_csv, structure_sim_json, output_csv='avg_s_bias.csv'):
-    with open(diff_sbias_csv, 'r') as input_csv:
-        reader = csv.reader(input_csv, delimiter=',')
-        data_csv = list(reader)
+async def process_path(path, transition_info):
+    summed_entropy = 0
+    summed_var = 0
+    for i in range(len(path) - 1):
+        bitstring_in = path[i]
+        bitstring_out = path[i + 1]
+        for transition in transition_info:
+            if transition[0] == bitstring_in and transition[1] == bitstring_out:
+                summed_entropy += transition[2]
+                summed_var += transition[3] ** 2
+                break
+    return summed_entropy, summed_var
 
-    diff_s_bias = dict()
-    for i in range(len(data_csv)):
-        diff_s_bias[(data_csv[i][0], data_csv[i][1])] = (float(data_csv[i][2]), float(data_csv[i][3]))
 
-    with open(structure_sim_json, 'r') as input_json:
-        data_json = json.load(input_json)
+async def process_all_paths(all_paths, transition_info):
+    master_entropy_var_list = []
+    tasks = []
+    for path in all_paths:
+        task = asyncio.create_task(process_path(path, transition_info))
+        tasks.append(task)
+    results = await asyncio.gather(*tasks)
+    for result in results:
+        master_entropy_var_list.append(result)
 
-    nonlocal_bonds = data_json['nonlocal_bonds']
-    nbonds = len(nonlocal_bonds)
+    # Get the transpose of the entropy and weights list to convert tuples to separate arrays of the
+    # entropy and its variance
+    entropy_weights_data = np.array(master_entropy_var_list).T
 
-    # initially fully bonded
-    work_list = [[True] * nbonds]
+    # calculate the weights as the inverse variance (give preference to more accurate values which have smaller
+    # variance)
+    entropy_weights_data[1] = 1 / entropy_weights_data[1]
 
-    bonded_config = format_bits(work_list[0])
+    return entropy_weights_data
 
-    s_bias = dict()
-    s_bias[bonded_config] = 0
 
-    avg_s_bias = dict()
+async def avg_s_bias_weighted(diff_s_bias_csv):
+    transition_info = []  # Load transition info from CSV file
 
-    while work_list:
-        bits_in = work_list.pop(0)
-        config_in = format_bits(bits_in)
-        mean_s_bias_in = np.mean(s_bias[config_in])
-        avg_s_bias[config_in] = mean_s_bias_in
+    # Simulated transition info, replace this with actual loading from CSV
+    with open(diff_s_bias_csv, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            transition_info.append((row[0], row[1], float(row[2]), float(row[3])))
 
-        for i in range(nbonds):
-            # if two beads are not bonded,
-            if not bits_in[i]:
-                # skip; do not form the bond
-                continue
+    start_bitstrings = set(list(zip(*transition_info))[0])
+    termination_bitstring = '1' * len(transition_info[0][0])
 
-            # copy of initial state for every bonded pair of beads
-            bits_out = bits_in.copy()
-            # flip bit to break bond
-            bits_out[i] = False
+    output = [(termination_bitstring, 0.0, 0.0)]
+    for start_bitstring in start_bitstrings:
+        all_paths = []
+        await find_paths(start_bitstring, termination_bitstring, [start_bitstring], all_paths)
 
-            config_out = format_bits(bits_out)
-            diff_s_bias_out, sigma_diff_s_bias_out = diff_s_bias[(config_out, config_in)]
+        entropy_weights_data = await process_all_paths(all_paths, transition_info)
 
-            s_bias_out = s_bias.setdefault(config_out, [])
-            s_bias_out.append(diff_s_bias_out + mean_s_bias_in)
+        d1 = DescrStatsW(entropy_weights_data[0], weights=entropy_weights_data[1])
 
-            # check if bond pattern already exists inside worklist;
-            # only append unique bond patterns to worklist
-            if not bits_out in work_list:
-                work_list.append(bits_out)
+        # find the standard error of the weighted average by taking 1 / sqrt(the sum of the weights for each path)
+        std_error = 1 / np.sqrt(d1.sum_weights) if d1.sum_weights else 0
 
-    # sort by the level (number of bits in key), then by integer index of converted binary key
-    avg_sorted = OrderedDict(sorted(avg_s_bias.items(), key=lambda t: (int(t[0], 2).bit_count(), int(t[0], 2))))
+        output.append((start_bitstring, d1.mean, std_error))
+        print("FINISHED " + start_bitstring)
+
+    return sorted(output, key=lambda t: (t[0].count('1'), int(t[0], 2)))
+
+
+def get_avg_sbias(diff_sbias_csv='diff_s_bias_with_error.csv', output_csv='avg_s_bias_weighted.csv'):
+    entropy_error_data = asyncio.run(avg_s_bias_weighted(diff_sbias_csv))
+
     with open(output_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
-        writer.writerows(avg_sorted.items())
+        writer.writerows(entropy_error_data)
 
     print("Done writing avg s_bias output")
 
 
 if __name__ == '__main__':
-
-    get_avg_sbias('diff_s_bias.csv', '../test.json', output_csv='avg_s_bias_sort.csv')
+    get_avg_sbias()

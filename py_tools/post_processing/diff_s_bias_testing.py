@@ -90,7 +90,7 @@ async def process_simulation(simulation_name, is_stair):
     return result
 
 
-def sync_process_simulation(simulation_name, is_stair):
+def fake_sync_process_simulation(simulation_name, is_stair):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -100,30 +100,6 @@ def sync_process_simulation(simulation_name, is_stair):
 
 
 # Asynchronous function to process a simulation
-def get_diff_sbias_threaded(out_csv='diff_s_bias.csv'):
-    # Create a ThreadPoolExecutor
-    with ThreadPoolExecutor() as executor:
-        # Initializations
-        output = []  # The list to write out to csv file, each element is one row of info for each simulation
-        sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
-
-        # Prepare tasks for all simulations
-        tasks = [executor.submit(sync_process_simulation, sim, is_stair=False) for sim in sims]
-        tasks += [executor.submit(sync_process_simulation, sim, is_stair=True) for sim in stair_sims]
-
-        # Collect results from completed tasks
-        results = [task.result() for task in as_completed(tasks)]
-        output.extend(results)
-
-        with open(out_csv, 'w') as output_csv:
-            writer = csv.writer(output_csv)
-            output.sort()  # sort the list by the bits in column
-            writer.writerows(output)
-
-        print("Done writing diff s_bias output")
-
-
-# Synchronous wrapper for process_simulation
 def _sync_process_simulation(simulation_name, is_stair):
     thread = threading.current_thread()
     print(f'name={thread.name}, daemon={thread.daemon}')
@@ -140,7 +116,9 @@ def _sync_process_simulation(simulation_name, is_stair):
         return ConfigEntropyDiffBoot(simulation_name).get_diff_sbias_output()
 
 
-def multi_diff_s_bias(out_csv):
+# Synchronous wrapper for process_simulation
+@measure_execution_time
+def diff_s_bias_multi(out_csv):
     with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         # Initializations
         output = []  # The list to write out to csv file, each element is one row of info for each simulation
@@ -161,17 +139,82 @@ def multi_diff_s_bias(out_csv):
 
         print("Done writing diff s_bias output")
 
+@measure_execution_time
+def diff_s_bias_multi(out_csv):
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        # Initializations
+        output = []  # The list to write out to csv file, each element is one row of info for each simulation
+        sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
 
-def get_diff_sbias(out_csv='diff_s_bias.csv'):
-    # asyncio.run(__async_get_diff_sbias(out_csv))
-    multi_diff_s_bias(out_csv)
+        # Prepare tasks for all simulations
+        tasks = [executor.submit(_sync_process_simulation, sim, is_stair=False) for sim in sims]
+        tasks += [executor.submit(_sync_process_simulation, sim, is_stair=True) for sim in stair_sims]
+
+        # Collect results from completed tasks
+        results = [task.result() for task in as_completed(tasks)]
+        output.extend(results)
+
+    with open(out_csv, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        output.sort()  # sort the list by the bits in column
+        writer.writerows(output)
+
+        print("Done writing diff s_bias output")
 
 
 @measure_execution_time
+def get_diff_sbias_threaded_async(out_csv='diff_s_bias.csv'):
+    # Create a ThreadPoolExecutor
+    with ThreadPoolExecutor() as executor:
+        # Initializations
+        output = []  # The list to write out to csv file, each element is one row of info for each simulation
+        sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
+
+        # Prepare tasks for all simulations
+        tasks = [executor.submit(fake_sync_process_simulation, sim, is_stair=False) for sim in sims]
+        tasks += [executor.submit(fake_sync_process_simulation, sim, is_stair=True) for sim in stair_sims]
+
+        # Collect results from completed tasks
+        results = [task.result() for task in as_completed(tasks)]
+        output.extend(results)
+
+        with open(out_csv, 'w') as output_csv:
+            writer = csv.writer(output_csv)
+            output.sort()  # sort the list by the bits in column
+            writer.writerows(output)
+
+        print("Done writing diff s_bias output")
+
+
+@measure_execution_time
+def get_diff_sbias_async(out_csv='diff_s_bias.csv'):
+    asyncio.run(__async_get_diff_sbias(out_csv))
+
+
+@measure_execution_time
+def diff_s_bias_sync(out_csv):
+    # Initializations
+    output = []  # The list to write out to csv file, each element is one row of info for each simulation
+    sims, stair_sims = classify_sims('hybridmc_*.h5')  # The normal and staircase simulations
+
+    # Prepare tasks for all simulations
+    output = [_sync_process_simulation(sim, is_stair=False) for sim in sims]
+    output += [_sync_process_simulation(sim, is_stair=True) for sim in stair_sims]
+
+    with open(out_csv, 'w') as output_csv:
+        writer = csv.writer(output_csv)
+        output.sort()  # sort the list by the bits in column
+        writer.writerows(output)
+
+        print("Done writing diff s_bias output")
+
+
 def main(out_csv='diff_s_bias_with_error.csv'):
-    # get_diff_sbias(out_csv)
+    diff_s_bias_sync(out_csv)
+    #get_diff_sbias_async(out_csv)
     # get_diff_sbias_threaded(out_csv)
-    multi_diff_s_bias(out_csv)
+    #get_diff_sbias_threaded_async(out_csv)
+    #diff_s_bias_multi(out_csv)
 
 
 if __name__ == '__main__':

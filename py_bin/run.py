@@ -30,8 +30,14 @@ def main(args):
 
     # Check if target directory already exists. Modify name if needed
     if os.path.isdir(dir_name):
-        print(f'{dir_name} already exists; saved as old version with given version code')
+        print(f'{dir_name} already exists; saved as old version with given version code or next available code')
+
+        while os.path.exists(f"{dir_name}_{args.old_version}"):
+            args.old_version += 1
+
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
+
+        os.rename()
 
     # Change directory name to suit the new temp working directory.
     # add ../ to the path to indicate its use from a directory one more level down.
@@ -83,8 +89,11 @@ if __name__ == '__main__':
     parser.add_argument('--json', help='master json input file', default='simple_stair_0.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
-                        default='old_2')
+                        default=1, type=int)
 
     args = parser.parse_args()
+
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
     main(args)
