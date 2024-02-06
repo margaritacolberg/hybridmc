@@ -41,7 +41,7 @@ def classify_sims(src):
     return sims, stair_sims
 
 
-# Synchronous wrapper for process_simulation
+# process_simulation
 def process_simulation(simulation_name, is_stair):
     print(f"Processing {simulation_name} ...")
     return StairConfigEntropyDiffBoot(simulation_name).get_diff_sbias_output() if is_stair else \

@@ -65,7 +65,7 @@ def main(args):
     init_json(init_json_args)
 
     # Calculate diff sbias, avg sbias and mfpt using simulation results
-    post_processing(args.json)
+    post_processing()
 
     # Move up from the directory with simulation results
     os.chdir("../")
@@ -74,9 +74,9 @@ def main(args):
     os.rename(src=tmp_dir_name, dst=dir_name)
 
 
-def post_processing(json_name):
+def post_processing():
     # Obtain the differences in the sbias for each transition
-    diff_s_bias.get_diff_sbias()
+    diff_s_bias.get_diff_sbias(out_csv='diff_s_bias.csv')
     # Obtain the average sbias for each bonding state
     avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv")
     # Obtain the mfpt for each bonding state
@@ -87,7 +87,7 @@ def post_processing(json_name):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--json', help='master json input file', default='simple_stair_0.json')
+    parser.add_argument('--json', help='master json input file', default='test_st.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default=1, type=int)
