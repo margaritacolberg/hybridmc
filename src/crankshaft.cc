@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
+//#define LOCAL_DEBUG
+
 void rodrigues_rotation(const std::vector<Vec3> &pos, const double theta,
                         std::vector<Vec3> &pos_trial, const unsigned int ind,
                         const Box &box) {
@@ -129,6 +131,7 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
                          const NonlocalBonds &permanent_bonds) {
   const unsigned int nbeads = pos_trial.size();
 
+
   for (unsigned int i = 0; i < nbeads - 3; i++) {
     for (unsigned int j = i + 3; j < nbeads; j++) {
       double dx = pos_trial[i].x - pos_trial[j].x;
@@ -151,6 +154,16 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
       const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
       const double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
+
+#ifdef LOCAL_DEBUG
+
+      if (p_bond_mask)
+      {
+        std::cout << " Expect permanent bond between " << i << " - " << j << " at rc = " << sqrt(rc2_inner) << " distance = "
+            << sqrt(dist2) << std::endl;
+      }
+
+#endif
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {
         LOG_DEBUG("permanent bond between beads "

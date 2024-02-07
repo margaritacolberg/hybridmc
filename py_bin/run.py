@@ -71,7 +71,8 @@ def post_processing(json_name):
     # Obtain the differences in the sbias for each transition
     diff_s_bias.get_diff_sbias()
     # Obtain the average sbias for each bonding state
-    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=json_name)
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias_with_error.csv", structure_sim_json=json_name)
+    #avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", structure_sim_json=json_name)
     # Obtain the mfpt for each bonding state
     mfpt.get_mfpt()
     # put together the mfpts in one file

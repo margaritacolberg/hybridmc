@@ -27,6 +27,7 @@ Adaptive = False
 Adaptive_KS = False
 q_cut = 0.5
 Verbose_Convergence = True
+Verbose_Bootstrap = True
 
 best_val = np.inf
 best_args = None
@@ -64,8 +65,10 @@ def minimize(f, x0, method, jac, ub, lb):
         opt_results = opt.optimize(x0)
     except:
         print("Failure: result code = ", opt.last_optimize_result())
+
         print('Trying non-derivative COBYLA routine.')
         print('opt_results are ', opt.last_optimum_value(), ' = ', best_val)
+        print('current xvalues are ', x0)
         print('best yvalues are ', best_args)
         opt2 = nlopt.opt(nlopt.LN_NELDERMEAD, dim)
         opt2.set_min_objective(obj_f)
@@ -287,7 +290,9 @@ def fpt_outer_std(name, stair_rc_list, xknots_iteration, yknots_iteration, nboot
         if plot_data or write_data:
             plot_outer_integrand(xknots_total, yknots_total, f'{name}.{boot}')
 
-        print(' outer bootstrap ', boot, ' has value ', fpt_boot_val, ' for transition ', name)
+        if Verbose_Bootstrap:
+            print(' outer bootstrap ', boot, ' has value ', fpt_boot_val, ' for transition ', name)
+
         outer_fpt_array.append(fpt_boot_val)
 
     return np.std(outer_fpt_array)
@@ -807,8 +812,8 @@ def fpt_std(dist_vec, min_dist, max_dist, state, nboot, x, y):
     for i in range(nboot):
         boot_fpt_i = utils.resample(dist_vec, random_state=i)
         fpt_i = fpt_boot(boot_fpt_i, min_dist, max_dist, state, x, y)
-
-        print('bootstrap round', i, ' has fpt = ', fpt_i)
+        if Verbose_Bootstrap:
+            print('bootstrap round', i, ' has fpt = ', fpt_i)
         boot_fpt.append(fpt_i)
 
     return np.std(boot_fpt, ddof=1)
@@ -992,6 +997,8 @@ def find_knots(dist_vec, min_dist, max_dist):
     y = np.zeros(nknots)
 
     while q < q_cut and x.size < 18:
+        if x[0] != min_dist or x[-1] != max_dist:
+            print('Error in initial values of xknot: x = ', x, ' for nknots = ', nknots, ' = ', x.size)
 
         y = minimize_f(x, dist_vec, y)
         norm = integrate_spline(x, y)

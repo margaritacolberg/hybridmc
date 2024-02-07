@@ -201,6 +201,8 @@ def stair_check(data, output_name, input_hdf5):
         print(f"Do Staircase on {stair_bp} because sbias is {sbias} for transition {config_in} to {config_out}")
         # Process rc values for staircase from prior WL run; ensure values are in descending order
         stair_rc_list = sorted([round(el, 2) for el in (rc3, rc2, rc1)], reverse=1)
+    else:
+        print(f"NO Staircase on {stair_bp} because sbias is {sbias} for transition {config_in} to {config_out}")
 
     return stair_bp, stair_rc_list
 

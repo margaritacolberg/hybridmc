@@ -15,6 +15,7 @@ import asyncio
 import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from multiprocessing import cpu_count
+from collections import OrderedDict
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
     from py_tools.helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
@@ -60,14 +61,16 @@ def multi_diff_s_bias(out_csv):
         tasks = [executor.submit(process_simulation, sim, is_stair=False) for sim in sims]
         tasks += [executor.submit(process_simulation, sim, is_stair=True) for sim in stair_sims]
 
-        # Collect results from completed tasks
+        # Collect results from completed tasksG
         results = [task.result() for task in as_completed(tasks)]
         output.extend(results)
 
+    avg_sorted = sorted(output, key=lambda t: (int(t[0], 2).bit_count(), int(t[0], 2)))
     with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
-        output.sort()  # sort the list by the bits in column
-        writer.writerows(output)
+        #output.sort()  # sort the list by the bits in column
+        #writer.writerows(output)
+        writer.writerows(avg_sorted)
 
         print("Done writing diff s_bias output")
 
