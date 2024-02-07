@@ -34,6 +34,7 @@ def init_json(args):
                      "sbias_min": 4.0,
                      "fail_max": 5,
                      "req_dists": 25000,
+                     "total_iter_initial": 400,
                      "rc_target_min_percentile": 0.10,
                      "nsteps_max": 1000,
                      "gamma_f_screening": 0.0005

@@ -25,17 +25,17 @@
     "temp": 1.0,
     "mc_moves": 20,
     "mc_write": 5,
-    "total_iter": 800,
+    "total_iter": 400,
     "total_iter_eq": 100,
     "pos_scale": 0.5,
     "neg_scale": 0.1,
     "sig_level": 0.05,
     "max_nbonds": 1,
     "max_g_test_count": 10000,
-    "flip_req": 1.0,
+    "flip_req": 1.2,
     "WL_sbias": 5.0,
     "fail_max": 1,
     "req_dists": 25000,
     "rc_target_min_percentile": 0.025,
-    "nboot": 20
+    "nboot": 5
 }

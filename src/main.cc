@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
         //
         //  Generate p.total_iter samples of state
         //
-        for (unsigned int iter = 0; iter < p.total_iter; iter++)
+        for (unsigned int iter = 0; iter < p.total_iter_initial; iter++)
         {
             run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
                          pos_writer, vel_writer, config_writer, dist_writer,
@@ -252,9 +252,6 @@ int main(int argc, char *argv[]) {
 
         // Now recompute the s_bias
         compute_entropy(config_count, sys.s_bias, nstates, p.pos_scale, p.neg_scale);
-
-
-        //config_count_writer.append(config_count); // store trajectory of sampled states in binary .h5 file
 
 
         auto flips = double(count_bond.formed + count_bond.broken);
@@ -340,7 +337,7 @@ int main(int argc, char *argv[]) {
   if (flipping_rate > 0.0) p.nsteps = int(p.flip_req * p.nsteps/flipping_rate) + 1;
   std::cout << " Staring long sampling to get good statistics with Sbias[0] = "
         << sys.s_bias[0] << " time steps per trajectory = " << p.nsteps << std::endl;
-  for (unsigned int iter = 0; iter < 2000; iter++)
+  for (unsigned int iter = 0; iter < p.total_iter; iter++)
   {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
                      pos_writer, vel_writer, config_writer, dist_writer,
