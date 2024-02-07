@@ -73,7 +73,7 @@ class ConfigEntropyDiffBoot:
         self.bootstrap_kwargs = bootstrap_kwargs
 
         # add the minimum required kwargs parameters for bootstrap computation
-        set_defaults(self.bootstrap_kwargs, dict(confidence_level=0.95,n_resamples=2000,
+        set_defaults(self.bootstrap_kwargs, dict(confidence_level=0.95,n_resamples=2000, batch=1,
                                                  random_state=np.random.default_rng()))
 
         # initialize bootstrap result

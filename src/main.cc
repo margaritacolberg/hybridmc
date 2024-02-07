@@ -334,8 +334,8 @@ int main(int argc, char *argv[]) {
   store_config_int.clear();
   std::fill(config_count.begin(), config_count.end(), 0);
   //
-  if (flipping_rate > 0.0) p.nsteps = int(p.flip_req * p.nsteps/flipping_rate) + 1;
-  std::cout << " Staring long sampling to get good statistics with Sbias[0] = "
+
+  std::cout << " Starting long sampling to get good statistics with Sbias[0] = "
         << sys.s_bias[0] << " time steps per trajectory = " << p.nsteps << std::endl;
   for (unsigned int iter = 0; iter < p.total_iter; iter++)
   {
