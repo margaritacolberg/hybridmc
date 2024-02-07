@@ -7,7 +7,13 @@ import wang_landau as WL
 
 
 def n_sims(nbonds):
-    return nbonds * 2**(nbonds-1)
+    return nbonds * 2 ** (nbonds - 1)
+
+
+def read_json_file(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    return data
 
 
 def make_rc_tuple(nonlocal_bonds, rc):
