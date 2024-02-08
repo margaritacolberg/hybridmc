@@ -21,9 +21,10 @@
 import argparse
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from py_tools.helpers.run_helpers import init_json
-from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
+from py_tools.post_processing import post_processing
 
 
 def main(args):
@@ -38,7 +39,6 @@ def main(args):
             args.old_version += 1
 
         os.rename(src=dir_name, dst=f"{dir_name}_{args.old_version}")
-
 
     # Change directory name to suit the new temp working directory.
     # add ../ to the path to indicate its use from a directory one more level down.
@@ -73,16 +73,6 @@ def main(args):
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)
 
-
-def post_processing():
-    # Obtain the differences in the sbias for each transition
-    diff_s_bias.get_diff_sbias(out_csv='diff_s_bias.csv')
-    # Obtain the average sbias for each bonding state
-    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv")
-    # Obtain the mfpt for each bonding state
-    mfpt.get_mfpt()
-    # put together the mfpts in one file
-    mfpt.compile_mfpts()
 
 
 if __name__ == '__main__':
