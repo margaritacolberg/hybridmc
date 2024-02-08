@@ -11,6 +11,8 @@
 #include <cmath>
 #include <iomanip>
 
+//#define LOCAL_DEBUG
+
 // calculate the x-, y- and z-coordinates of a point that lies on the surface
 // of a unit sphere;
 // sphere point picking: http://mathworld.wolfram.com/SpherePointPicking.html;
@@ -182,7 +184,7 @@ void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
 
   const unsigned int nbeads = pos.size();
 
-  // reset bonds
+  // reset bonds to zero
   update_config = UpdateConfig();
 
   for (unsigned int i = 0; i + 3 < nbeads; i++) {
@@ -205,6 +207,10 @@ void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
         assert(update_config.non_bonded(t_bond_mask));
         update_config.flip_bond(t_bond_mask);
         assert(update_config.bonded(t_bond_mask));
+#ifdef LOCAL_DEBUG
+        std::cout << " In init_update_config, transient bond between " << i << "-" << j << " formed since dist = "
+                    << sqrt(dist2) << " and rc = " << rc2val << std::endl;
+#endif
       }
     }
   }

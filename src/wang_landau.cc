@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 namespace po = boost::program_options;
 
+//#define LOCAL_DEBUG
 // wang landau plugin for python function
 std::vector<double> wang_landau_plugin(const std::string& json_name, std::optional<std::string> input_name) {
 
@@ -67,8 +68,12 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     double gamma = p.gamma;
     unsigned int iter_wl = 0;
     unsigned int native_ind = nstates - 1;
-
-    while (gamma > p.gamma_f) {
+#ifdef LOCAL_DEBUG
+    std::cout << "  Starting plugin WL with Sbias values of " << sys.s_bias[0] << " and " << sys.s_bias[1]
+            << " config is " << update_config.config << std::endl;
+#endif
+    //  Use a different final gamma_f for the quick and dirty screening for staircase.
+    while (gamma > p.gamma_f_screening) {
         // iterate over the 2 states
         for (unsigned int i = 0; i < nstates; i++) {
             // run trajectory to get final state
@@ -106,10 +111,11 @@ std::vector<double> wang_landau_plugin(const std::string& json_name, std::option
     //sort distance vector
     std::sort(distance_values.begin(), distance_values.end());
 
-    //std::cout << "sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
-    //std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
-    //std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
-
+#ifdef LOCAL_DEBUG
+    std::cout << "After WL plugin, sbias is " << sys.s_bias[0] - sys.s_bias[1] << std::endl;
+    std::cout << "native sbias is " << sys.s_bias[1] << std::endl;
+    std::cout << "non native sbias is " << sys.s_bias[0] << std::endl;
+#endif
     // create return vector
     std::vector<double> return_info;
     // get s bias value

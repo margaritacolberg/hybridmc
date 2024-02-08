@@ -73,12 +73,14 @@ struct Param {
   double gamma;
   // final gamma
   double gamma_f;
-
+  // gamma value for quick screening for stair
+  double gamma_f_screening;
   // temperature of the system
   double temp;
   // number of Monte Carlo crankshaft moves
   unsigned int mc_moves;
   // total number of iterations of MD trajectories and MC moves
+  unsigned int total_iter_initial;
   unsigned int total_iter;
   unsigned int total_iter_eq;
   // entropy scaling factors

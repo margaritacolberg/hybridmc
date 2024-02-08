@@ -9,7 +9,7 @@ from itertools import combinations
 import numpy as np
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
-    from data_processing_helpers import set_defaults
+    from data_processing_helpers import set_defaults, if_stair
 
 else:
     from .data_processing_helpers import set_defaults, if_stair
@@ -73,7 +73,7 @@ class ConfigEntropyDiffBoot:
         self.bootstrap_kwargs = bootstrap_kwargs
 
         # add the minimum required kwargs parameters for bootstrap computation
-        set_defaults(self.bootstrap_kwargs, dict(confidence_level=0.9,
+        set_defaults(self.bootstrap_kwargs, dict(confidence_level=0.95,n_resamples=2000, batch=1,
                                                  random_state=np.random.default_rng()))
 
         # initialize bootstrap result
@@ -83,22 +83,22 @@ class ConfigEntropyDiffBoot:
         self.compute_bootstrap(**self.bootstrap_kwargs)
 
     def __repr__(self):
-        return (f"Simulation had s_bias: {self.s_bias}\n"
+        return (f"Simulation had s_bias: {self.s_bias_mean}\n"
                 f"Standard Error: {self.bootstrap_result.standard_error}\n"
                 f"Confidence interval: {self.bootstrap_result.confidence_interval.low} to "
                 f"{self.bootstrap_result.confidence_interval.high}")
 
     def __str__(self):
-        return (f"Simulation had s_bias: {self.s_bias}\n"
+        return (f"Simulation had s_bias_mean: {self.s_bias_mean}\n"
                 f"Standard Error: {self.bootstrap_result.standard_error}\n"
                 f"Confidence interval: {self.bootstrap_result.confidence_interval.low} to "
                 f"{self.bootstrap_result.confidence_interval.high}")
 
     def __call__(self):
-        fields = ['bootstrap_result', 'config_set', 's_bias']
+        fields = ['bootstrap_result', 'config_set', 's_bias', 's_bias_mean']
         BootstrapInfo = make_dataclass('BootstrapInfo', fields)
         return BootstrapInfo(bootstrap_result=self.bootstrap_result,
-                             config_set=self.config_set[0], s_bias=self.s_bias)
+                             config_set=self.config_set[0], s_bias=self.s_bias_mean)
 
     @staticmethod
     def _get_config_from_h5(h5_file_name):
@@ -110,13 +110,6 @@ class ConfigEntropyDiffBoot:
             total_configs = int(f['config_count'][-1].sum())
             return f['config']['int'][-total_configs:], f['s_bias'][0]
 
-    def _set_configs(self):
-        """
-        Sets the configuration bitstring list in a form compatible with the scipy bootstrap method,
-        Also sets the s_bias value.
-        """
-        config_set, self.s_bias = self._get_config_from_h5(f"{self.simulation_name}.h5")
-        self.config_set = (config_set,)
 
     @staticmethod
     def sbias_from_config_estimator(config_data, s_bias):
@@ -131,13 +124,23 @@ class ConfigEntropyDiffBoot:
         -------
 
         """
-        return float(s_bias) + np.log(config_data.sum() / (config_data.size - config_data.sum()))
+        # add sbias and log(number of 0 states in config_data / number of 1 states)
+        return float(s_bias) + np.log((config_data.size - config_data.sum()) / config_data.sum())
+
+    def _set_configs(self):
+        """
+        Sets the configuration bitstring list in a form compatible with the scipy bootstrap method,
+        Also sets the s_bias value.
+        """
+        config_set, self.s_bias = self._get_config_from_h5(f"{self.simulation_name}.h5")
+        self.s_bias_mean = self.sbias_from_config_estimator(config_set, self.s_bias)
+        self.config_set = (config_set,)
 
     def _s_bias_estimator(self, config_data):
         return self.sbias_from_config_estimator(config_data, self.s_bias)
 
     def compute_bootstrap(self, **kwargs):
-        set_defaults(kwargs, dict(confidence_level=0.9,
+        set_defaults(kwargs, dict(confidence_level=0.95,
                                   random_state=np.random.default_rng()))
 
         self.bootstrap_result = bootstrap(data=self.config_set,
@@ -164,7 +167,11 @@ class ConfigEntropyDiffBoot:
         diff_data += self.simulation_name.split('_')[2:4]
 
         # Add the bootstrap result to the diff data output
-        diff_data += [self.s_bias, self.bootstrap_result.standard_error, self.bootstrap_result.confidence_interval.low,
+        #diff_data += [self.s_bias, self.bootstrap_result.standard_error, self.bootstrap_result.confidence_interval.low,
+        #              self.bootstrap_result.confidence_interval.high]
+
+        diff_data += [self.s_bias_mean, self.bootstrap_result.standard_error,
+                      self.bootstrap_result.confidence_interval.low,
                       self.bootstrap_result.confidence_interval.high]
 
         return diff_data
@@ -233,7 +240,7 @@ class StairConfigEntropyDiffBoot(ConfigEntropyDiffBoot):
         self.config_set, self.s_bias_list = list(zip(*(self._get_config_from_h5(f"{file_id}.h5") for file_id in sim_paths)))
 
         # Set the sbias as the actual sbias value for the simulation: This is the "mean" sbias here.
-        self.s_bias = str(self.stair_s_bias(self.s_bias_list))
+        self.s_bias_mean = self._stair_sbias_estimator(self.config_set)
 
     def _stair_sbias_estimator(self, config_data):
         stair_sbias_list = []
@@ -257,7 +264,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--simulation_name', type=str, default='hybridmc_0_0000000000_0000000001')
+    parser.add_argument('--simulation_name', type=str, default='hybridmc_0_00_10.h5')
     parser.add_argument('--s_bias', type=float, default=0)
     parser.add_argument('--config_set', type=float, default=0)
     parser.add_argument('--output-file', type=str, default='diff_s_bias_with_error.csv')

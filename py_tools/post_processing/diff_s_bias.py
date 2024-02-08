@@ -13,6 +13,7 @@ import glob
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import cpu_count
+from collections import OrderedDict
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
     from py_tools.helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
@@ -64,10 +65,12 @@ def multi_diff_s_bias(out_csv):
         output.extend(results)
 
     # write out the results to csv file
+    avg_sorted = sorted(output, key=lambda t: (int(t[0], 2).bit_count(), int(t[0], 2)))
     with open(out_csv, 'w') as output_csv:
         writer = csv.writer(output_csv)
-        output.sort()  # sort the list by the bits in column
-        writer.writerows(output)
+        #output.sort()  # sort the list by the bits in column
+        #writer.writerows(output)
+        writer.writerows(avg_sorted)
 
     print("Done writing diff s_bias output")
 

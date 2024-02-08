@@ -188,9 +188,20 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
     LOG_DEBUG("max_time = " << max_time);
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+       // to check energy conservation
+    const double tot_E_before =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
     run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
+
+    const double tot_E_during =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+    const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
+    if (E_diff >= 1e-6) {
+      std::cout << E_diff << " energy difference in equilibration iter " << iter << " step = " << step << std::endl;
+      throw std::runtime_error("energy is not conserved in equilibration: steps = ");
+    }
 
   }
 
@@ -210,7 +221,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
                     CountBond &count_bond,
-                    unsigned int iter) {
+                    unsigned int iter,bool storeTrajectory) {
 
   LOG_DEBUG("run_trajectory");
 
@@ -287,19 +298,27 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       }*/
   }
 
-  // store the integer of the configuration and the time of the event
-  store_config_int.emplace_back(update_config.config);
-  update_config_writer.config_int.emplace_back(update_config.config);
+  store_config_int.emplace_back(update_config.config); // record the current state in vector list
 
-  assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
-                          p.nnear_max2));
-  assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
-                             p.transient_bonds, p.permanent_bonds));
+  if (storeTrajectory)
+  {
 
-  // store the configurations in the hdf5 file
-  update_config_writer.append();
-  update_config_writer.clear();
+      update_config_writer.config_int.emplace_back(update_config.config);
+
+      assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                              p.nnear_max2));
+      assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
+                                 p.transient_bonds, p.permanent_bonds));
+
+      // store the configurations in the hdf5 file
+      update_config_writer.append();
+      update_config_writer.clear();
+  }
 }
+
+//Config getState_from_pos()
+//{
+//}
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
@@ -345,10 +364,9 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
   }
 
-
-
   return update_config.config;
 }
+
 
 // Wang-Landau algorithm for estimating entropy
 void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box,
@@ -369,7 +387,6 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
       // run trajectory to get final state
       Config state = run_trajectory_wl(sys, mt, p, box, update_config,
                                        count_bond, iter_wl, record_dists, &dist, &dist_writer);
-
       if (state == 0) {
         s_bias[native_ind] -= gamma;
       } else {
@@ -424,11 +441,13 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.nsteps_wl = json["nsteps_wl"];
     p.del_t_wl = json["del_t_wl"];
     p.gamma = json["gamma"];
+    p.gamma_f_screening = json["gamma_f_screening"];
     p.gamma_f = json["gamma_f"];
     p.write_step = json["write_step"];
     p.seeds = json["seeds"].get<std::vector<unsigned int>>();
     p.temp = json["temp"];
     p.mc_moves = json["mc_moves"];
+    p.total_iter_initial = json["total_iter_initial"];
     p.total_iter = json["total_iter"];
     p.total_iter_eq = json["total_iter_eq"];
     p.pos_scale = json["pos_scale"];

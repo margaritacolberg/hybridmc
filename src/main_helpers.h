@@ -47,7 +47,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
                     CountBond &count_bond,
-                    unsigned int iter);
+                    unsigned int iter,bool storeTrajectory = false);
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
