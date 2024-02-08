@@ -14,12 +14,13 @@ class ConfigGenerator:
 
         self.base_config = base_config
         self.num_files = num_files
-        self.target_directory = target_directory
         self._configs = []  # To store generated configurations for uniqueness check
         self.id_counter = None
-
-        self._param_settings = {}
+        self.param_settings = {}
         self.csv_file_name = csv_file_name
+
+        # set target directory, also ensure all paths like the csv name are changed accordingly
+        self.target_directory = target_directory
 
     @property
     def id_counter(self):
@@ -69,14 +70,6 @@ class ConfigGenerator:
             raise ValueError("Need a Dict or json string. Defaults to empty dictionary")
 
     @property
-    def num_files(self) -> int:
-        return self._num_files
-
-    @num_files.setter
-    def num_files(self, value: int) -> None:
-        self._num_files = value
-
-    @property
     def target_directory(self) -> str:
         return self._target_directory
 
@@ -84,30 +77,45 @@ class ConfigGenerator:
     def target_directory(self, value: str) -> None:
         self._target_directory = value
         os.makedirs(value, exist_ok=True)
-        os.chdir(value)
+        self.csv_file_name = os.path.join(self.target_directory, self.csv_file_name)
 
-    @property
-    def param_settings(self):
-        return self._param_settings
-
-    def _update_csv(self, csv_data: List[List[Any]]) -> None:
+    def _update_csv(self, csv_rows: List[List[Any]]) -> None:
         """Update the CSV file with new configurations."""
         file_exists = os.path.exists(self.csv_file_name)
+
+        # Step 1: Determine the existing field names in the CSV file
+        if file_exists:
+            with open(self.csv_file_name, mode='r', newline='') as file:
+                reader = csv.DictReader(file)
+                existing_field_names = reader.fieldnames
+        else:
+            existing_field_names = []
+
+        # Ensure rows get written to correct column to these fields
+        field_names = ["ID"] + list(self.param_settings.keys()) + ["Filename"]
+
+        csv_data = zip(field_names, zip(*csv_rows))
+
         with open(self.csv_file_name, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            if not file_exists:
-                writer.writerow(["ID"] + list(self._param_settings.keys()) + ["Filename"])
-            writer.writerows(csv_data)
 
-    def generate_configs(self) -> None:
+            if not file_exists:
+                writer.writerow(field_names)
+
+            writer.writerows([k, *v] for k, v in csv_data)
+
+    def generate_configs(self, N_tries_for_unique=1000):
+        return self._generate_configs(N_tries_for_unique)
+
+    def _generate_configs(self, N_tries_for_unique) -> None:
         csv_data = []
 
         # Generate new files num files number of times
-        for _ in range(self._num_files):
+        for _ in range(self.num_files):
 
             counter = 0
             # limit of searching 1000 times for a new configuration
-            while counter < 1000:
+            while counter < N_tries_for_unique:
                 new_config, row = self.get_new_config()
 
                 # stop looking for more configurations if the new config was found to be unique
@@ -127,7 +135,7 @@ class ConfigGenerator:
             row.append(filename)
             csv_data.append(row)
 
-            with open(filename, 'w') as json_file:
+            with open(os.path.join(self.target_directory, filename), 'w') as json_file:
                 json.dump(new_config, json_file, indent=4)
 
             self.id_counter += 1
@@ -188,12 +196,19 @@ class ConfigGeneratorDriver(ConfigGenerator):
 
         # Load file master settings
         if 'master_settings' in config:
-
             # initialize super class with the master settings
-            super().__init__(base_config=config.get('master_settings', 'template_structure', fallback="template.json"),
-                             target_directory=config.get('master_settings', 'target_directory', fallback="generated_configs"),
-                             csv_file_name=config.get('master_settings', 'csv_name', fallback="configurations.csv"),
-                             num_files=config.getint('master_settings', 'num_files', fallback=5))
+            super().__init__(
+                base_config=config.get('master_settings', 'template_structure', fallback="template.json"),
+                target_directory=config.get('master_settings', 'target_directory', fallback="generated_configs"),
+                csv_file_name=config.get('master_settings', 'csv_name', fallback="configurations.csv"),
+                num_files=config.getint('master_settings', 'num_files', fallback=5)
+            )
+
+            self.N_tries_for_unique = config.getint('master_settings', 'N_tries_for_unique', fallback=2000)
+
+        # if not given then just use defaults
+        else:
+            super().__init__()
 
         # read in the param settings
         if 'param_settings' in config:
@@ -204,3 +219,15 @@ class ConfigGeneratorDriver(ConfigGenerator):
                 elif settings_type == 'values':
                     values = [json.loads(value) for value in values]
                     self.param_settings[param] = {'values': values}
+
+    def generate_configs(self, N_tries_for_unique=None):
+
+        # in case N_tries is given manually, use the manual value else use settings value
+        if N_tries_for_unique is None:
+            N_tries_for_unique = self.N_tries_for_unique
+
+        return self._generate_configs(N_tries_for_unique)
+
+    def submit_slurm(self):
+        slurm_command = ('sbatch'
+                         '')
