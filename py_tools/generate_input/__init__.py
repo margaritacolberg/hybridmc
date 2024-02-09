@@ -271,8 +271,9 @@ class DatabaseManager:
 
 class JobSubmitter:
     def __init__(self, account='def-jmschofi', job_name='get_training', cpus_per_task=4,
-                 mem_per_cpu=500, time='0-01:00:00', Nconfigs="1-5", target_dir='simulation_configs',
-                 exe="/scratch/vignesh9/hybridmc/py_bin/run.py"):
+                 mem_per_cpu=500, time='0-01:00:00', Nconfigs="1-5", json_dir='simulation_configs',
+                 out_dir="train_configs", exe="/scratch/vignesh9/hybridmc/py_bin/run.py"):
+
         self.temp_script_path = None
         self.account = account
         self.job_name = job_name
@@ -280,17 +281,28 @@ class JobSubmitter:
         self.mem_per_cpu = mem_per_cpu
         self.time = time
         self.Nconfigs = Nconfigs
-        self.target_directory = target_dir
+        self.json_dir = json_dir
+        self.out_dir = out_dir
         self.exe = exe
 
     @property
-    def target_directory(self) -> str:
-        return self._target_directory
+    def json_dir(self) -> str:
+        return self._json_dir
 
-    @target_directory.setter
-    def target_directory(self, value: str) -> None:
-        self._target_directory = value
-        os.makedirs(value, exist_ok=True)
+    @json_dir.setter
+    def json_dir(self, value: str) -> None:
+        self._json_dir = value
+        os.makedirs(self._json_dir, exist_ok=True)
+
+    @property
+    def out_dir(self) -> str:
+        return self._out_dir
+
+    @out_dir.setter
+    def out_dir(self, value: str) -> None:
+        self._out_dir = value
+        os.makedirs(self._out_dir, exist_ok=True)
+        os.chdir(self._out_dir)
 
     def create_job_script(self):
         # Create the SLURM script content
@@ -306,13 +318,17 @@ class JobSubmitter:
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=vignesh.rajesh@mail.utoronto.ca
 
+# intitialize shell
+source /home/vignesh9/.bashrc
 module --force purge
 
 # Capture start time
 start_time=$(date +%s)
 
 micromamba activate HMC
-time python {self.exe} {os.path.join(self.target_directory, "config")}_"$SLURM_ARRAY_TASK_ID".json
+
+# python execute with time tracking
+time python {self.exe} --json {os.path.join(self.json_dir, "config")}_"$SLURM_ARRAY_TASK_ID".json --exe {self.exe}
 
 # Capture end time and calculate duration
 end_time=$(date +%s)

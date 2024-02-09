@@ -15,17 +15,16 @@ def main():
     config = configparser.ConfigParser()
     config.read("settings.cfg")
 
-    Nconfigs = config.get('master_settings', 'job_arrays', fallback="1-10")
-
     # submit job to slurm for these configs
     jobsubmitter = JobSubmitter(
-        target_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
-        Nconfigs=Nconfigs,
-        cpus_per_task=4, mem_per_cpu=500, time='0-01:00:00',
+        json_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
+        out_dir=config.get('slurm_settings', 'out_dir', fallback="config_run"),
+        Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
+        cpus_per_task=1, mem_per_cpu=256, time='0-00:15:00',
         exe="/scratch/vignesh9/hybridmc/py_bin/run.py"
     )
 
-    print(jobsubmitter.exe)
+    #jobsubmitter.create_job_script()
     jobsubmitter.submit_job()
     print("DONE SUBMITTING")
 
