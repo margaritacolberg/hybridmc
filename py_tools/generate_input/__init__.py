@@ -6,6 +6,9 @@ import warnings
 from functools import cached_property
 from typing import Any, Dict, List
 import sqlite3
+import subprocess
+import tempfile
+
 
 
 class ConfigGenerator:
@@ -216,10 +219,6 @@ class ConfigGeneratorDriver(ConfigGenerator):
 
         return self._generate_configs(N_tries_for_unique)
 
-    def submit_slurm(self):
-        slurm_command = ('sbatch'
-                         '')
-
 
 class DatabaseManager:
     def __init__(self, db_file_name: str):
@@ -269,3 +268,94 @@ class DatabaseManager:
     def close(self):
         """Close the database connection."""
         self.connection.close()
+
+
+class JobSubmitter:
+    def __init__(self, account='def-jmschofi', job_name='get_training', cpus_per_task=4,
+                 mem_per_cpu=500, time='0-01:00:00', Nconfigs=1, target_dir='.', search_path="/scratch/vignesh9"):
+        self.account = account
+        self.job_name = job_name
+        self.cpus_per_task = cpus_per_task
+        self.mem_per_cpu = mem_per_cpu
+        self.time = time
+        self.Nconfigs = Nconfigs
+
+        self.target_directory = target_dir
+
+        self.search_path = search_path
+
+        self.exe = self.get_path("hybridmc/py_bin/run.py", search_path)
+
+
+    @property
+    def target_directory(self) -> str:
+        return self._target_directory
+
+    @target_directory.setter
+    def target_directory(self, value: str) -> None:
+        self._target_directory = value
+        os.makedirs(value, exist_ok=True)
+
+
+    # Function to get file paths
+    @staticmethod
+    def get_path(file_name, search_path):
+        """
+        Find the path of file_name named file.
+        Parameters
+        ----------
+        file_name (str): The file that needs its path found
+        search_path (str). The path in which to find file_name
+
+        Returns
+        -------
+        THe string containing the path of file_name
+        """
+        for root, _, files in os.walk(search_path, topdown=0):
+            if file_name in files:
+                return os.path.join(root, file_name)
+
+    def submit_job(self):
+        # Create the SLURM script content
+        slurm_script_content = f"""#!/bin/bash
+#SBATCH --account={self.account}
+#SBATCH --job-name={self.job_name}
+#SBATCH --cpus-per-task={self.cpus_per_task}
+#SBATCH --mem-per-cpu={self.mem_per_cpu}
+#SBATCH --time={self.time}
+#SBATCH --output=config_%A_%a.out
+#SBATCH --error=config_%A_%a.err
+#SBATCH --array=1-{self.Nconfigs}
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=vignesh.rajesh@mail.utoronto.ca
+
+# Capture start time
+start_time=$(date +%s)
+
+time python {self.exe} {os.path.join(self.target_directory, "config")}_"$SLURM_ARRAY_TASK_ID".json
+
+# Capture end time and calculate duration
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "Job Duration: $duration seconds"
+
+# Additional SLURM job information
+echo "Detailed job information:"
+scontrol show job $SLURM_JOB_ID --details
+
+echo "Accounting information for the job:"
+sacct -j $SLURM_JOB_ID
+
+"""
+
+        # Write the SLURM script to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_script:
+            temp_script.write(slurm_script_content)
+            temp_script_path = temp_script.name
+
+        # Submit the SLURM job using the script
+        try:
+            subprocess.run(['sbatch', temp_script_path], check=True)
+        finally:
+            # Ensure the temporary file is removed after submission
+            os.remove(temp_script_path)
