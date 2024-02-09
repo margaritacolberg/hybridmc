@@ -1,51 +1,29 @@
 import configparser
 import json
 import random
-import csv
 import os
 import warnings
+from functools import cached_property
 from typing import Any, Dict, List
+import sqlite3
 
 
 class ConfigGenerator:
 
-    def __init__(self, base_config: Dict[str, Any] = None, num_files: int = 5,
-                 target_directory: str = "Generated_configs", csv_file_name: str = "configs.csv"):
+    def __init__(self, base_config: Dict[str, Any] = None, num_files: int = 5, start_id=None,
+                 target_directory: str = "Generated_configs", database_file_name: str = "configs.db"):
 
         self.base_config = base_config
         self.num_files = num_files
         self._configs = []  # To store generated configurations for uniqueness check
-        self.id_counter = None
         self.param_settings = {}
-        self.csv_file_name = csv_file_name
 
-        # set target directory, also ensure all paths like the csv name are changed accordingly
+        # set target directory
         self.target_directory = target_directory
 
-    @property
-    def id_counter(self):
-        """Property for dynamically getting the next ID counter value."""
-        if self._id_counter is None:
-            self._initialize_id_counter()
-
-        return self._id_counter
-
-    @id_counter.setter
-    def id_counter(self, value):
-        """Allow manual setting of the ID counter."""
-        self._id_counter = value
-
-    def _initialize_id_counter(self):
-        """Initialize ID counter by finding the last ID used in the CSV file."""
-        try:
-            with open(self.csv_file_name, 'r') as csv_file:
-                reader = csv.reader(csv_file)
-                last_row = list(reader)[-1]  # Go to the last row
-                last_id = int(last_row[0])  # Assuming the ID is the first column
-        except (FileNotFoundError, IndexError):
-            last_id = 0  # Start from 1 if no file exists or file is empty
-
-        self._id_counter = last_id + 1
+        # Set the database name and find the id counter
+        self.database_name = database_file_name
+        self.id_counter = start_id
 
     @property
     def base_config(self) -> Dict[str, Any]:
@@ -77,46 +55,57 @@ class ConfigGenerator:
     def target_directory(self, value: str) -> None:
         self._target_directory = value
         os.makedirs(value, exist_ok=True)
-        self.csv_file_name = os.path.join(self.target_directory, self.csv_file_name)
 
-    def _update_csv(self, csv_rows: List[List[Any]]) -> None:
-        """Update the CSV file with new configurations."""
-        file_exists = os.path.exists(self.csv_file_name)
+    @property
+    def id_counter(self) -> int:
+        return self._id_counter
 
-        # Step 1: Determine the existing field names in the CSV file
-        if file_exists:
-            with open(self.csv_file_name, mode='r', newline='') as file:
-                reader = csv.DictReader(file)
-                existing_field_names = reader.fieldnames
+    @cached_property
+    def database_path(self):
+        return os.path.join(self.target_directory, self.database_name)
+
+    @id_counter.setter
+    def id_counter(self, value):
+        """Initialize id_counter with the last ID in the database plus one or given manual value."""
+        if value:
+            self._id_counter = value
+        elif not os.path.exists(self.database_path):
+            self._id_counter = 1
         else:
-            existing_field_names = []
+            db_manager = DatabaseManager(self.database_path)
+            last_id = db_manager.get_max_id()
+            self._id_counter = last_id + 1
+            db_manager.close()
 
-        # Ensure rows get written to correct column to these fields
-        field_names = ["ID"] + list(self.param_settings.keys()) + ["Filename"]
+    def _update_database(self, rows: List[List[Any]]) -> None:
+        """Update the CSV file with new configurations."""
+        db_manager = DatabaseManager(self.database_path)
 
-        csv_data = zip(field_names, zip(*csv_rows))
+        # field_names =
+        # Update the database with the new configurations
+        db_manager.update_configurations(
+            rows=rows,
+            field_names=[el if el != "rc" else "nonlocal_bonds" for el in self.param_settings.keys()] + ["Filename"],
+            default_values=self.base_config
+        )
 
-        with open(self.csv_file_name, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-
-            if not file_exists:
-                writer.writerow(field_names)
-
-            writer.writerows([k, *v] for k, v in csv_data)
+        # Close the database connection when done
+        db_manager.close()
 
     def generate_configs(self, N_tries_for_unique=1000):
         return self._generate_configs(N_tries_for_unique)
 
     def _generate_configs(self, N_tries_for_unique) -> None:
-        csv_data = []
+        data = []
 
         # Generate new files num files number of times
         for _ in range(self.num_files):
-
+            # initialize the row for writing to database with the id counter number
+            row = []
             counter = 0
             # limit of searching 1000 times for a new configuration
             while counter < N_tries_for_unique:
-                new_config, row = self.get_new_config()
+                new_config = self.get_new_config(row)
 
                 # stop looking for more configurations if the new config was found to be unique
                 if new_config not in self._configs:
@@ -133,20 +122,19 @@ class ConfigGenerator:
             self._configs.append(new_config)
             filename = f"config_{self.id_counter}.json"
             row.append(filename)
-            csv_data.append(row)
+            data.append(row)
 
             with open(os.path.join(self.target_directory, filename), 'w') as json_file:
                 json.dump(new_config, json_file, indent=4)
 
             self.id_counter += 1
 
-        self._update_csv(csv_data)
+        self._update_database(data)
 
-    def get_new_config(self):
+    def get_new_config(self, row):
         # initialize new file based on template base config
         new_config = self._base_config.copy()
-        # initialize the row for writing to csv with the id counter number
-        row = [self.id_counter]
+
         # iterate through all the parameter keys and its values in param settings
         for param, settings in self.param_settings.items():
 
@@ -171,7 +159,7 @@ class ConfigGenerator:
                 # append value for this param to the row for this file
                 row.append(new_config[param])
 
-        return new_config, row
+        return new_config
 
     @staticmethod
     def _randomize_rcs(nonlocal_bonds, settings) -> list[list[Any]]:
@@ -200,7 +188,7 @@ class ConfigGeneratorDriver(ConfigGenerator):
             super().__init__(
                 base_config=config.get('master_settings', 'template_structure', fallback="template.json"),
                 target_directory=config.get('master_settings', 'target_directory', fallback="generated_configs"),
-                csv_file_name=config.get('master_settings', 'csv_name', fallback="configurations.csv"),
+                database_file_name=config.get('master_settings', 'database_name', fallback="configurations.db"),
                 num_files=config.getint('master_settings', 'num_files', fallback=5)
             )
 
@@ -231,3 +219,53 @@ class ConfigGeneratorDriver(ConfigGenerator):
     def submit_slurm(self):
         slurm_command = ('sbatch'
                          '')
+
+
+class DatabaseManager:
+    def __init__(self, db_file_name: str):
+        self.db_file_name = db_file_name
+        self.connection = sqlite3.connect(self.db_file_name)
+        self.cursor = self.connection.cursor()
+
+    def _ensure_table(self, field_names: List[str]):
+        """Ensure the table exists and has the required columns."""
+        # The ID column is defined as INTEGER PRIMARY KEY, which auto-increments.
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS configurations (ID INTEGER PRIMARY KEY)''')
+        for field in field_names:
+            try:
+                self.cursor.execute(f'''ALTER TABLE configurations ADD COLUMN {field} TEXT''')
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+    def update_configurations(self, rows: List[List[Any]], field_names: List[str], default_values: Dict[str, Any]):
+        """Update the database with new configurations, applying default values as necessary."""
+        self._ensure_table(field_names)
+
+        for row in rows:
+            # Apply default values for any missing fields
+            data = {field: default_values.get(field) for field in field_names}
+            # Update data with actual row values
+            data.update(dict(zip(field_names, row)))
+
+            # Exclude 'ID' from the insert operation
+            if 'ID' in data:
+                del data['ID']
+
+            # Prepare and execute the insert query
+            columns = ', '.join(data.keys())
+            placeholders = ', '.join(['?'] * len(data))
+            values = tuple(data.values())
+            query = f"INSERT INTO configurations ({columns}) VALUES ({placeholders})"
+            self.cursor.execute(query, values)
+
+        self.connection.commit()
+
+    def get_max_id(self) -> int:
+        """Fetch the maximum ID from the configurations table."""
+        self.cursor.execute('SELECT MAX(ID) FROM configurations')
+        max_id = self.cursor.fetchone()[0]
+        return max_id if max_id is not None else 0
+
+    def close(self):
+        """Close the database connection."""
+        self.connection.close()
