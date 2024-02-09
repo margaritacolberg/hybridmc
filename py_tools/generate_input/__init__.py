@@ -10,7 +10,6 @@ import subprocess
 import tempfile
 
 
-
 class ConfigGenerator:
 
     def __init__(self, base_config: Dict[str, Any] = None, num_files: int = 5, start_id=None,
@@ -272,7 +271,8 @@ class DatabaseManager:
 
 class JobSubmitter:
     def __init__(self, account='def-jmschofi', job_name='get_training', cpus_per_task=4,
-                 mem_per_cpu=500, time='0-01:00:00', Nconfigs=1, target_dir='simulation_configs', search_path="/scratch/vignesh9"):
+                 mem_per_cpu=500, time='0-01:00:00', Nconfigs="1-5", target_dir='simulation_configs',
+                 exe="/scratch/vignesh9/hybridmc/py_bin/run.py"):
         self.temp_script_path = None
         self.account = account
         self.job_name = job_name
@@ -280,13 +280,8 @@ class JobSubmitter:
         self.mem_per_cpu = mem_per_cpu
         self.time = time
         self.Nconfigs = Nconfigs
-
         self.target_directory = target_dir
-
-        self.search_path = search_path
-
-        self.exe = self.get_path("hybridmc/py_bin/run.py", search_path)
-
+        self.exe = exe
 
     @property
     def target_directory(self) -> str:
@@ -296,25 +291,6 @@ class JobSubmitter:
     def target_directory(self, value: str) -> None:
         self._target_directory = value
         os.makedirs(value, exist_ok=True)
-
-
-    # Function to get file paths
-    @staticmethod
-    def get_path(file_name, search_path):
-        """
-        Find the path of file_name named file.
-        Parameters
-        ----------
-        file_name (str): The file that needs its path found
-        search_path (str). The path in which to find file_name
-
-        Returns
-        -------
-        THe string containing the path of file_name
-        """
-        for root, _, files in os.walk(search_path, topdown=0):
-            if file_name in files:
-                return os.path.join(root, file_name)
 
     def create_job_script(self):
         # Create the SLURM script content
@@ -326,13 +302,16 @@ class JobSubmitter:
 #SBATCH --time={self.time}
 #SBATCH --output=config_%A_%a.out
 #SBATCH --error=config_%A_%a.err
-#SBATCH --array=1-{self.Nconfigs}
+#SBATCH --array={self.Nconfigs}
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=vignesh.rajesh@mail.utoronto.ca
+
+module --force purge
 
 # Capture start time
 start_time=$(date +%s)
 
+micromamba activate HMC
 time python {self.exe} {os.path.join(self.target_directory, "config")}_"$SLURM_ARRAY_TASK_ID".json
 
 # Capture end time and calculate duration
