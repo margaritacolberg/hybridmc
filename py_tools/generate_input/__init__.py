@@ -272,7 +272,8 @@ class DatabaseManager:
 
 class JobSubmitter:
     def __init__(self, account='def-jmschofi', job_name='get_training', cpus_per_task=4,
-                 mem_per_cpu=500, time='0-01:00:00', Nconfigs=1, target_dir='.', search_path="/scratch/vignesh9"):
+                 mem_per_cpu=500, time='0-01:00:00', Nconfigs=1, target_dir='simulation_configs', search_path="/scratch/vignesh9"):
+        self.temp_script_path = None
         self.account = account
         self.job_name = job_name
         self.cpus_per_task = cpus_per_task
@@ -315,7 +316,7 @@ class JobSubmitter:
             if file_name in files:
                 return os.path.join(root, file_name)
 
-    def submit_job(self):
+    def create_job_script(self):
         # Create the SLURM script content
         slurm_script_content = f"""#!/bin/bash
 #SBATCH --account={self.account}
@@ -351,11 +352,16 @@ sacct -j $SLURM_JOB_ID
         # Write the SLURM script to a temporary file
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_script:
             temp_script.write(slurm_script_content)
-            temp_script_path = temp_script.name
+            self.temp_script_path = temp_script.name
 
+    def submit_job(self):
+
+        # Check if job script was made, if not create one
+        if self.temp_script_path is None:
+            self.create_job_script()
         # Submit the SLURM job using the script
         try:
-            subprocess.run(['sbatch', temp_script_path], check=True)
+            subprocess.run(['sbatch', self.temp_script_path], check=True)
         finally:
             # Ensure the temporary file is removed after submission
-            os.remove(temp_script_path)
+            os.remove(self.temp_script_path)
