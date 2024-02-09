@@ -44,8 +44,16 @@ def main(args):
     os.chdir(tmp_dir_name)
 
     # Change directory name to suit the new temp working directory.
+    # if abs path given not needed
+
+
     # add ../ to the path to indicate its use from a directory one more level down.
-    (args.json, args.exe) = ("../" + path for path in (args.json, args.exe))
+    (json, exe) = ("../" + path for path in (args.json, args.exe))
+
+    if args.abspath:
+        args.json = json
+    else:
+        args.json, args.exe = json, exe
 
     # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
@@ -97,6 +105,8 @@ if __name__ == '__main__':
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default=1, type=int)
+    parser.add_argument('--abspath', help='set version code for old structure simulation run if needed',
+                        default=0, type=int)
 
     args = parser.parse_args()
 

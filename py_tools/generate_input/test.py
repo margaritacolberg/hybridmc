@@ -22,7 +22,8 @@ def main():
         Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
         cpus_per_task=2, mem_per_cpu=1000, time='0-1:55:00',
         exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
-        hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc"
+        hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
+        abspath=1
     )
 
     #jobsubmitter.create_job_script()
