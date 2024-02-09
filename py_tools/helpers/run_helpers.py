@@ -49,7 +49,9 @@ def init_json(args):
     worker = []
     layer_args = (data, in_queue, out_queue, args["seed_increment"], args['exe'])
 
-    for _ in range(args["nproc"]):
+    print(f"{int(args['nproc'])} workers available")
+
+    for _ in range(int(args["nproc"])):
         p = Process(target=run_layer, args=layer_args)
         p.start()
         worker.append(p)

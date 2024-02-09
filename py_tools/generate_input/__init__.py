@@ -272,7 +272,8 @@ class DatabaseManager:
 class JobSubmitter:
     def __init__(self, account='def-jmschofi', job_name='get_training', cpus_per_task=4,
                  mem_per_cpu=500, time='0-01:00:00', Nconfigs="1-5", json_dir='simulation_configs',
-                 out_dir="train_configs", exe="/scratch/vignesh9/hybridmc/py_bin/run.py"):
+                 out_dir="train_configs", exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
+                 hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc"):
 
         self.temp_script_path = None
         self.account = account
@@ -284,6 +285,7 @@ class JobSubmitter:
         self.json_dir = json_dir
         self.out_dir = out_dir
         self.exe = exe
+        self.hmc_exe = hmc_exe
 
     @property
     def json_dir(self) -> str:
@@ -316,7 +318,7 @@ class JobSubmitter:
 #SBATCH --output=config_%A_%a.out
 #SBATCH --error=config_%A_%a.err
 #SBATCH --array={self.Nconfigs}
-#SBATCH --mail-type=FAIL
+#SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=vignesh.rajesh@mail.utoronto.ca
 
 # intitialize shell
@@ -329,7 +331,7 @@ start_time=$(date +%s)
 micromamba activate HMC
 
 # python execute with time tracking
-time python {self.exe} --json {os.path.join(self.json_dir, "config")}_"$SLURM_ARRAY_TASK_ID".json --exe {self.exe}
+time python {self.exe} --json {os.path.join(self.json_dir, "config")}_"$SLURM_ARRAY_TASK_ID".json --exe {self.hmc_exe}
 
 # Capture end time and calculate duration
 end_time=$(date +%s)
@@ -358,6 +360,18 @@ sacct -j $SLURM_JOB_ID
         # Submit the SLURM job using the script
         try:
             subprocess.run(['sbatch', self.temp_script_path], check=True)
+        finally:
+            # Ensure the temporary file is removed after submission
+            os.remove(self.temp_script_path)
+
+    def exec_script(self):
+
+        # Check if job script was made, if not create one
+        if self.temp_script_path is None:
+            self.create_job_script()
+
+        try:
+            subprocess.run(['sh', self.temp_script_path], check=True)
         finally:
             # Ensure the temporary file is removed after submission
             os.remove(self.temp_script_path)
