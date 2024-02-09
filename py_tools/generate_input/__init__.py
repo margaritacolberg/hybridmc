@@ -303,6 +303,7 @@ class JobSubmitter:
         self._out_dir = value
         os.makedirs(self._out_dir, exist_ok=True)
         os.chdir(self._out_dir)
+        self.json_dir = f"../{self.json_dir}"
 
     def create_job_script(self):
         # Create the SLURM script content
