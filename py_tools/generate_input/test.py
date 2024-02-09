@@ -1,15 +1,21 @@
 from . import ConfigGenerator, ConfigGeneratorDriver, JobSubmitter
+import configparser
 
 
 def main():
-    #config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
-    #config_generator.generate_configs()
 
-    jobsubmitter = JobSubmitter()
-    jobsubmitter.exe = '../../../py_bin/run.py'
+    # Generate some configurations
+    config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
+    config_generator.generate_configs()
 
-    jobsubmitter.create_job_script()
-    print(1)
+    # read config settings
+    config = configparser.ConfigParser()
+    config.read("settings.cfg")
+
+    # submit job to slurm for these configs
+    jobsubmitter = JobSubmitter(target_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"))
+    jobsubmitter.submit_job()
+    print("DONE SUBMITTING")
 
 
 # Example usage
