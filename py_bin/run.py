@@ -33,34 +33,40 @@ def main(args):
     tmp_dir_name = f'{dir_name}.tmp'
 
     # Check if target directory or tmp already exists. Modify name if needed
-    check_dir(args, dir_name)
-    check_dir(args, tmp_dir_name)
+    check_dir(dir_name, old_version_code=args.old_version)
+    check_dir(tmp_dir_name)
+
+    # Convert the given paths for json and exe to absolute paths if not already absolute
+    args.json = os.path.realpath(args.json)
+    args.exe = os.path.realpath(args.exe)
+
 
     # create the temporary directory to run the simulations
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
 
     # move into the temporary directory
-    os.chdir(tmp_dir_name)
+    #os.chdir(tmp_dir_name)
 
     # Change directory name to suit the new temp working directory.
     # if abs path given not needed
 
 
     # add ../ to the path to indicate its use from a directory one more level down.
-    (json, exe) = ("../" + path for path in (args.json, args.exe))
+    #(json, exe) = ("../" + path for path in (args.json, args.exe))
 
-    if args.abspath:
-        args.json = json
-    else:
-        args.json, args.exe = json, exe
+    # if args.abspath:
+    #     args.json = json
+    # else:
+    #     args.json, args.exe = json, exe
+
 
     # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
 
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
-        nproc = os.getenv('SLURM_CPUS_PER_TASK')
+        nproc = int(os.getenv('SLURM_CPUS_PER_TASK'))
 
     init_json_args["nproc"] = nproc
 
@@ -77,15 +83,20 @@ def main(args):
     os.rename(src=tmp_dir_name, dst=dir_name)
 
 
-def check_dir(args, dir):
-    if os.path.isdir(dir):
+def check_dir(dir_name, old_version_code="delete"):
+    if os.path.isdir(dir_name):
 
-        print(f'{dir} already exists; saved as old version with given version code or next available code')
+        print(f'{dir_name} already exists; saved as old version with given version code or next available code')
 
-        while os.path.exists(f"{dir}_{args.old_version}"):
-            args.old_version += 1
+        # delete directory if old version code given as delete adn return function
+        if old_version_code == "delete":
+            return os.rmdir(dir_name)
 
-        os.rename(src=dir, dst=f"{dir}_{args.old_version}")
+        # else add available old version code to path name
+        while os.path.exists(f"{dir_name}_{args.old_version}"):
+            old_version_code += 1
+
+        os.rename(src=dir_name, dst=f"{dir_name}_{old_version_code}")
 
 
 def post_processing():

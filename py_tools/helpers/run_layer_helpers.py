@@ -35,7 +35,7 @@ def run_sim(data, input_hdf5, output_name, exe):
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
 
-    # Obtain real path for the HMC executable
+    # Obtain real path for the HMC executable in case it is not already
     exe = os.path.realpath(exe)
 
     # for layer = 1 or greater,
