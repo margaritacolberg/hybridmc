@@ -20,6 +20,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -40,26 +41,10 @@ def main(args):
     args.json = os.path.realpath(args.json)
     args.exe = os.path.realpath(args.exe)
 
-
     # create the temporary directory to run the simulations
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
-
-    # move into the temporary directory
-    #os.chdir(tmp_dir_name)
-
-    # Change directory name to suit the new temp working directory.
-    # if abs path given not needed
-
-
-    # add ../ to the path to indicate its use from a directory one more level down.
-    #(json, exe) = ("../" + path for path in (args.json, args.exe))
-
-    # if args.abspath:
-    #     args.json = json
-    # else:
-    #     args.json, args.exe = json, exe
-
+    os.chdir(tmp_dir_name)
 
     # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
@@ -90,7 +75,7 @@ def check_dir(dir_name, old_version_code="delete"):
 
         # delete directory if old version code given as delete adn return function
         if old_version_code == "delete":
-            return os.rmdir(dir_name)
+            return shutil.rmtree(dir_name)
 
         # else add available old version code to path name
         while os.path.exists(f"{dir_name}_{args.old_version}"):
