@@ -259,14 +259,12 @@ int main(int argc, char *argv[]) {
         flipping_rate = flips / stateCount;
 
         done_g_test = g_test(config_count,nstates, p.sig_level);
-        if (done_g_test)
-        {
-            Sbias_array.push_back(sys.s_bias[0]);
-        }
+        if (done_g_test)  Sbias_array.push_back(sys.s_bias[0]);
 
         if (flipping_rate > p.flip_req) {
           done_flip = true;
         } else {
+          done_flip = false;
           fail_counter++;
           // check if too many fails have occurred
           if (fail_counter >= p.fail_max) {
@@ -280,7 +278,8 @@ int main(int argc, char *argv[]) {
             else
             {
                 p.nsteps = p.nsteps_max;
-                std::cout << " Reached maximum number of steps! Increase del_t to get longer trajectories." << std::endl;
+                std::cout << " Reached maximum number of steps! Increase del_t to get longer trajectories."
+                        << std::endl;
                 std::exit(1);
             }
 
@@ -302,9 +301,10 @@ int main(int argc, char *argv[]) {
             sys.distanceWrite = false;
         }
 
-        std::cout << "Working on output_file: " << output_name << std::endl;
+        //std::cout << "Working on output_file: " << output_name << std::endl;
         std::cout << " In iteration " << g_test_count << " fail_counter = " << fail_counter << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
-                  << " must be greater than " << p.flip_req << " done_flip = " << done_flip << " done_g = " << done_g_test << std::endl;
+                  << " must be greater than " << p.flip_req << " done_flip = " << done_flip
+                  << " done_g = " << done_g_test << std::endl << std::endl;
         g_test_count++;
         if (g_test_count >= p.max_g_test_count)
         {
@@ -335,14 +335,16 @@ int main(int argc, char *argv[]) {
   std::fill(config_count.begin(), config_count.end(), 0);
   //
 
-  std::cout << " Starting long sampling to get good statistics with Sbias[0] = "
+  std::cout << std::endl << " Starting long sampling with " << p.total_iter << " states to get good statistics with Sbias[0] = "
         << sys.s_bias[0] << " time steps per trajectory = " << p.nsteps << std::endl;
+  sys.distanceWrite = false;
   for (unsigned int iter = 0; iter < p.total_iter; iter++)
   {
       run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
                      pos_writer, vel_writer, config_writer, dist_writer,
                      store_config, store_config_int, count_bond,
                      iter, true);
+
   }
 
     // count the number of times each configuration is visited
@@ -363,10 +365,17 @@ int main(int argc, char *argv[]) {
   //  The diff_s_bias.py routine will later recompute the difference in entropy based on the trajectory
   //  and bootstrap the errors.
   //
-  compute_entropy(config_count, sys.s_bias, nstates, p.pos_scale, p.neg_scale);
+  // final unbiased entropy estimate from long run with pos_scale = 1.0, neg_scale = 1.0
+  //  This value is not recorded in h5 file, but it computed with diff_s_bias.py with bootstraps
+  //
+  compute_entropy(config_count, sys.s_bias, nstates, 1.0, 1.0);
   done_g_test = g_test(config_count,nstates, p.sig_level);
+  if (!done_g_test)
+  {
+     std::cout << " Warning: Estimate of this transition will possibly be incorrect since the sampling wasn't uniform."
+        << std::endl;
+  }
   file.close();
-
   std::filesystem::rename(output_name + ".tmp", output_name);
 
   return 0;

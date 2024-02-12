@@ -19,7 +19,7 @@
   "gamma": 0.1,
   "gamma_f": 0.0005,
   "write_step": 2,
-  "seeds": [3, 1],
+  "seeds": [30, 10],
   "temp": 1.0,
   "mc_moves": 20,
   "mc_write": 5,

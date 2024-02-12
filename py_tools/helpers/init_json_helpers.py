@@ -49,7 +49,7 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
         common_data['config_out'] = int(format_bits(bits_out), 2)
 
         # Set the seed
-        common_data['seeds'] = [count, seed_increment]
+        #common_data['seeds'] = [count, seed_increment]
 
         # Check for stairs using wang_landau (WL) run
         stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
