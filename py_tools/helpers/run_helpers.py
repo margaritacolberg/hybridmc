@@ -30,8 +30,7 @@ def init_json(args):
     # set some more default values for parameters in case they are not provided in json file
     set_defaults(data,
                  defaults={
-                     "WL_sbias": 6.0,
-                     "sbias_min": 4.0,
+                     "WL_sbias": 4.0,
                      "fail_max": 5,
                      "req_dists": 25000,
                      "total_iter_initial": 400,
