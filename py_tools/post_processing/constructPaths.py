@@ -114,8 +114,7 @@ def get_transition_info(diff_s_bias_csv):
     return transition_info
 
 
-def main(start_node='1101',
-         end_node='1111'):
+def main(start_node='1101', end_node='1111', depth=2):
     n = len(start_node)
 
     if n != len(end_node):
@@ -126,7 +125,7 @@ def main(start_node='1101',
 
     print('Graph is:\n', graph)
 
-    maxDepth = n + 2
+    maxDepth = n + depth
     simple_paths = find_all_simple_paths_async(graph, start_node, end_node, maxDepth)
     sorted_paths = sorted(simple_paths, key=lambda t: (len(t)))
 
@@ -152,7 +151,7 @@ def main(start_node='1101',
     return diff_test(mean1, mean2, SE1, SE2)
 
 
-def diff_test(mean1, mean2, SE1, SE2, Z=1.96):
+def diff_test(mean1, mean2, SE1, SE2, Z=2.57):
     mean_diff = abs(mean1 - mean2)
     SE = np.sqrt(SE1 ** 2 + SE2 ** 2)
 
@@ -162,10 +161,10 @@ def diff_test(mean1, mean2, SE1, SE2, Z=1.96):
 
     if conf_int[0] < 0 < conf_int[1]:
         print("There is no significant difference")
-        return False, conf_int
+        return mean1, mean2, False, conf_int
     else:
         print("There is a significant difference")
-        return True, conf_int
+        return mean1, mean2, True, conf_int
 
 
 if __name__ == "__main__":
@@ -173,12 +172,17 @@ if __name__ == "__main__":
 
     src_dst_nodes = list(zip(*list(zip(*transition_info))[:2]))
 
-    field_names = ["src_node", "dst_node", "Sig_diff?", "diff_conf_int"]
+    field_names = ["src_node", "dst_node", "path mean", "direct mean","Sig_diff?", "diff_conf_int"]
     output = []
+    n_trues = 0
     for src, dst in src_dst_nodes:
 
-        significant_difference_test_result, diff_conf_int = main(src, dst)
-        output.append([src, dst, str(significant_difference_test_result), str(diff_conf_int)])
+        mean1, mean2, significant_difference_test_result, diff_conf_int = main(src, dst, depth=4)
+        output.append([src, dst, str(mean1), str(mean2), str(significant_difference_test_result), str(diff_conf_int)])
+        if significant_difference_test_result:
+            n_trues += 1
+
+    print(f"The failure percentage was: {100 * n_trues / len(output)}")
 
     # Write data to CSV file
     with open("sig_diffs.csv", mode='w', newline='') as file:

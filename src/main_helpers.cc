@@ -271,6 +271,10 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       // beads to file
       if (update_config.config == 1 &&
           store_config.insert(update_config.config).second) {
+        //
+        //  The insertion into the set of Config above fails if store_config already contains update_config.config (i.e 1 here)
+        //   The insert(obj).second is a boolean that is true if insertion is successful.
+        //
         pos_writer.append(sys.pos);
         vel_writer.append(sys.vel);
         config_writer.append(update_config.config);
