@@ -12,6 +12,10 @@ void write_snapshot(const std::string snapshot_name,
                     const std::vector<double> &s_bias, Random &mt,
                     UpdateConfig &update_config);
 
+void write_ensemble(H5::H5Location &file, const System &sys);
+
+
+
 void read_snapshot(const std::string snapshot_name, std::vector<Vec3> &pos,
                    std::vector<double> &s_bias, Random &mt,
                    UpdateConfig &update_config);

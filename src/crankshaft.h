@@ -6,6 +6,8 @@
 
 #include "hardspheres.h"
 
+void swapMC(System &sys, Random &mt, const Box& box, const Param &p);
+
 void rodrigues_rotation(const std::vector<Vec3> &pos, const double theta,
                         std::vector<Vec3> &pos_trial, const unsigned int ind,
                         const Box &box);

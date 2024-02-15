@@ -109,6 +109,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         # set the outer rc for the next step to be the current rc
         data["stair"] = rc
 
+
         # Convergence Check:
 
         # get the list of distances for the last simulation
@@ -118,7 +119,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         rc_target_percentile = searchsorted(dist_t_active, rc_target) / len(dist_t_active)
 
         # simulation has converged if the rc target percentile is small enough: outer-wall close enough to rc
-        if min_rc_percentile < rc_target_percentile:
+        if min_rc_percentile <= rc_target_percentile:
             converged = True
             # run last sim with final target rc
             rc = rc_target
@@ -128,8 +129,7 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
             # find the rc that corresponds to the min_rc_percentile of the distance: set as the new rc
             rc = round(dist_t_active[int(min_rc_percentile * len(dist_t_active))], 1)
 
-            # exit to final sim if it is the target rc or lower
-            #TODO: Check if this is ok to have the lwoer pass as well
+            # exit to final sim if it is the target rc
             if rc <= rc_target:
                 converged = True
 
@@ -139,3 +139,5 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     # update the rc value for the bonds in the transient_bonds list
     update_rc(data, rc)
     run_sim(data, input_hdf5, output_name, exe)
+
+
