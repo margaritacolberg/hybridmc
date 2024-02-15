@@ -355,71 +355,68 @@ int main(int argc, char *argv[]) {
             << Sbias_array.size() << " values." << std::endl;
 
   sys.s_bias[0] = mean_s;
-  //  Store value of s_bias used to generate next dataset
-  dataset_s_bias.write(&sys.s_bias[0], H5::PredType::NATIVE_DOUBLE, mem_space);
+  done_g_test = false;
 
-  //  Now sample a long trajectory of states
-  for (unsigned int i = 0; i < p.nbeads; i++)
-  {
-          sys.times[i] = 0.0;
-          sys.counter[i] = 0.0;
-  }
-  // reset configuration count
-  store_config_int.clear();
-  std::fill(config_count.begin(), config_count.end(), 0);
-  //
-
-  std::cout << std::endl << " Starting long sampling with " << p.total_iter << " states to get good statistics with Sbias[0] = "
+  std::cout << std::endl << " Starting refined sampling with " << p.total_iter << " states to get good statistics with Sbias[0] = "
         << sys.s_bias[0] << " time steps per trajectory = " << p.nsteps << std::endl;
   sys.distanceWrite = false;
-  for (unsigned int iter = 0; iter < p.total_iter; iter++)
-  {
-      run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
-                     pos_writer, vel_writer, config_writer, dist_writer,
-                     store_config, store_config_int, count_bond,
-                     iter, true);
-  }
+  sys.recordEnsemble = false;
 
-  // count the number of times each configuration is visited
-  for (unsigned long i: store_config_int) {
-      config_count[i]++;
+  while (!done_g_test){
+      //  Store value of s_bias used to generate dataset
+      dataset_s_bias.write(&sys.s_bias[0], H5::PredType::NATIVE_DOUBLE, mem_space);
+
+      //  Now sample a long trajectory of states
+      for (unsigned int i = 0; i < p.nbeads; i++)
+      {
+              sys.times[i] = 0.0;
+              sys.counter[i] = 0.0;
+      }
+      // reset configuration count
+      store_config_int.clear();
+      std::fill(config_count.begin(), config_count.end(), 0);
+      //
+
+
+      for (unsigned int iter = 0; iter < p.total_iter; iter++)
+      {
+          run_trajectory(sys, mt, p, box, dist, update_config, update_config_writer,
+                         pos_writer, vel_writer, config_writer, dist_writer,
+                         store_config, store_config_int, count_bond,
+                         iter, true);
+      }
+
+      // count the number of times each configuration is visited
+      for (unsigned long i: store_config_int) {
+          config_count[i]++;
+      }
+      config_count_writer.append(config_count); // store trajectory of sampled states in binary .h5 file
+      //
+      //std::cout << std::endl << "  Next ensemble is:" << std::endl;
+      //printEnsemble(sys.nextEnsemble);
+      //
+
+      //
+      // Output data for analysis:  Note that sys.s_bias recorded in .h5 file is the base sbias used to generate data
+      //  The diff_s_bias.py routine will later recompute the difference in entropy based on the trajectory
+      //  and bootstrap the errors.
+      //
+      // final unbiased entropy estimate from long run with pos_scale = 1.0, neg_scale = 1.0
+      //  This value is not recorded in h5 file, but it computed with diff_s_bias.py with bootstraps
+      //
+
+      done_g_test = g_test(config_count,nstates, p.sig_level);
+       if (!done_g_test)
+       {
+            // minor adjustment to s_bias for next iteration
+            compute_entropy(config_count, sys.s_bias, nstates, p.pos_scale, p.neg_scale);
+       }
+
   }
-  config_count_writer.append(config_count); // store trajectory of sampled states in binary .h5 file
-  //
-  //std::cout << std::endl << "  Next ensemble is:" << std::endl;
-  //printEnsemble(sys.nextEnsemble);
-  //
-  if (snapshot_name)
-  {
-          // write new snapshot to temporary file
-          const std::string snapshot_tmp = *snapshot_name + ".tmp";
-          write_snapshot(snapshot_tmp, sys.pos, sys.s_bias, mt, update_config);
-          // atomically overwrite old snapshot with new snapshot
-          std::filesystem::rename(snapshot_tmp, *snapshot_name);
-  }
-  //
-  // Output data for analysis:  Note that sys.s_bias recorded in .h5 file is the base sbias used to generate data
-  //  The diff_s_bias.py routine will later recompute the difference in entropy based on the trajectory
-  //  and bootstrap the errors.
-  //
-  // final unbiased entropy estimate from long run with pos_scale = 1.0, neg_scale = 1.0
-  //  This value is not recorded in h5 file, but it computed with diff_s_bias.py with bootstraps
-  //
-  compute_entropy(config_count, sys.s_bias, nstates, 1.0, 1.0);
-  done_g_test = g_test(config_count,nstates, p.sig_level);
-  if (!done_g_test)
-  {
-     std::cout << " Warning: Estimate of this transition will possibly be incorrect since the sampling wasn't uniform."
-        << std::endl;
-  }
+  compute_entropy(config_count, sys.s_bias, nstates, 1.0, 1.0);  // this will be true estimate of s_bias
   write_ensemble(group_ensemble, sys);
   file.close();
   std::filesystem::rename(output_name + ".tmp", output_name);
-
-   //
-  //std::cout << " Test reading in on ensemble from file " << output_name << std::endl;
-  //sys.ensemble = readMoleculesFromHDF5ByName(output_name.c_str() );
-  //printEnsemble(sys.ensemble);
 
   return 0;
 }
