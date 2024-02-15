@@ -88,7 +88,7 @@ def process_paths(graph, simple_paths):
         path_weight.append(1.0 / summed_variance)
         lower_confidence = summed_entropy - 1.96 * np.sqrt(summed_variance)
         upper_confidence = summed_entropy + 1.96 * np.sqrt(summed_variance)
-        print("Path:", path, ' has entropy ', summed_entropy, ' with CI (', lower_confidence, ",",
+        print("Path:", path, ' has entropy ', summed_entropy, ' with 95% CI (', lower_confidence, ",",
               upper_confidence, ') with weight ', 1.0 / summed_variance)
 
     return path_entropy, path_weight
@@ -114,7 +114,7 @@ def get_transition_info(diff_s_bias_csv):
     return transition_info
 
 
-def main(start_node='1101', end_node='1111', depth=2):
+def main(start_node='1101', end_node='1111', depth=2, Z=2.576):
     n = len(start_node)
 
     if n != len(end_node):
@@ -123,7 +123,7 @@ def main(start_node='1101', end_node='1111', depth=2):
     transition_info = get_transition_info('diff_s_bias_with_error.csv')
     graph = create_bit_flip_graph_with_edge_properties_async(n, transition_info)
 
-    print('Graph is:\n', graph)
+    #print('Graph is:\n', graph)
 
     maxDepth = n + depth
     simple_paths = find_all_simple_paths_async(graph, start_node, end_node, maxDepth)
@@ -137,10 +137,10 @@ def main(start_node='1101', end_node='1111', depth=2):
     # find the standard error of the weighted average by taking 1 / sqrt(the sum of the weights for each path)
     std_error = 1 / np.sqrt(d1.sum_weights) if d1.sum_weights else 0
 
-    lower_ci = d1.mean - 1.96 * std_error
-    upper_ci = d1.mean + 1.96 * std_error
+    lower_ci = d1.mean - Z * std_error
+    upper_ci = d1.mean + Z * std_error
 
-    print('  Sbias over path = ', d1.mean, ' with 95% confidence interval (', lower_ci,
+    print('  Sbias over path = ', d1.mean, ' with 99% confidence interval (', lower_ci,
           ',', upper_ci, ')')
 
     mean1 = d1.mean
@@ -148,10 +148,10 @@ def main(start_node='1101', end_node='1111', depth=2):
     mean2 = path_entropy[0]
     SE2 = 1 / np.sqrt(path_weight[0])
 
-    return diff_test(mean1, mean2, SE1, SE2)
+    return diff_test(mean1, mean2, SE1, SE2, Z)
 
 
-def diff_test(mean1, mean2, SE1, SE2, Z=2.57):
+def diff_test(mean1, mean2, SE1, SE2, Z):
     mean_diff = abs(mean1 - mean2)
     SE = np.sqrt(SE1 ** 2 + SE2 ** 2)
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     n_trues = 0
     for src, dst in src_dst_nodes:
 
-        mean1, mean2, significant_difference_test_result, diff_conf_int = main(src, dst, depth=4)
+        mean1, mean2, significant_difference_test_result, diff_conf_int = main(src, dst, depth=2, Z=2.58)
         output.append([src, dst, str(mean1), str(mean2), str(significant_difference_test_result), str(diff_conf_int)])
         if significant_difference_test_result:
             n_trues += 1

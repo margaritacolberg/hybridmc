@@ -9,6 +9,66 @@
 #include <cmath>
 
 //#define LOCAL_DEBUG
+//#define LOCAL_VERBOSE
+
+void swapMC(System &sys, Random &mt, const Box &box, const Param &p) {
+    int numEnsemble = sys.ensemble.size();
+    if (numEnsemble < 1) return; // no move possible
+
+    std::vector<Vec3> pos = sys.pos;
+    Molecule swapMolecule( pos.size() );
+    swapMolecule.setPositions(pos); // converts Vec3 positions into vector<double> array
+    UpdateConfig current_config = config_int(pos, box, p.transient_bonds);
+    int current_state = current_config.config;
+
+#ifdef LOCAL_VERBOSE
+    std::cout << " Before swap, state is: "  << current_state << std::endl;
+    swapMolecule.printPositions(-1);
+    std::cout << " Ensemble is:" << std::endl;
+    printEnsemble(sys.ensemble);
+#endif
+
+    std::uniform_int_distribution<> index_probability(0, numEnsemble-1);
+
+    int s_index = index_probability(mt);
+    std::vector<Vec3> trial_pos = sys.ensemble[s_index].getVec3Positions();
+    UpdateConfig trial_config = config_int(trial_pos, box, p.transient_bonds);
+    int trial_state = trial_config.config;
+
+
+#ifdef LOCAL_VERBOSE
+    std::cout << "  Trying to swap with ensemble index " << s_index << " which has state "
+            << trial_state << std::endl;
+#endif
+    //  Iterate if not the same state
+    int counter = 100;
+    while (trial_state != current_state and counter)
+    {
+
+        s_index = index_probability(mt);
+        trial_pos = sys.ensemble[s_index].getVec3Positions();
+        trial_config = config_int(trial_pos, box, p.transient_bonds);
+        trial_state = trial_config.config;
+        counter--;
+
+#ifdef LOCAL_VERBOSE
+        std::cout << "  Since state was different, new swap with ensemble index " << s_index << " which has state "
+            << trial_state << std::endl;
+#endif
+
+    }
+    if (counter <= 0) return;
+
+    std::swap(sys.ensemble[s_index], swapMolecule);
+
+    //std::cout << std::endl << " After swap of molecule " << s_index << " swap molecule is:" << std::endl;
+    //swapMolecule.printPositions(-1);
+    //std::cout << " Ensemble is:" << std::endl;
+    //printEnsemble(sys.ensemble);
+
+    sys.pos = swapMolecule.getVec3Positions();
+
+}
 
 void rodrigues_rotation(const std::vector<Vec3> &pos, const double theta,
                         std::vector<Vec3> &pos_trial, const unsigned int ind,

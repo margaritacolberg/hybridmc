@@ -9,6 +9,7 @@
 // state;
 
 #include "main_helpers.h"
+//#include "molecule.h"
 namespace po = boost::program_options;
 
 //#define LOCAL_DEBUG
@@ -110,6 +111,15 @@ int main(int argc, char *argv[]) {
   System sys(p.nbeads);
   sys.distanceWrite = true;
 
+  if (p.useEnsemble)
+  {
+    std::cout << " Will use ensemble of size " << p.ensembleSize << std::endl;
+    sys.useEnsemble = true;
+    sys.ensemble.reserve(p.ensembleSize);
+  }
+  sys.ensembleSize = p.ensembleSize;
+  sys.nextEnsemble.reserve(p.ensembleSize);
+
   std::seed_seq seq(p.seeds.begin(), p.seeds.end());
   Random mt(seq);
 
@@ -119,6 +129,8 @@ int main(int argc, char *argv[]) {
   UpdateConfigWriter update_config_writer(file);
 
   H5::Group group{file.createGroup("unique_config")};
+  H5::Group group_ensemble{file.createGroup("ensemble")};
+
   PosWriter pos_writer{group, "pos", p.nbeads};
   VelWriter vel_writer{group, "vel", p.nbeads};
   ConfigWriter config_writer{group, "config"};
@@ -159,6 +171,7 @@ int main(int argc, char *argv[]) {
   init_update_config(sys.pos, update_config, box, p.transient_bonds);
 
   sys.distanceWrite = false; // don't write distance data during equilibration step since states aren't equally likely
+  sys.recordEnsemble = false; // don't record configurations for next ensemble yet
 
   for (unsigned int iter = 0; iter < p_eq.total_iter_eq; iter++) {
      run_trajectory_eq(sys, mt, p, box, update_config, count_bond,
@@ -200,6 +213,9 @@ int main(int argc, char *argv[]) {
   bool done_flip = false;
   bool done_g_test = false;
   bool done_distances = false;
+  bool done_ensemble = false;
+  sys.recordEnsemble = true; // turn on recording of next ensemble of configurations
+
   int fail_counter = 0;
   int current_distances = dist_writer.get_size();
   std::cout << " Starting convergence loop with Sbias values = "
@@ -211,7 +227,7 @@ int main(int argc, char *argv[]) {
   //
 
   std::vector<double> Sbias_array; // store all converged values according to g-test
-  while (!done_g_test or !done_flip or !done_distances){
+  while (!done_g_test or !done_flip or !done_distances or !done_ensemble){
         // reset bead clocks, counters and wall time
         for (unsigned int i = 0; i < p.nbeads; i++) {
           sys.times[i] = 0.0;
@@ -301,14 +317,32 @@ int main(int argc, char *argv[]) {
             sys.distanceWrite = false;
         }
 
+        int numRecordedEnsemble = sys.nextEnsemble.size();
+        if (numRecordedEnsemble < p.ensembleSize)
+        {
+            done_ensemble = false;
+           // std::cout << " Have recorded " << numRecordedEnsemble << " configurations of next ensemble size "
+            //    << p.ensembleSize << std::endl;
+            sys.recordEnsemble = true;
+        }
+        else
+        {
+            done_ensemble = true;
+            sys.recordEnsemble = false;
+        }
+
         //std::cout << "Working on output_file: " << output_name << std::endl;
-        std::cout << " In iteration " << g_test_count << " fail_counter = " << fail_counter << " stateCount = " << stateCount << " flips = " << flips << " flip rate = " << flipping_rate
-                  << " must be greater than " << p.flip_req << " done_flip = " << done_flip
-                  << " done_g = " << done_g_test << std::endl << std::endl;
+        std::cout << " In iteration " << g_test_count << " flip rate = " << flipping_rate
+                  << " done_flip = " << done_flip
+                  << " done_g = " << done_g_test << " done_distances = " << done_distances
+                  << " done_ensemble = " << done_ensemble
+                  << std::endl << "      ensemble size = " << numRecordedEnsemble
+                  << "  distances recorded = " << numD << std::endl << std::endl;
         g_test_count++;
         if (g_test_count >= p.max_g_test_count)
         {
-            std::cout << "  Done the maximum number of iterations: " << g_test_count <<  " without convergence." << std::endl;
+            std::cout << "  Done the maximum number of iterations: " << g_test_count
+                    <<  " without convergence." << std::endl;
             break;
         }
   } // end of while loop
@@ -316,7 +350,7 @@ int main(int argc, char *argv[]) {
   double mean_s = 0.0;
   double stdev_s = 0.0;
   mean_stdev(Sbias_array, mean_s, stdev_s);
-  std::cout << "The size of dist is " << dist_writer.get_size() << std::endl;
+
   std::cout << " Average s_bias is " << mean_s << "  standard deviation = " << stdev_s << " for "
             << Sbias_array.size() << " values." << std::endl;
 
@@ -344,14 +378,17 @@ int main(int argc, char *argv[]) {
                      pos_writer, vel_writer, config_writer, dist_writer,
                      store_config, store_config_int, count_bond,
                      iter, true);
-
   }
 
-    // count the number of times each configuration is visited
+  // count the number of times each configuration is visited
   for (unsigned long i: store_config_int) {
       config_count[i]++;
   }
   config_count_writer.append(config_count); // store trajectory of sampled states in binary .h5 file
+  //
+  //std::cout << std::endl << "  Next ensemble is:" << std::endl;
+  //printEnsemble(sys.nextEnsemble);
+  //
   if (snapshot_name)
   {
           // write new snapshot to temporary file
@@ -375,8 +412,14 @@ int main(int argc, char *argv[]) {
      std::cout << " Warning: Estimate of this transition will possibly be incorrect since the sampling wasn't uniform."
         << std::endl;
   }
+  write_ensemble(group_ensemble, sys);
   file.close();
   std::filesystem::rename(output_name + ".tmp", output_name);
+
+   //
+  //std::cout << " Test reading in on ensemble from file " << output_name << std::endl;
+  //sys.ensemble = readMoleculesFromHDF5ByName(output_name.c_str() );
+  //printEnsemble(sys.ensemble);
 
   return 0;
 }
@@ -681,9 +724,13 @@ int mainOld(int argc, char *argv[]) {
   // store mean of all converged S_bias differences
   //
   dataset_s_bias.write(&mean_s, H5::PredType::NATIVE_DOUBLE, mem_space);
+  write_ensemble(file, sys);
   file.close();
 
   std::filesystem::rename(output_name + ".tmp", output_name);
-
+  //
+  std::cout << " Test reading in on ensemble from file " << output_name << std::endl;
+  sys.ensemble = readMoleculesFromHDF5ByName(output_name.c_str() );
+  printEnsemble(sys.ensemble);
   return 0;
 }

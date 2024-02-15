@@ -4,7 +4,7 @@
 #-----------------------------------------------------------------------------------------------------
 
 # create common library with all dependant source files for main
-add_library(hybridmc_common OBJECT hardspheres.cc crankshaft.cc entropy.cc config.cc snapshot.cc main_helpers.cc)
+add_library(hybridmc_common OBJECT molecule.cc hardspheres.cc crankshaft.cc entropy.cc config.cc snapshot.cc main_helpers.cc)
 
 target_include_directories(hybridmc_common SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
 

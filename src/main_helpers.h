@@ -11,6 +11,7 @@
 #include "json.hpp"
 #include "snapshot.h"
 #include "writer.h"
+
 #include <H5Cpp.h>
 #include <boost/program_options.hpp>
 #include <cassert>
@@ -19,6 +20,8 @@
 #include <iostream>
 #include <optional>
 #include <numeric>
+
+void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box);
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,

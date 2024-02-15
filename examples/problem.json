@@ -11,7 +11,7 @@
   "tries": 10000,
   "length": 60.0,
   "ncell": 5,
-  "nsteps": 1,
+  "nsteps": 20,
   "nsteps_eq": 8,
   "del_t": 1.0,
   "nsteps_wl": 5,
@@ -38,4 +38,8 @@
   "rc_target_min_percentile": 0.025,
   "nboot": 5,
   "nsteps_max": 1000,
-  "gamma_f_screening": 0.0005}
+  "gamma_f_screening": 0.0005,
+  "useEnsemble": true,
+  "ensembleSize": 100,
+  "ensemble_write_step": 10
+}

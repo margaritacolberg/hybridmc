@@ -11,6 +11,59 @@
 #include "main_helpers.h"
 double max_time = std::numeric_limits<double>::max();
 
+void checkEnsemble(System &sys, const Box &box, const NonlocalBonds &transient_bonds)
+{
+   //std::cout << " In check Ensemble, update_config is " << update_config.config << std::endl;
+
+   UpdateConfig test_config;
+   for (int i=0;i<sys.ensembleSize;i++)
+   {
+        std::vector<Vec3> pos_i = sys.ensemble[i].getVec3Positions();
+        init_update_config(pos_i, test_config, box, transient_bonds) ;
+        //std::cout << " Ensemble member " << i << " has config = " << test_config.config << std::endl;
+   }
+}
+
+void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box)
+{
+    std::cout << " generateEnsemble called with ensemble size of " << p.ensembleSize
+        << " for molecule of length " << p.nbeads << std::endl;
+    std::vector<Molecule> ensemble(p.ensembleSize);
+    std::vector<Vec3> pos( p.nbeads );
+
+    UpdateConfig test_config;
+
+    for (int i=0;i<p.ensembleSize;i++){
+        // set flag for random initialization success
+        bool found = false;
+        // set the maximum tries for a random initialization to 10
+        int max_init_count = 100;
+        // while random initialization not found and 10 attempts not hit, try random init
+        while (found == false && max_init_count){
+            found = init_pos(pos, box, mt, p);
+            max_init_count--;
+            test_config = config_int(pos, box, p.transient_bonds);
+            if (test_config.config != 0) {
+                found = false;
+                std::cout << " Generated initially bound configuration.  Skipping." << std::endl;
+            }
+        }
+        //std::cout << " Found configuration starting at " << pos[0] << " ending at " << pos[p.nbeads-1]
+        //    << std::endl;
+        Molecule mol(p.nbeads);
+        mol.setPositions(pos);
+
+        ensemble[i] = mol;
+        //mol.printPositions(i);
+    }
+
+    sys.ensemble = ensemble;
+    //checkEnsemble(sys, box, p.transient_bonds);
+    //printEnsemble(sys.ensemble);
+
+}
+
+
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,
                     std::optional<std::string> input_name,
@@ -25,6 +78,13 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
   } else if (input_name && std::filesystem::exists(*input_name)) {
     std::cout << "Reading in input file " << *input_name << std::endl;
     read_input(*input_name, sys.pos);
+
+    if (sys.useEnsemble)
+    {
+        sys.ensemble = readMoleculesFromHDF5ByName(input_name->c_str());
+        //checkEnsemble(sys, box, p.transient_bonds);
+    }
+
     init_update_config(sys.pos, update_config, box, p.transient_bonds);
     init_s(sys.s_bias, t_bonds);
   } else {
@@ -39,6 +99,12 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
         found = init_pos(sys.pos, box, mt, p);
         max_init_count--;
     };
+
+    if (sys.useEnsemble)
+    {
+        generateEnsemble(sys, mt, p, box); // generate the initial ensemble of configurations
+        //checkEnsemble(sys, box, p.transient_bonds);
+    }
 
     // do linear draw if above procedure failed
 
@@ -224,6 +290,21 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     unsigned int iter,bool storeTrajectory) {
 
   LOG_DEBUG("run_trajectory");
+   //  Do swap MC move if active
+  if (sys.useEnsemble and (update_config.config == 0) )
+  {
+      //std::cout << "  Doing swap MC move. " << std::endl;
+      swapMC(sys, mt, box, p);
+      UpdateConfig trial_config = config_int(sys.pos, box, p.transient_bonds);
+      if (trial_config.config != update_config.config)
+      {
+          std::cerr << " Possible error with swap move.  State is " << trial_config.config
+                    << " and was " << update_config.config << std::endl;
+          exit(1);
+      }
+  }
+
+
 
   // Do Molecular Dynamics moves
 
@@ -233,6 +314,9 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
   // until the p.nsteps-th interval is reached); each iteration of the
   // BIIIIIIIG loop will run until update_time and then dump the output to the
   // hdf5 file
+
+
+
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
     EventQueue event_queue;
@@ -279,6 +363,7 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
         vel_writer.append(sys.vel);
         config_writer.append(update_config.config);
       }
+
     }
 
     const double tot_E_during =
@@ -288,6 +373,19 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
+  }
+  //
+  //  Now add to ensemble if needed
+
+  if ( ((int)sys.nextEnsemble.size() < sys.ensembleSize) and sys.recordEnsemble )
+  {
+      if ( (update_config.config == 1) and (iter % p.ensemble_write_step == 0) ){
+            //std::cout << " @@@@@ Adding configuration to stored ensemble at iter " << iter
+            //    << " size is " << sys.nextEnsemble.size() << " of " << sys.ensembleSize << std::endl;
+            Molecule mol(p.nbeads);
+            mol.setPositions( sys.pos );
+            sys.nextEnsemble.push_back(mol);
+      }
   }
 
   // Do Monte Carlo moves (mc moves)
@@ -463,4 +561,7 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.fail_max = json["fail_max"];
     p.req_dists = json["req_dists"];
     p.nsteps_max = json["nsteps_max"];
+    p.useEnsemble = json["useEnsemble"];
+    p.ensembleSize = json["ensembleSize"];
+    p.ensemble_write_step = json["ensemble_write_step"];
 }

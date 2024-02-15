@@ -99,6 +99,12 @@ struct Param {
   int fail_max;
   // number of distances to store
   int req_dists;
+  //  Flag to use ensemble MC
+  bool useEnsemble;
+  // Number of swap configurations in ensemble
+  int ensembleSize;
+  // step at which to write configuration to ensemble
+  unsigned int ensemble_write_step;
 };
 
 #endif

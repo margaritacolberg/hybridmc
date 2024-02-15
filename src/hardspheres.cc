@@ -171,7 +171,7 @@ bool init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     i++;
     tries = 0;
   }
-  std::cout << " Generated random initial unbonded configuration." << std::endl;
+  //std::cout << " Generated random initial unbonded configuration." << std::endl;
   return true;
 }
 
