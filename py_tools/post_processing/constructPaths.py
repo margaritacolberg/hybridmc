@@ -94,13 +94,6 @@ def process_paths(graph, simple_paths):
     return path_entropy, path_weight
 
 
-def print_paths(graph, simple_paths):
-    for path in simple_paths:
-        summed_variance, summed_entropy = sum_path_properties(graph, path)
-
-        print("Path:", path, ' has confidence interval (', lower_confidence, ",",
-              upper_confidence, ') and entropy ',
-              summed_entropy, ' with weight', 1.0 / summed_variance)
 
 
 def get_transition_info(diff_s_bias_csv):
