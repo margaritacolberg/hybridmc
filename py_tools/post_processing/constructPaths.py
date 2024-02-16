@@ -113,7 +113,7 @@ def main(start_node='1101', end_node='1111', depth=2, Z=2.576):
     if n != len(end_node):
         raise ValueError("lengths of start and end node have to be equal")
 
-    transition_info = get_transition_info('diff_s_bias_with_error.csv')
+    transition_info = get_transition_info('diff_s_bias.csv')
     graph = create_bit_flip_graph_with_edge_properties_async(n, transition_info)
 
     #print('Graph is:\n', graph)
@@ -161,7 +161,7 @@ def diff_test(mean1, mean2, SE1, SE2, Z):
 
 
 if __name__ == "__main__":
-    transition_info = get_transition_info('diff_s_bias_with_error.csv')
+    transition_info = get_transition_info('diff_s_bias.csv')
 
     src_dst_nodes = list(zip(*list(zip(*transition_info))[:2]))
 

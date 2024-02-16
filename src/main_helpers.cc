@@ -16,12 +16,15 @@ void checkEnsemble(System &sys, const Box &box, const NonlocalBonds &transient_b
    //std::cout << " In check Ensemble, update_config is " << update_config.config << std::endl;
 
    UpdateConfig test_config;
+   double count_bonded = 0.0;
    for (int i=0;i<sys.ensembleSize;i++)
    {
         std::vector<Vec3> pos_i = sys.ensemble[i].getVec3Positions();
         init_update_config(pos_i, test_config, box, transient_bonds) ;
+        if (test_config.config == 1) count_bonded += 1.0;
         //std::cout << " Ensemble member " << i << " has config = " << test_config.config << std::endl;
    }
+   std::cout << "  Fraction of bonded states in ensemble was " << count_bonded/sys.ensembleSize << std::endl;
 }
 
 void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box)
@@ -58,7 +61,7 @@ void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box)
     }
 
     sys.ensemble = ensemble;
-    //checkEnsemble(sys, box, p.transient_bonds);
+    checkEnsemble(sys, box, p.transient_bonds);
     //printEnsemble(sys.ensemble);
 
 }
@@ -82,7 +85,7 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
     if (sys.useEnsemble)
     {
         sys.ensemble = readMoleculesFromHDF5ByName(input_name->c_str());
-        //checkEnsemble(sys, box, p.transient_bonds);
+        checkEnsemble(sys, box, p.transient_bonds);
     }
 
     init_update_config(sys.pos, update_config, box, p.transient_bonds);
@@ -103,7 +106,7 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
     if (sys.useEnsemble)
     {
         generateEnsemble(sys, mt, p, box); // generate the initial ensemble of configurations
-        //checkEnsemble(sys, box, p.transient_bonds);
+        checkEnsemble(sys, box, p.transient_bonds);
     }
 
     // do linear draw if above procedure failed

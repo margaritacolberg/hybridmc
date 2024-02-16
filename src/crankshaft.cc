@@ -21,7 +21,7 @@ void swapMC(System &sys, Random &mt, const Box &box, const Param &p) {
     UpdateConfig current_config = config_int(pos, box, p.transient_bonds);
     int current_state = current_config.config;
 
-#ifdef LOCAL_VERBOSE
+#ifdef LOCAL_VERY_VERBOSE
     std::cout << " Before swap, state is: "  << current_state << std::endl;
     swapMolecule.printPositions(-1);
     std::cout << " Ensemble is:" << std::endl;
@@ -36,28 +36,20 @@ void swapMC(System &sys, Random &mt, const Box &box, const Param &p) {
     int trial_state = trial_config.config;
 
 
-#ifdef LOCAL_VERBOSE
+#ifdef LOCAL_VERY_VERBOSE
     std::cout << "  Trying to swap with ensemble index " << s_index << " which has state "
             << trial_state << std::endl;
 #endif
-    //  Iterate if not the same state
-    int counter = 100;
-    while (trial_state != current_state and counter)
+    //  replace ensemble state if not the same state
+    if (trial_state != current_state )
     {
-
-        s_index = index_probability(mt);
-        trial_pos = sys.ensemble[s_index].getVec3Positions();
-        trial_config = config_int(trial_pos, box, p.transient_bonds);
-        trial_state = trial_config.config;
-        counter--;
-
+        sys.ensemble[s_index]  = swapMolecule; // replace incorrect state in ensemble with current state
 #ifdef LOCAL_VERBOSE
-        std::cout << "  Since state was different, new swap with ensemble index " << s_index << " which has state "
-            << trial_state << std::endl;
+        std::cout << "  Since state was different, swapping out ensemble index " << s_index << " which had state "
+            << trial_state << " replaced with current state and return." << std::endl;
 #endif
-
+        return;
     }
-    if (counter <= 0) return;
 
     std::swap(sys.ensemble[s_index], swapMolecule);
 
