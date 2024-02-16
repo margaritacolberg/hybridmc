@@ -153,7 +153,7 @@ def get_path_summary(transition_info, start_node='1101', end_node='1111', depth=
     return diff_test(mean1, mean2, SE1, SE2, Z)
 
 
-def get_allpaths_summary(diff_sbias_csv):
+def get_allpaths_summary(diff_sbias_csv, depth=2, Z=2.58):
     transition_info = get_transition_info(diff_sbias_csv)
     src_dst_nodes = list(zip(*list(zip(*transition_info))[:2]))
     allpaths_output = []
@@ -162,7 +162,7 @@ def get_allpaths_summary(diff_sbias_csv):
     for src, dst in src_dst_nodes:
 
         mean1, mean2, significant_difference_test_result, diff_conf_int = get_path_summary(transition_info, src, dst,
-                                                                                           depth=2, Z=2.58)
+                                                                                           depth=depth, Z=Z)
         allpaths_output.append([src, dst, str(mean1), str(mean2),
                                 str(significant_difference_test_result), str(diff_conf_int)])
 
@@ -174,9 +174,9 @@ def get_allpaths_summary(diff_sbias_csv):
     return allpaths_output
 
 
-def diff_sbias_state_function_check(diff_s_bias_csv, csv_out="sig_diffs.csv"):
+def diff_sbias_state_function_check(diff_s_bias_csv, csv_out="sig_diffs.csv", depth=2, Z=2.58):
 
-    output = get_allpaths_summary(diff_s_bias_csv)
+    output = get_allpaths_summary(diff_s_bias_csv, depth=depth, Z=Z)
     field_names = ["src_node", "dst_node", "path mean", "direct mean", "Sig_diff?", "diff_conf_int"]
     # Write data to CSV file
     with open(csv_out, mode='w', newline='') as file:

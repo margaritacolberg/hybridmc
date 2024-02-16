@@ -39,7 +39,10 @@ def init_json(args):
                      "total_iter_initial": 400,
                      "rc_target_min_percentile": 0.10,
                      "nsteps_max": 1000,
-                     "gamma_f_screening": 0.0005
+                     "gamma_f_screening": 0.0005,
+                     "useEnsemble": True,
+                     "ensembleSize": 100,
+                     "ensemble_write_step": 10,
                  })
 
     in_queue = Queue()
