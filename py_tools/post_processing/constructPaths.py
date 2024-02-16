@@ -4,7 +4,7 @@ import numpy as np
 from statsmodels.stats.weightstats import DescrStatsW
 
 
-def create_bit_flip_graph_with_edge_properties_async(n, transition_info):
+def create_bit_flip_graph_with_edge_properties(n, transition_info):
     graph = {}
     for i in range(2 ** n):
         node = format(i, '0' + str(n) + 'b')
@@ -46,11 +46,11 @@ def dfs_async(graph, start, end, maxDepth=None, visited=None, path=None):
     return paths
 
 
-def find_all_simple_paths_async(graph, start_node, end_node, maxDepth):
+def find_all_simple_paths(graph, start_node, end_node, maxDepth):
     return dfs_async(graph, start_node, end_node, maxDepth)
 
 
-def sum_path_weights_async(graph, path):
+def sum_path_weights(graph, path):
     total_variance = 0
     for i in range(len(path) - 1):
         current_node = path[i]
@@ -94,8 +94,6 @@ def process_paths(graph, simple_paths):
     return path_entropy, path_weight
 
 
-
-
 def get_transition_info(diff_s_bias_csv):
     transition_info = []  # Load transition info from CSV file
     # Simulated transition info, replace this with actual loading from CSV
@@ -107,23 +105,34 @@ def get_transition_info(diff_s_bias_csv):
     return transition_info
 
 
-def main(start_node='1101', end_node='1111', depth=2, Z=2.576):
+def diff_test(mean1, mean2, SE1, SE2, Z):
+    mean_diff = abs(mean1 - mean2)
+    SE = np.sqrt(SE1 ** 2 + SE2 ** 2)
+
+    conf_int = mean_diff - SE * Z, mean_diff + SE * Z
+
+    print(conf_int)
+
+    if conf_int[0] < 0 < conf_int[1]:
+        print("There is no significant difference")
+        return mean1, mean2, False, conf_int
+    else:
+        print("There is a significant difference")
+        return mean1, mean2, True, conf_int
+
+
+def get_path_summary(transition_info, start_node='1101', end_node='1111', depth=2, Z=2.576):
     n = len(start_node)
 
     if n != len(end_node):
         raise ValueError("lengths of start and end node have to be equal")
 
-    transition_info = get_transition_info('diff_s_bias_with_error.csv')
-    graph = create_bit_flip_graph_with_edge_properties_async(n, transition_info)
+    graph = create_bit_flip_graph_with_edge_properties(n, transition_info)
 
-    #print('Graph is:\n', graph)
-
-    maxDepth = n + depth
-    simple_paths = find_all_simple_paths_async(graph, start_node, end_node, maxDepth)
-    sorted_paths = sorted(simple_paths, key=lambda t: (len(t)))
+    sorted_paths = sorted(find_all_simple_paths(graph, start_node, end_node, maxDepth=n + depth), key=lambda t: (len(t)))
 
     path_entropy, path_weight = process_paths(graph, sorted_paths)
-    print('There are a total of ', len(simple_paths), ' paths connecting ', start_node, ' to ', end_node)
+    print('There are a total of ', len(sorted_paths), ' paths connecting ', start_node, ' to ', end_node)
 
     d1 = DescrStatsW(path_entropy, weights=path_weight)
 
@@ -144,39 +153,31 @@ def main(start_node='1101', end_node='1111', depth=2, Z=2.576):
     return diff_test(mean1, mean2, SE1, SE2, Z)
 
 
-def diff_test(mean1, mean2, SE1, SE2, Z):
-    mean_diff = abs(mean1 - mean2)
-    SE = np.sqrt(SE1 ** 2 + SE2 ** 2)
-
-    conf_int = mean_diff - SE * Z, mean_diff + SE * Z
-
-    print(conf_int)
-
-    if conf_int[0] < 0 < conf_int[1]:
-        print("There is no significant difference")
-        return mean1, mean2, False, conf_int
-    else:
-        print("There is a significant difference")
-        return mean1, mean2, True, conf_int
-
-
-if __name__ == "__main__":
-    transition_info = get_transition_info('diff_s_bias_with_error.csv')
-
+def get_allpaths_summary(diff_sbias_csv):
+    transition_info = get_transition_info(diff_sbias_csv)
     src_dst_nodes = list(zip(*list(zip(*transition_info))[:2]))
-
-    field_names = ["src_node", "dst_node", "path mean", "direct mean","Sig_diff?", "diff_conf_int"]
-    output = []
+    allpaths_output = []
     n_trues = 0
+
     for src, dst in src_dst_nodes:
 
-        mean1, mean2, significant_difference_test_result, diff_conf_int = main(src, dst, depth=2, Z=2.58)
-        output.append([src, dst, str(mean1), str(mean2), str(significant_difference_test_result), str(diff_conf_int)])
+        mean1, mean2, significant_difference_test_result, diff_conf_int = get_path_summary(transition_info, src, dst,
+                                                                                           depth=2, Z=2.58)
+        allpaths_output.append([src, dst, str(mean1), str(mean2),
+                                str(significant_difference_test_result), str(diff_conf_int)])
+
         if significant_difference_test_result:
             n_trues += 1
 
-    print(f"The failure percentage was: {100 * n_trues / len(output)}")
+    print(f"The failure percentage was: {100 * n_trues / len(allpaths_output)}")
 
+    return allpaths_output
+
+
+def main(params):
+
+    output = get_allpaths_summary(params.diff_sbias_csv)
+    field_names = ["src_node", "dst_node", "path mean", "direct mean", "Sig_diff?", "diff_conf_int"]
     # Write data to CSV file
     with open("sig_diffs.csv", mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -186,3 +187,11 @@ if __name__ == "__main__":
         writer.writerows(output)
 
 
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--diff_sbias_csv", type=str, default="diff_s_bias_with_error", help="Diff sbias csv file")
+
+    args = parser.parse_args()
+
+    main(args)

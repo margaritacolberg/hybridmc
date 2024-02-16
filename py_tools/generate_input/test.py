@@ -6,10 +6,12 @@ from py_tools.generate_input import ConfigGenerator, ConfigGeneratorDriver, JobS
 import configparser
 
 
-def main():
-    # Generate some configurations
-    config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
-    #config_generator.generate_configs()
+def main(args):
+
+    if args.gen:
+        # Generate some configurations
+        config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
+        config_generator.generate_configs()
 
     # read config settings
     config = configparser.ConfigParser()
@@ -33,4 +35,15 @@ def main():
 
 # Example usage
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    # Create the parser
+    parser = argparse.ArgumentParser(description="Example script showing how to use argparse for a bool and a value.")
+
+    # Add a boolean flag (default=False). If the flag is used, the value is set to True.
+    parser.add_argument('-g', '--gen', action='store_true', help="Generate structures or no")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    main(args)
