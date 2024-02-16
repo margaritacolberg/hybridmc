@@ -274,7 +274,7 @@ class JobSubmitter:
                  mem_per_cpu=500, time='0-01:00:00', Nconfigs="1-5", json_dir='simulation_configs',
                  out_dir="train_configs", exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
                  hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
-                 abspath=1):
+                 ):
 
         self.temp_script_path = None
         self.account = account
@@ -287,7 +287,6 @@ class JobSubmitter:
         self.out_dir = out_dir
         self.exe = exe
         self.hmc_exe = hmc_exe
-        self.abspath=abspath
 
     @property
     def json_dir(self) -> str:
@@ -333,7 +332,7 @@ start_time=$(date +%s)
 micromamba activate HMC
 
 # python execute with time tracking
-time python {self.exe} --json {os.path.join(self.json_dir, "config")}_"$SLURM_ARRAY_TASK_ID".json --exe {self.hmc_exe} --abspath {self.abspath}
+time python {self.exe} --json {os.path.join(self.json_dir, "config")}_"$SLURM_ARRAY_TASK_ID".json --exe {self.hmc_exe}
 
 # Capture end time and calculate duration
 end_time=$(date +%s)

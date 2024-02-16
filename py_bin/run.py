@@ -28,18 +28,18 @@ from py_tools.helpers.run_helpers import init_json
 from py_tools.post_processing import avg_s_bias, diff_s_bias, mfpt
 
 
-def main(args):
-    file_name = os.path.basename(args.json)
+def main(run_params):
+    file_name = os.path.basename(run_params.json)
     dir_name = os.path.splitext(file_name)[0]
     tmp_dir_name = f'{dir_name}.tmp'
 
     # Check if target directory or tmp already exists. Modify name if needed
-    check_dir(dir_name, old_version_code=args.old_version)
-    check_dir(tmp_dir_name)
+    check_dir(dir_name, old_version_code=run_params.old_version)
+    check_dir(tmp_dir_name, old_version_code="")
 
     # Convert the given paths for json and exe to absolute paths if not already absolute
-    args.json = os.path.realpath(args.json)
-    args.exe = os.path.realpath(args.exe)
+    run_params.json = os.path.realpath(run_params.json)
+    run_params.exe = os.path.realpath(run_params.exe)
 
     # create the temporary directory to run the simulations
     if not os.path.isdir(tmp_dir_name):
@@ -47,7 +47,7 @@ def main(args):
     os.chdir(tmp_dir_name)
 
     # Create dictionary that will have arguments passed to init_json
-    init_json_args = {"json": args.json, "seed_increment": 1, "exe": args.exe}
+    init_json_args = {"json": run_params.json, "seed_increment": 1, "exe": run_params.exe}
 
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
@@ -77,11 +77,18 @@ def check_dir(dir_name, old_version_code="delete"):
         if old_version_code == "delete":
             return shutil.rmtree(dir_name)
 
-        # else add available old version code to path name
-        while os.path.exists(f"{dir_name}_{args.old_version}"):
-            old_version_code += 1
+        if isinstance(old_version_code, int):
+            # else add available old version code to path name
+            while os.path.exists(f"{dir_name}_{args.old_version}"):
+                old_version_code += 1
 
-        os.rename(src=dir_name, dst=f"{dir_name}_{old_version_code}")
+            return os.rename(src=dir_name, dst=f"{dir_name}_{old_version_code}")
+
+        elif os.path.exists(f"{dir_name}{args.old_version}"):
+            raise FileExistsError("Tmp file already exists, so does the old version code tmp file")
+
+        else:
+            return os.rename(src=dir_name, dst=f"{dir_name}{old_version_code}")
 
 
 def post_processing():
@@ -101,8 +108,6 @@ if __name__ == '__main__':
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default=1, type=int)
-    parser.add_argument('--abspath', help='set version code for old structure simulation run if needed',
-                        default=0, type=int)
 
     args = parser.parse_args()
 
