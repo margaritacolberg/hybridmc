@@ -6,10 +6,12 @@ from py_tools.generate_input import ConfigGenerator, ConfigGeneratorDriver, JobS
 import configparser
 
 
-def main():
-    # Generate some configurations
-    # config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
-    # config_generator.generate_configs()
+def main(args):
+
+    if args.gen:
+        # Generate some configurations
+        config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
+        config_generator.generate_configs()
 
     # read config settings
     config = configparser.ConfigParser()
@@ -20,10 +22,9 @@ def main():
         json_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
         out_dir=config.get('slurm_settings', 'out_dir', fallback="config_run"),
         Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
-        cpus_per_task=2, mem_per_cpu=1000, time='0-1:55:00',
+        cpus_per_task=2, mem_per_cpu=1000, time='0-5:55:00',
         exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
         hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
-        abspath=1
     )
 
     #jobsubmitter.create_job_script()
@@ -34,4 +35,15 @@ def main():
 
 # Example usage
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    # Create the parser
+    parser = argparse.ArgumentParser(description="Example script showing how to use argparse for a bool and a value.")
+
+    # Add a boolean flag (default=False). If the flag is used, the value is set to True.
+    parser.add_argument('-g', '--gen', action='store_true', help="Generate structures or no")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    main(args)
