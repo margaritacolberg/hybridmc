@@ -1,5 +1,5 @@
 import argparse
-from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
+from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt, constructPaths
 
 
 def main():
@@ -8,9 +8,10 @@ def main():
     # Obtain the average sbias for each bonding state
     avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias_new.csv")
     # Obtain the mfpt for each bonding state
-    mfpt.get_mfpt(rewrite=True)
+    #mfpt.get_mfpt(rewrite=True)
     # put together the mfpts in one file
-    mfpt.compile_mfpts()
+    #mfpt.compile_mfpts()
+    constructPaths.diff_sbias_state_function_check("diff_s_bias_new.csv", csv_out="sig_diff_new.csv")
 
 
 if __name__ == "__main__":

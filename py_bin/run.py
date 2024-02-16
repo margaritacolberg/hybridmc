@@ -25,7 +25,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from py_tools.helpers.run_helpers import init_json
-from py_tools.post_processing import avg_s_bias, diff_s_bias, mfpt
+from py_tools.post_processing import avg_s_bias, diff_s_bias, mfpt, constructPaths
 
 
 def main(run_params):
@@ -95,11 +95,13 @@ def post_processing():
     # Obtain the differences in the sbias for each transition
     diff_s_bias.get_diff_sbias(out_csv='diff_s_bias.csv')
     # Obtain the average sbias for each bonding state
-    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv")
+    avg_s_bias.get_avg_sbias(diff_sbias_csv="diff_s_bias.csv", output_csv="avg_s_bias.csv")
     # Obtain the mfpt for each bonding state
     mfpt.get_mfpt()
     # put together the mfpts in one file
     mfpt.compile_mfpts()
+    # check if direct and indirect (via paths) diff s bias result consistent
+    constructPaths.diff_sbias_state_function_check(diff_s_bias_csv='diff_s_bias.csv', csv_out="diff_check.csv")
 
 
 if __name__ == '__main__':

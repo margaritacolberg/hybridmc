@@ -174,12 +174,12 @@ def get_allpaths_summary(diff_sbias_csv):
     return allpaths_output
 
 
-def main(params):
+def diff_sbias_state_function_check(diff_s_bias_csv, csv_out="sig_diffs.csv"):
 
-    output = get_allpaths_summary(params.diff_sbias_csv)
+    output = get_allpaths_summary(diff_s_bias_csv)
     field_names = ["src_node", "dst_node", "path mean", "direct mean", "Sig_diff?", "diff_conf_int"]
     # Write data to CSV file
-    with open("sig_diffs.csv", mode='w', newline='') as file:
+    with open(csv_out, mode='w', newline='') as file:
         writer = csv.writer(file)
         # Write the header
         writer.writerow(field_names)
@@ -190,8 +190,8 @@ def main(params):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--diff_sbias_csv", type=str, default="diff_s_bias_with_error", help="Diff sbias csv file")
+    parser.add_argument("--diff_sbias_csv", type=str, default="diff_s_bias_with_error.csv", help="Diff sbias csv file")
 
     args = parser.parse_args()
 
-    main(args)
+    diff_sbias_state_function_check(args.diff_sbias_csv)
