@@ -7,7 +7,6 @@ import configparser
 
 
 def main(args):
-
     if args.gen:
         # Generate some configurations
         config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
@@ -27,10 +26,15 @@ def main(args):
         hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
     )
 
-    #jobsubmitter.create_job_script()
-    jobsubmitter.submit_job()
-    #jobsubmitter.exec_script()
-    print("DONE SUBMITTING")
+    if args.submit:
+        jobsubmitter.submit_job()
+
+    if args.create_job_script:
+        jobsubmitter.create_job_script()
+
+    else:
+        from sys import exit
+        exit("Nothing to do. Please pass argument to indicate what to do.")
 
 
 # Example usage
@@ -42,6 +46,8 @@ if __name__ == "__main__":
 
     # Add a boolean flag (default=False). If the flag is used, the value is set to True.
     parser.add_argument('-g', '--gen', action='store_true', help="Generate structures or no")
+    parser.add_argument('-c', '--create_job_script', action='store_true', help="create job script or no")
+    parser.add_argument('-s', '--submit', action='store_true', help="Submit job or no")
 
     # Parse the command-line arguments
     args = parser.parse_args()

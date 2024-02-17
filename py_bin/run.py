@@ -35,7 +35,7 @@ def main(run_params):
 
     # Check if target directory or tmp already exists. Modify name if needed
     check_dir(dir_name, old_version_code=run_params.old_version)
-    check_dir(tmp_dir_name, old_version_code="")
+    check_dir(tmp_dir_name, old_version_code=run_params.tmp_old_version)
 
     # Convert the given paths for json and exe to absolute paths if not already absolute
     run_params.json = os.path.realpath(run_params.json)
@@ -68,16 +68,23 @@ def main(run_params):
     os.rename(src=tmp_dir_name, dst=dir_name)
 
 
-def check_dir(dir_name, old_version_code="delete"):
+def check_dir(dir_name, old_version_code=""):
     if os.path.isdir(dir_name):
 
-        print(f'{dir_name} already exists; saved as old version with given version code or next available code')
+        if old_version_code == "":
+            print("Blank old version code given. Using pre-existing tmp directory for simulation")
+            return None
 
-        # delete directory if old version code given as delete adn return function
-        if old_version_code == "delete":
+        # delete directory if old version code given as delete and return function
+        elif old_version_code == "delete":
+            print("Removing old tmp directory since old version code supplied as delete")
             return shutil.rmtree(dir_name)
 
-        if isinstance(old_version_code, int):
+        elif old_version_code.isnumeric():
+            old_version_code = int(old_version_code)
+            print(f'{dir_name} already exists and int old version code; '
+                  f'saved as old version with given version code or next available code')
+
             # else add available old version code to path name
             while os.path.exists(f"{dir_name}_{args.old_version}"):
                 old_version_code += 1
@@ -88,6 +95,7 @@ def check_dir(dir_name, old_version_code="delete"):
             raise FileExistsError("Tmp file already exists, so does the old version code tmp file")
 
         else:
+            print(f'{dir_name} already exists. Renaming with old version code given')
             return os.rename(src=dir_name, dst=f"{dir_name}{old_version_code}")
 
 
@@ -106,10 +114,13 @@ def post_processing():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--json', help='master json input file', default='test_st.json')
+    parser.add_argument('--json', help='master json input file', default='test.json')
     parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
-                        default=1, type=int)
+                        default="1", type=str)
+    parser.add_argument('-tov', '--tmp_old_version',
+                        help='set version code for old structure simulation tmp run if needed',
+                        default="", type=str)
 
     args = parser.parse_args()
 

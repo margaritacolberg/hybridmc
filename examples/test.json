@@ -40,5 +40,8 @@
   "sbias_min": 4.0,
   "nsteps_max": 1000,
   "gamma_f_screening": 0.0005,
+  "useEnsemble": true,
+  "ensembleSize": 100,
+  "ensemble_write_step": 10,
   "config_in": 0,
   "config_out": 1}

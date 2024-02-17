@@ -365,15 +365,3 @@ sacct -j $SLURM_JOB_ID
         finally:
             # Ensure the temporary file is removed after submission
             os.remove(self.temp_script_path)
-
-    def exec_script(self):
-
-        # Check if job script was made, if not create one
-        if self.temp_script_path is None:
-            self.create_job_script()
-
-        try:
-            subprocess.run(['sh', self.temp_script_path], check=True)
-        finally:
-            # Ensure the temporary file is removed after submission
-            os.remove(self.temp_script_path)
