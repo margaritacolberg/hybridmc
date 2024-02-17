@@ -1,3 +1,5 @@
+import warnings
+
 from .data_processing_helpers import *
 from .run_layer_helpers import run_sim, run_stairs
 
@@ -51,20 +53,26 @@ def run_layer(common_data, in_queue, out_queue, seed_increment, exe):
         # Set the seed
         common_data['seeds'] = [count, seed_increment]
 
-        # Check for stairs using wang_landau (WL) run
-        stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
+        # Run simulations, if simulation results not already generated
+        if not os.path.exists(f"{output_name}.h5"):
 
-        # Check if staircase needed and do a staircase run for structure; if not do regular run
-        if stair_bp and stair_rc_list:
+            # Check for stairs using wang_landau (WL) run
+            stair_bp, stair_rc_list = stair_check(common_data, output_name, input_hdf5)
 
-            # ensure cell size can accommodate the rc
-            if (common_data["length"] / common_data["ncell"]) < stair_rc_list[0]:
-                common_data["length"] = stair_rc_list[0] * common_data["ncell"] + 0.1
+            # Check if staircase needed and do a staircase run for structure; if not do regular run
+            if stair_bp and stair_rc_list:
 
-            run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list)
+                # ensure cell size can accommodate the rc
+                if (common_data["length"] / common_data["ncell"]) < stair_rc_list[0]:
+                    common_data["length"] = stair_rc_list[0] * common_data["ncell"] + 0.1
+
+                run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list)
+
+            else:
+                run_sim(common_data, input_hdf5, output_name, exe)
 
         else:
-            run_sim(common_data, input_hdf5, output_name, exe)
+            warnings.warn(f"{output_name} was already generated, not running simulation for this transition again")
 
         # Put the output file name in the queue to indicate that this transition has been run
         out_queue.put((bits_out, f'{output_name}.h5'))

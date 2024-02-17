@@ -191,22 +191,34 @@ def stair_check(data, output_name, input_hdf5):
     print(f"Running Wang-Landau process for {os.path.relpath(json_name)} to check if staircase potential needed")
 
     # find what configurational change is happening for this simulation
-    config_in, config_out = json_name.strip('.json').split('_')[-2], json_name.strip('.json').split('_')[-1]
+    config_in, config_out = json_name.replace('.json', '').split('_')[-2], json_name.strip('.json').split('_')[-1]
 
     # Create json input for the wang_landau run
+
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
 
     # Get sbias value for native index from wang-landau (WL) trajectory run along with rc values at different
     # quartiles for this run
-    sbias, rc1, rc2, rc3 = WL.WL_process(json_name, input_hdf5)
+
+    # find pre-existing stair sims rc values either in h5 or tmp files
+    existing_stairs = (if_stair(output_name, os.listdir(), end_tag='.h5') +
+                       if_stair(output_name, os.listdir(), end_tag='.h5.tmp'))
+
+    if len(existing_stairs) > 0:
+        sbias = data["WL_sbias"]
+        rc1, rc2 = sorted(existing_stairs)[0], data["transient_bonds"][-1][-1]
+        rc3 = 0.5 * (rc1 + rc2)
+
+    else:
+        sbias, rc1, rc2, rc3 = WL.WL_process(json_name, input_hdf5)
 
     # Optional staircase potential, initially the bond pair (bp) is not staircased
     stair_bp = None
     stair_rc_list = None
 
-    # if sbias from WL test larger than a threshold value WL_sbias then use staircase potential for this bond
-    if sbias > data['WL_sbias']:
+    # if sbias from WL test larger than or equal to threshold value WL_sbias then use staircase potential for this bond
+    if sbias >= data['WL_sbias']:
         stair_bp = data['transient_bonds']
         print(f"Do Staircase on {stair_bp} because sbias is {sbias} for transition {config_in} to {config_out}")
         # Process rc values for staircase from prior WL run; ensure values are in descending order
@@ -254,7 +266,7 @@ def get_mcMoves(data: dict):
     return round(1000 * 1 - (len(data['permanent_bonds']) / len(data['nonlocal_bonds'])))
 
 
-def if_stair(ref_sim_id, files):
+def if_stair(ref_sim_id, files, end_tag='.json'):
     """
     Function to check if the file_path has associated staircased steps simulations results. If yes, then the paths of these
     intermediate steps' csv files with their mfpt information are compiled into a list and returned.
@@ -269,9 +281,9 @@ def if_stair(ref_sim_id, files):
 
     # loop through json files in directory
     for file in files:
-        if file.endswith('.json'):
+        if file.endswith(end_tag):
             # obtain simulation tag for this file
-            sim_id = file.rstrip('.json')
+            sim_id = file.replace(end_tag, '')
             # if the reference tag and this are the same then add the filepath to the output list
             if ref_sim_id.split('_') == sim_id.split('_')[:-1]:
                 stair_rc_list.append(float(sim_id.split("_")[-1]))

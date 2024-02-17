@@ -26,12 +26,12 @@ def run_sim(data, input_hdf5, output_name, exe):
     # Set the name for the hdf5 and json files generated
     hdf5_name, json_name = os.path.realpath(f'{output_name}.h5'), os.path.realpath(f'{output_name}.json')
 
-    # Exit if this trajectory has already been run
+    # Exit if this trajectory has already been run. Just another check for safety.
     if os.path.exists(hdf5_name):
-        print(f"Simulation results for transition already generated")
+        print(f"Simulation results for transition {output_name} already generated")
         return
 
-    # Create json file input for the HMC program to run this trajectory
+    # Create json file input for the HMC program to run this trajectory.
     with open(json_name, 'w') as output_json:
         json.dump(data, output_json)
 
@@ -109,7 +109,6 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
         # set the outer rc for the next step to be the current rc
         data["stair"] = rc
 
-
         # Convergence Check:
 
         # get the list of distances for the last simulation
@@ -139,5 +138,3 @@ def run_stairs(common_data, input_hdf5, output_name, exe, stair_rc_list):
     # update the rc value for the bonds in the transient_bonds list
     update_rc(data, rc)
     run_sim(data, input_hdf5, output_name, exe)
-
-
