@@ -7,34 +7,39 @@ import configparser
 
 
 def main(args):
+
+    if not (args.gen or args.submit or args.create_job_script):
+        from sys import exit
+        exit("Nothing to do. Please pass argument to indicate what to do.")
+
     if args.gen:
         # Generate some configurations
         config_generator = ConfigGeneratorDriver(settings_config_file="settings.cfg")
         config_generator.generate_configs()
 
-    # read config settings
-    config = configparser.ConfigParser()
-    config.read("settings.cfg")
+    if args.submit or args.create_job_script:
 
-    # submit job to slurm for these configs
-    jobsubmitter = JobSubmitter(
-        json_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
-        out_dir=config.get('slurm_settings', 'out_dir', fallback="config_run"),
-        Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
-        cpus_per_task=2, mem_per_cpu=1000, time='0-5:55:00',
-        exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
-        hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
-    )
+        # read config settings
+        config = configparser.ConfigParser()
+        config.read("settings.cfg")
 
-    if args.submit:
-        jobsubmitter.submit_job()
+        # submit job to slurm for these configs
+        jobsubmitter = JobSubmitter(
+            json_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
+            out_dir=config.get('slurm_settings', 'out_dir', fallback="config_run"),
+            Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
+            cpus_per_task=2, mem_per_cpu=1000, time='0-5:55:00',
+            exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
+            hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
+        )
 
-    if args.create_job_script:
-        jobsubmitter.create_job_script()
+        if args.submit:
+            jobsubmitter.submit_job()
 
-    else:
-        from sys import exit
-        exit("Nothing to do. Please pass argument to indicate what to do.")
+        if args.create_job_script:
+
+            jobsubmitter.create_job_script()
+            print(f"Shell script in {jobsubmitter.temp_script_path}")
 
 
 # Example usage

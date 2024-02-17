@@ -76,7 +76,7 @@ def run_TransitionMulti(json_name, input_name, exe_name, n_iterations=2):
     input_json_name = os.path.basename(json_name)
     data = extract_json(input_json_name)
 
-    output_name = input_json_name.strip('.json')
+    output_name = input_json_name.replace('.json', '')
 
     data = process_json(data, output_name)
 
@@ -123,7 +123,7 @@ def run_TransitionSerial(json_name, input_name, exe_name, n_iterations=2):
     input_json_name = os.path.basename(json_name)
     data = extract_json(input_json_name)
 
-    output_name = input_json_name.strip('.json')  # input hdf5 is None if zeroth layer transition
+    output_name = input_json_name.replace('.json', '')  # input hdf5 is None if zeroth layer transition
 
     if output_name.split('_')[1] == '0':
         input_hdf5 = None
