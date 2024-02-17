@@ -316,8 +316,8 @@ class JobSubmitter:
 #SBATCH --cpus-per-task={self.cpus_per_task}
 #SBATCH --mem-per-cpu={self.mem_per_cpu}
 #SBATCH --time={self.time}
-#SBATCH --output=config_%A_%a.out
-#SBATCH --error=config_%A_%a.err
+#SBATCH --output=$SLURM_SUBMIT_DIR/slurm_out/config_%A_%a.out
+#SBATCH --error=$SLURM_SUBMIT_DIR/slurm_err/config_%A_%a.err
 #SBATCH --array={self.Nconfigs}
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=vignesh.rajesh@mail.utoronto.ca

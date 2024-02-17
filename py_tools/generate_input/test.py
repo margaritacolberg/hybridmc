@@ -28,7 +28,7 @@ def main(args):
             json_dir=config.get('master_settings', 'target_directory', fallback="generated_configs"),
             out_dir=config.get('slurm_settings', 'out_dir', fallback="config_run"),
             Nconfigs=config.get('slurm_settings', 'job_arrays', fallback="1-10"),
-            cpus_per_task=2, mem_per_cpu=1000, time='0-5:55:00',
+            cpus_per_task=2, mem_per_cpu=1000, time='0-1:01:00',
             exe="/scratch/vignesh9/hybridmc/py_bin/run.py",
             hmc_exe="/scratch/vignesh9/hybridmc/release/hybridmc",
         )
