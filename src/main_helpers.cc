@@ -301,9 +301,12 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       UpdateConfig trial_config = config_int(sys.pos, box, p.transient_bonds);
       if (trial_config.config != update_config.config)
       {
-          std::cerr << " Possible error with swap move.  State is " << trial_config.config
-                    << " and was " << update_config.config << std::endl;
-          exit(1);
+
+        std::ostringstream errorMessage;
+        errorMessage << "Possible error with swap move. State is " << trial_config.config
+                     << " and was " << update_config.config << std::endl;
+
+          throw std::runtime_error(errorMessage.str());
       }
   }
 
