@@ -5,9 +5,12 @@
 
 HybridMC simulates the event-driven dynamics of coarse-grained protein folding.
 The entropy and mean first passage times (MFPT) of each bond forming or
-breaking event is calculated, and the Markov transition rate matrix is
+breaking event are calculated, and the Markov transition rate matrix is
 constructed. The average time needed to fold to the protein's native state,
 starting from the unfolded state, is evaluated under two conditions.
+
+For more information, see the [publication](https://doi.org/10.1063/5.0098612)
+or the [preprint](https://arxiv.org/abs/2205.05799).
 
 ## Directories
 
@@ -24,6 +27,8 @@ complicated.
     the MFPT
 
   * `tree`: C++ and Bash scripts for generating tree plots
+
+  * `crambin_s_bias_mfpt`: biased entropy and MPFT results for crambin
 
 ## C++ Program Details
 
@@ -83,8 +88,7 @@ pip install .
 
 ### Run Program
 
-For any protein with or without staircase potentials, use `run.py`; for
-non-staircase crambin folding, use `run.py` or `crambin.sh`.
+Simply run the python executable run.py --json JSON_NAME.json
 
 The json files for running the examples (for example test.json) in the examples directory
 have the following parameters:
@@ -164,12 +168,25 @@ have the following parameters:
 
     "WL_sbias": 6.0 -- the sbias value for a wang landau simulation result beyond which a configuration is deemed to need staircasing 
 
+    "req_dists": 50000 -- minimum distances used for MFPT. Enforced in the hybridmc c++ source: it is a convergence criterion.
+
+    "rc_target_min_percentile": 0.025 -- Determines the lcoation of rc for the stair. Look at 2.5 percentile rc value from the rc explored
+                                            during simulation.
+
+    "D_mean": 0.046 -- Estimated diffusion coefficent mean value. Used for rate calculation.
+    
+    "D_std_perc": 1 -- Assumed % error in D_mean.
+
+    "eps": 3 -- The energy of the bond in kT units. Used to calculate reates and probability.
+}
 
 ### Calculate Entropy
 
-To get biased entropy of each state, use `diff_s_bias.py`, followed by
+To get biased entropy of each state manually, use `diff_s_bias.py`, followed by
 `avg_s_bias.py`. To get biased entropy of each state which includes the
 staircase potential, use `diff_s_bias_stair.py`, followed by `avg_s_bias.py`.
+
+But this is done automatically when run.py is executed.
 
 To find which transition gives smallest entropy difference, use
 `min_diff_s_bias.py`. To get percent error for the entropy of one transition,
@@ -177,10 +194,12 @@ use `get_error_s_bias.py`.
 
 ### Calculate MFPT
 
-To calculate MFPT for a single transition, use `mfpt.py`. To calculate MFPT for
+To calculate MFPT for a single transition manually, use `mfpt.py`. To calculate MFPT for
 all transitions in current dir, use `run_mfpt.py`. To combine the MFPT for each
 step of staircase into a single MFPT for the transition, use
 `mfpt_for_stair.py`.
+
+Again, as with the entropy, this is done automatically when run.py is executed.
 
 ### Rerun Files
 

@@ -8,6 +8,60 @@
 #include <algorithm>
 #include <cmath>
 
+//#define LOCAL_DEBUG
+//#define LOCAL_VERBOSE
+
+void swapMC(System &sys, Random &mt, const Box &box, const Param &p) {
+    int numEnsemble = sys.ensemble.size();
+    if (numEnsemble < 1) return; // no move possible
+
+    std::vector<Vec3> pos = sys.pos;
+    Molecule swapMolecule( pos.size() );
+    swapMolecule.setPositions(pos); // converts Vec3 positions into vector<double> array
+    UpdateConfig current_config = config_int(pos, box, p.transient_bonds);
+    int current_state = current_config.config;
+
+#ifdef LOCAL_VERY_VERBOSE
+    std::cout << " Before swap, state is: "  << current_state << std::endl;
+    swapMolecule.printPositions(-1);
+    std::cout << " Ensemble is:" << std::endl;
+    printEnsemble(sys.ensemble);
+#endif
+
+    std::uniform_int_distribution<> index_probability(0, numEnsemble-1);
+
+    int s_index = index_probability(mt);
+    std::vector<Vec3> trial_pos = sys.ensemble[s_index].getVec3Positions();
+    UpdateConfig trial_config = config_int(trial_pos, box, p.transient_bonds);
+    int trial_state = trial_config.config;
+
+
+#ifdef LOCAL_VERY_VERBOSE
+    std::cout << "  Trying to swap with ensemble index " << s_index << " which has state "
+            << trial_state << std::endl;
+#endif
+    //  replace ensemble state if not the same state
+    if (trial_state != current_state )
+    {
+        sys.ensemble[s_index]  = swapMolecule; // replace incorrect state in ensemble with current state
+#ifdef LOCAL_VERBOSE
+        std::cout << "  Since state was different, swapping out ensemble index " << s_index << " which had state "
+            << trial_state << " replaced with current state and return." << std::endl;
+#endif
+        return;
+    }
+
+    std::swap(sys.ensemble[s_index], swapMolecule);
+
+    //std::cout << std::endl << " After swap of molecule " << s_index << " swap molecule is:" << std::endl;
+    //swapMolecule.printPositions(-1);
+    //std::cout << " Ensemble is:" << std::endl;
+    //printEnsemble(sys.ensemble);
+
+    sys.pos = swapMolecule.getVec3Positions();
+
+}
+
 void rodrigues_rotation(const std::vector<Vec3> &pos, const double theta,
                         std::vector<Vec3> &pos_trial, const unsigned int ind,
                         const Box &box) {
@@ -129,6 +183,7 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
                          const NonlocalBonds &permanent_bonds) {
   const unsigned int nbeads = pos_trial.size();
 
+
   for (unsigned int i = 0; i < nbeads - 3; i++) {
     for (unsigned int j = i + 3; j < nbeads; j++) {
       double dx = pos_trial[i].x - pos_trial[j].x;
@@ -151,6 +206,16 @@ bool check_nonlocal_dist(const std::vector<Vec3> &pos_trial, const Box &box,
       const Config p_bond_mask = std::get<0>(p_bond_mask_tuple);
 
       const double rc2_inner = get_rc2_inner(t_bond_mask_tuple, p_bond_mask_tuple);
+
+#ifdef LOCAL_DEBUG
+
+      if (p_bond_mask)
+      {
+        std::cout << " Expect permanent bond between " << i << " - " << j << " at rc = " << sqrt(rc2_inner) << " distance = "
+            << sqrt(dist2) << std::endl;
+      }
+
+#endif
 
       if (p_bond_mask && !(dist2 < rc2_inner)) {
         LOG_DEBUG("permanent bond between beads "

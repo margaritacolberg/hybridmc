@@ -8,22 +8,34 @@
 #define HYBRIDMC_SYSTEM_H
 
 #include "vec3.h"
+#include "molecule.h"
 #include <vector>
 
-struct System {
-  // positions of all beads at time t
-  std::vector<Vec3> pos;
-  // velocities of all beads at time t
-  std::vector<Vec3> vel;
-  // bead clocks
-  std::vector<double> times;
-  // collision counters of beads
-  std::vector<uint64_t> counter;
-  // entropy of beads
-  std::vector<double> s_bias;
+class System {
+  public:
+      // positions of all beads at time t
+      std::vector<Vec3> pos;
+      // velocities of all beads at time t
+      std::vector<Vec3> vel;
+      // bead clocks
+      std::vector<double> times;
+      // collision counters of beads
+      std::vector<uint64_t> counter;
+      // entropy of beads
+      std::vector<double> s_bias;
 
-  System(unsigned int nbeads)
-      : pos(nbeads), vel(nbeads), times(nbeads), counter(nbeads) {}
+      // flag to indicate whether to write distance data
+      bool distanceWrite;
+
+      bool useEnsemble;
+      bool recordEnsemble;
+      int ensembleSize;
+      std::vector<Molecule> ensemble;
+      std::vector<Molecule> nextEnsemble;
+
+      System(unsigned int nbeads)
+          : pos(nbeads), vel(nbeads), times(nbeads), counter(nbeads), useEnsemble(false) {}
+
 };
 
 #endif

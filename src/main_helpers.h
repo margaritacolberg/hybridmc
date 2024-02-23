@@ -11,6 +11,7 @@
 #include "json.hpp"
 #include "snapshot.h"
 #include "writer.h"
+
 #include <H5Cpp.h>
 #include <boost/program_options.hpp>
 #include <cassert>
@@ -18,6 +19,9 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <numeric>
+
+void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box);
 
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,
@@ -31,12 +35,12 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
 
 void run_step(System &sys, const Param &p, const Box &box,
               UpdateConfig &update_config, CountBond &count_bond,
-              double wall_time, Cells &cells, EventQueue &event_queue,
+              Cells &cells, EventQueue &event_queue,
               unsigned int step, double del_t);
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double wall_time, unsigned int iter,
+                       unsigned int iter,
                        DistWriter &dist_writer, std::vector<double> &dist);
 
 void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
@@ -45,12 +49,12 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     PosWriter &pos_writer, VelWriter &vel_writer,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
-                    CountBond &count_bond, double wall_time,
-                    unsigned int iter);
+                    CountBond &count_bond,
+                    unsigned int iter,bool storeTrajectory = false);
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
-                         CountBond &count_bond, double wall_time,
+                         CountBond &count_bond,
                          unsigned int iter_wl,
                          bool record_dists = false,
                          std::vector<double>* dist = nullptr,

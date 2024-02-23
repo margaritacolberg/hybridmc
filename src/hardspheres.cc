@@ -11,6 +11,8 @@
 #include <cmath>
 #include <iomanip>
 
+//#define LOCAL_DEBUG
+
 // calculate the x-, y- and z-coordinates of a point that lies on the surface
 // of a unit sphere;
 // sphere point picking: http://mathworld.wolfram.com/SpherePointPicking.html;
@@ -32,14 +34,46 @@ void unit_sphere(Random &mt, double &x, double &y, double &z) {
   z = 1 - 2 * (v * v + w * w);
 }
 
+void draw_linear_chain(std::vector<Vec3> &pos, const Param &p)
+{
+
+    // location of the first bead
+    pos[0].x = 0.0;
+    pos[0].y = 0.0;
+    pos[0].z = 0.0;
+    const unsigned int nbeads = pos.size();
+    double length = p.near_min + 0.5*(p.near_max - p.near_min);
+    Vec3 dr(0.0,0.0,0.0);
+    for (unsigned int j=1;j<nbeads;j++)
+    {
+        if (j%2)
+        {
+            dr.x = 0.0;
+            dr.y = length;
+            dr.z = 0.0;
+        }
+        else
+        {
+            dr.x = length;
+            dr.y = 0.0;
+            dr.z = 0.0;
+        }
+        pos[j].x = pos[j-1].x + dr.x;
+        pos[j].y = pos[j-1].y + dr.y;
+        pos[j].z = pos[j-1].z + dr.z;
+
+    }
+}
+
+
 // initial positions of all beads
-void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
+bool init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
               const Param &p) {
   const unsigned int nbeads = pos.size();
   std::uniform_real_distribution<> uniform_near(0.0, 1.0);
 
   if (pos.size() < 1)
-    return;
+    return true;
 
   // location of the first bead
   pos[0].x = 0.0;
@@ -54,8 +88,9 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
 
   while (i < nbeads) {
     if (!(tries++ < p.tries)) {
-      throw std::logic_error(
-          "number of tries exceeded while placing bead in box");
+      std::cout << " Initialization error with random placement for particle " << i << " after " << tries << " attempts." << std::endl;
+      std::cout << " Starting chain again." << std::endl;
+      return false;
     }
 
     // calculate the x-, y- and z-coordinates of a point that lies on the
@@ -136,6 +171,8 @@ void init_pos(std::vector<Vec3> &pos, const Box &box, Random &mt,
     i++;
     tries = 0;
   }
+  //std::cout << " Generated random initial unbonded configuration." << std::endl;
+  return true;
 }
 
 // if two nonlocal beads which can form a transient bond happened to reach
@@ -147,7 +184,7 @@ void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
 
   const unsigned int nbeads = pos.size();
 
-  // reset bonds
+  // reset bonds to zero
   update_config = UpdateConfig();
 
   for (unsigned int i = 0; i + 3 < nbeads; i++) {
@@ -170,6 +207,10 @@ void init_update_config(std::vector<Vec3> &pos, UpdateConfig &update_config,
         assert(update_config.non_bonded(t_bond_mask));
         update_config.flip_bond(t_bond_mask);
         assert(update_config.bonded(t_bond_mask));
+#ifdef LOCAL_DEBUG
+        std::cout << " In init_update_config, transient bond between " << i << "-" << j << " formed since dist = "
+                    << sqrt(dist2) << " and rc = " << rc2val << std::endl;
+#endif
       }
     }
   }
@@ -472,9 +513,9 @@ void if_coll(const std::vector<Vec3> &pos, const std::vector<Vec3> &vel,
   const unsigned int nbonds = update_config.count_bonds();
   assert(nbonds <= max_nbonds);
 
-  if (stair2 && update_config.non_bonded(t_bond_mask)) {
-      std::cout << "STAIRCASED: " << "; rc2 inner = " << std::sqrt(rc2_inner) << "; rc2 outer = " << std::sqrt(rc2_outer) << std::endl;
-  }
+  //if (stair2 && update_config.non_bonded(t_bond_mask)) {
+  //    std::cout << "STAIRCASED: " << "; rc2 inner = " << std::sqrt(rc2_inner) << "; rc2 outer = " << std::sqrt(rc2_outer) << std::endl;
+ // }
 
   // if two nonlocal beads collide and form a bond (i and j must initially
   // not be bonded),
@@ -1054,7 +1095,12 @@ bool check_local_dist(const std::vector<Vec3> &pos_trial, const Box &box,
     box.mindist(dx, dy, dz);
 
     if (!check_bond(near_min2, near_max2, dx, dy, dz)) {
-      LOG_DEBUG("nearest neighbors " << i << " and " << i + 1 << " overlap");
+      LOG_DEBUG("check_local_dist: nearest neighbors " << i << " and " << i + 1 << " overlap");
+      std::cerr << " check_local_dist: nearest neighbors " << i << " and " << i + 1
+            << " overlap with dx = " << dx << " dy = " << dy << " dz = " << dz
+        << std::endl << " position " << i << " is " << pos_trial[i].x << " " << pos_trial[i].y << " " << pos_trial[i].z
+        << std::endl << " position " << i+1 << " is " << pos_trial[i+1].x << " " << pos_trial[i+1].y << " " << pos_trial[i+1].z
+        << std::endl;
       return false;
     }
   }

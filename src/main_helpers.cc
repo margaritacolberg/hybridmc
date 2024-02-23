@@ -11,6 +11,62 @@
 #include "main_helpers.h"
 double max_time = std::numeric_limits<double>::max();
 
+void checkEnsemble(System &sys, const Box &box, const NonlocalBonds &transient_bonds)
+{
+   //std::cout << " In check Ensemble, update_config is " << update_config.config << std::endl;
+
+   UpdateConfig test_config;
+   double count_bonded = 0.0;
+   for (int i=0;i<sys.ensembleSize;i++)
+   {
+        std::vector<Vec3> pos_i = sys.ensemble[i].getVec3Positions();
+        init_update_config(pos_i, test_config, box, transient_bonds) ;
+        if (test_config.config == 1) count_bonded += 1.0;
+        //std::cout << " Ensemble member " << i << " has config = " << test_config.config << std::endl;
+   }
+   std::cout << "  Fraction of bonded states in ensemble was " << count_bonded/sys.ensembleSize << std::endl;
+}
+
+void generateEnsemble(System &sys, Random &mt, const Param &p, const Box &box)
+{
+    std::cout << " generateEnsemble called with ensemble size of " << p.ensembleSize
+        << " for molecule of length " << p.nbeads << std::endl;
+    std::vector<Molecule> ensemble(p.ensembleSize);
+    std::vector<Vec3> pos( p.nbeads );
+
+    UpdateConfig test_config;
+
+    for (int i=0;i<p.ensembleSize;i++){
+        // set flag for random initialization success
+        bool found = false;
+        // set the maximum tries for a random initialization to 10
+        int max_init_count = 100;
+        // while random initialization not found and 10 attempts not hit, try random init
+        while (found == false && max_init_count){
+            found = init_pos(pos, box, mt, p);
+            max_init_count--;
+            test_config = config_int(pos, box, p.transient_bonds);
+            if (test_config.config != 0) {
+                found = false;
+                std::cout << " Generated initially bound configuration.  Skipping." << std::endl;
+            }
+        }
+        //std::cout << " Found configuration starting at " << pos[0] << " ending at " << pos[p.nbeads-1]
+        //    << std::endl;
+        Molecule mol(p.nbeads);
+        mol.setPositions(pos);
+
+        ensemble[i] = mol;
+        //mol.printPositions(i);
+    }
+
+    sys.ensemble = ensemble;
+    checkEnsemble(sys, box, p.transient_bonds);
+    //printEnsemble(sys.ensemble);
+
+}
+
+
 void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
                     UpdateConfig &update_config,
                     std::optional<std::string> input_name,
@@ -20,13 +76,48 @@ void initialize_pos(System &sys, Random &mt, const Param &p, const Box &box,
   if (snapshot_name && std::filesystem::exists(*snapshot_name)) {
     // overwrite existing entries in pos and s_bias vectors with read-in values
     // from hdf5 file
+    std::cout << " Reading in snapshot " << *snapshot_name << std::endl;
     read_snapshot(*snapshot_name, sys.pos, sys.s_bias, mt, update_config);
   } else if (input_name && std::filesystem::exists(*input_name)) {
+    std::cout << "Reading in input file " << *input_name << std::endl;
     read_input(*input_name, sys.pos);
+
+    if (sys.useEnsemble)
+    {
+        sys.ensemble = readMoleculesFromHDF5ByName(input_name->c_str());
+        checkEnsemble(sys, box, p.transient_bonds);
+    }
+
     init_update_config(sys.pos, update_config, box, p.transient_bonds);
     init_s(sys.s_bias, t_bonds);
   } else {
-    init_pos(sys.pos, box, mt, p);
+
+    // set flag for random initialization success
+    bool found = false;
+    // set the maximum tries for a random initialization to 10
+    int max_init_count = 10;
+    // while random initialization not found and 10 attempts not hit, try random init
+    while (found == false && max_init_count)
+    {
+        found = init_pos(sys.pos, box, mt, p);
+        max_init_count--;
+    };
+
+    if (sys.useEnsemble)
+    {
+        generateEnsemble(sys, mt, p, box); // generate the initial ensemble of configurations
+        checkEnsemble(sys, box, p.transient_bonds);
+    }
+
+    // do linear draw if above procedure failed
+
+    if (found == false) {
+
+        std::cout << " Calling linear chain draw." << std::endl;
+        draw_linear_chain(sys.pos,p);
+
+    }
+
     init_s(sys.s_bias, t_bonds);
   }
 }
@@ -38,12 +129,12 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
   LOG_DEBUG("New step initialization");
   if (!check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                         p.nnear_max2)) {
-    throw std::runtime_error("local beads overlap");
+    throw std::runtime_error("local beads overlap in initialize_system.");
   }
 
   if (!check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
                            p.transient_bonds, p.permanent_bonds)) {
-    throw std::runtime_error("nonlocal beads overlap");
+    throw std::runtime_error("nonlocal beads overlap in initialize_system");
   }
 
   if (cells.ncell < 4) {
@@ -96,12 +187,15 @@ void initialize_system(System &sys, Random &mt, const Param &p, const Box &box,
 
 void run_step(System &sys, const Param &p, const Box &box,
               UpdateConfig &update_config, CountBond &count_bond,
-              double wall_time, Cells &cells, EventQueue &event_queue,
+              Cells &cells, EventQueue &event_queue,
               const unsigned int step, double del_t) {
   LOG_DEBUG("step = " << step);
 
+  double zero_time = 0.0;
   // the current time interval the events are occurring in
   double step_time = step * del_t;
+
+//  std::cout << " At start of step " << step << " local clock time is " << sys.times[0] << std::endl;
 
   // while events are occurring in step_time,
   while (!event_queue.empty()) {
@@ -112,7 +206,7 @@ void run_step(System &sys, const Param &p, const Box &box,
     if (std::visit(
             [=](auto &&ev) {
               // check for monotonically increasing event times
-              assert(ev.t >= wall_time);
+              assert(ev.t >= zero_time);
               return ev.t > step_time;
             },
             event))
@@ -123,11 +217,10 @@ void run_step(System &sys, const Param &p, const Box &box,
     // process collision or cell crossing event
     std::visit(
         [&](auto &&ev) {
-          wall_time = ev.t;
-          LOG_DEBUG("wall time " << wall_time << " Queue Size is " << event_queue.size());
+          zero_time = ev.t;
+          LOG_DEBUG("wall time " << zero_time << " Queue Size is " << event_queue.size());
           process_event(ev, sys, p, box, event_queue, cells, update_config,
                         count_bond);
-          //if (wall_time > 15.1) {exit(0);}
         },
         event);
   }
@@ -145,13 +238,11 @@ void run_step(System &sys, const Param &p, const Box &box,
   assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
                              p.transient_bonds, p.permanent_bonds));
 
-  // update time
-  wall_time = step_time;
 }
 
 void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
                        UpdateConfig &update_config, CountBond &count_bond,
-                       double wall_time, unsigned int iter,
+                       unsigned int iter,
                        DistWriter &dist_writer, std::vector<double> &dist) {
 
   LOG_DEBUG("run_trajectory_eq");
@@ -160,20 +251,31 @@ void run_trajectory_eq(System &sys, Random &mt, const Param &p, const Box &box,
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
+    //set max time
     if (step != 0) {max_time = (step * p.del_t) + 0.001;}
 
-    LOG_DEBUG("max_time = " << max_time << " wall_time = " << wall_time);
+    LOG_DEBUG("max_time = " << max_time);
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
+       // to check energy conservation
+    const double tot_E_before =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
 
-    dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
-    dist_writer.append(dist);
+    const double tot_E_during =
+        compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+    const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
+    if (E_diff >= 1e-6) {
+      std::cout << E_diff << " energy difference in equilibration iter " << iter << " step = " << step << std::endl;
+      throw std::runtime_error("energy is not conserved in equilibration: steps = ");
+    }
 
   }
+
+  dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
+  if (sys.distanceWrite) dist_writer.append(dist);
 
   assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
                           p.nnear_max2));
@@ -187,10 +289,28 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
                     PosWriter &pos_writer, VelWriter &vel_writer,
                     ConfigWriter &config_writer, DistWriter &dist_writer,
                     std::set<Config> &store_config, ConfigInt &store_config_int,
-                    CountBond &count_bond, double wall_time,
-                    unsigned int iter) {
+                    CountBond &count_bond,
+                    unsigned int iter,bool storeTrajectory) {
 
   LOG_DEBUG("run_trajectory");
+   //  Do swap MC move if active
+  if (sys.useEnsemble and (update_config.config == 0) )
+  {
+      //std::cout << "  Doing swap MC move. " << std::endl;
+      swapMC(sys, mt, box, p);
+      UpdateConfig trial_config = config_int(sys.pos, box, p.transient_bonds);
+      if (trial_config.config != update_config.config)
+      {
+
+        std::ostringstream errorMessage;
+        errorMessage << "Possible error with swap move. State is " << trial_config.config
+                     << " and was " << update_config.config << std::endl;
+
+          throw std::runtime_error(errorMessage.str());
+      }
+  }
+
+
 
   // Do Molecular Dynamics moves
 
@@ -200,24 +320,34 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
   // until the p.nsteps-th interval is reached); each iteration of the
   // BIIIIIIIG loop will run until update_time and then dump the output to the
   // hdf5 file
+
+
+
   for (unsigned int step = iter * p.nsteps; step < (iter + 1) * p.nsteps;
        step++) {
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
+    //set max time
     if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+
+/*     std::cout << " step = " << step
+        << " max_time = " << max_time << " with nsteps = " << p.nsteps
+        << std::endl;*/
+
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     // to check energy conservation
     const double tot_E_before =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t);
-
-    dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
-    dist_writer.append(dist);
+    if (sys.distanceWrite)
+    {
+        dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, dist);
+        dist_writer.append(dist);
+    }
 
     if (step % p.write_step == 0) {
       // store the integer of the configuration and the time of the event
@@ -231,10 +361,15 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       // beads to file
       if (update_config.config == 1 &&
           store_config.insert(update_config.config).second) {
+        //
+        //  The insertion into the set of Config above fails if store_config already contains update_config.config (i.e 1 here)
+        //   The insert(obj).second is a boolean that is true if insertion is successful.
+        //
         pos_writer.append(sys.pos);
         vel_writer.append(sys.vel);
         config_writer.append(update_config.config);
       }
+
     }
 
     const double tot_E_during =
@@ -244,6 +379,19 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
+  }
+  //
+  //  Now add to ensemble if needed
+
+  if ( ((int)sys.nextEnsemble.size() < sys.ensembleSize) and sys.recordEnsemble )
+  {
+      if ( (update_config.config == 1) and (iter % p.ensemble_write_step == 0) ){
+            //std::cout << " @@@@@ Adding configuration to stored ensemble at iter " << iter
+            //    << " size is " << sys.nextEnsemble.size() << " of " << sys.ensembleSize << std::endl;
+            Molecule mol(p.nbeads);
+            mol.setPositions( sys.pos );
+            sys.nextEnsemble.push_back(mol);
+      }
   }
 
   // Do Monte Carlo moves (mc moves)
@@ -258,23 +406,31 @@ void run_trajectory(System &sys, Random &mt, const Param &p, const Box &box,
       }*/
   }
 
-  // store the integer of the configuration and the time of the event
-  store_config_int.emplace_back(update_config.config);
-  update_config_writer.config_int.emplace_back(update_config.config);
+  store_config_int.emplace_back(update_config.config); // record the current state in vector list
 
-  assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
-                          p.nnear_max2));
-  assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
-                             p.transient_bonds, p.permanent_bonds));
+  if (storeTrajectory)
+  {
 
-  // store the configurations in the hdf5 file
-  update_config_writer.append();
-  update_config_writer.clear();
+      update_config_writer.config_int.emplace_back(update_config.config);
+
+      assert(check_local_dist(sys.pos, box, p.near_min2, p.near_max2, p.nnear_min2,
+                              p.nnear_max2));
+      assert(check_nonlocal_dist(sys.pos, box, p.rh2, p.stair2,
+                                 p.transient_bonds, p.permanent_bonds));
+
+      // store the configurations in the hdf5 file
+      update_config_writer.append();
+      update_config_writer.clear();
+  }
 }
+
+//Config getState_from_pos()
+//{
+//}
 
 Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
                          const Box &box, UpdateConfig &update_config,
-                         CountBond &count_bond, double wall_time,
+                         CountBond &count_bond,
                          unsigned int iter_wl,
                          bool record_dists,
                          std::vector<double>* dist,
@@ -282,39 +438,43 @@ Config run_trajectory_wl(System &sys, Random &mt, const Param &p,
 
   LOG_DEBUG("run_trajectory_wl");
 
-  for (unsigned int step = iter_wl * p.nsteps_wl;
-       step < (iter_wl + 1) * p.nsteps_wl; step++) {
+  for (unsigned int step = iter_wl * p.nsteps_wl; step < (iter_wl + 1) * p.nsteps_wl; step++) {
 
     EventQueue event_queue;
     Cells cells{p.ncell, p.length / p.ncell};
 
-    //set max time based on wall_time
-    if (step != 0) {max_time = (step * p.del_t) + 0.001;}
+    //set max time
+    if (step != 0) {max_time = (step * p.del_t_wl) + 0.001;}
 
     initialize_system(sys, mt, p, box, update_config, cells, event_queue);
 
     const double tot_E_before =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
 
-    run_step(sys, p, box, update_config, count_bond, wall_time, cells,
+    run_step(sys, p, box, update_config, count_bond, cells,
              event_queue, step, p.del_t_wl);
 
-    if (record_dists) {
-      dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, *dist);
-      dist_writer->append(*dist);
-    }
 
     const double tot_E_during =
         compute_hamiltonian(sys.vel, sys.s_bias, update_config.config, p.m);
+
     const double E_diff = std::abs(1 - (tot_E_during / tot_E_before));
+
     if (E_diff >= 1e-6) {
       std::cout << E_diff << " energy difference" << std::endl;
       throw std::runtime_error("energy is not conserved");
     }
+
+    if (step % p.write_step == 0 and record_dists) {
+      dist_between_nonlocal_beads(sys.pos, box, p.nonlocal_bonds, *dist);
+      dist_writer->append(*dist);
+    }
+
   }
 
   return update_config.config;
 }
+
 
 // Wang-Landau algorithm for estimating entropy
 void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box,
@@ -324,9 +484,9 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
 
   // amount by which entropy is adjusted
   double gamma = p.gamma;
+  // initialize iteration counter at 0
   unsigned int iter_wl = 0;
   unsigned int native_ind = nstates - 1;
-  double wall_time = 0.0;
   bool record_dists = true;
 
   while (gamma > p.gamma_f) {
@@ -334,18 +494,19 @@ void wang_landau_process(System &sys, Random &mt, const Param &p, const Box &box
     for (unsigned int i = 0; i < nstates; i++) {
       // run trajectory to get final state
       Config state = run_trajectory_wl(sys, mt, p, box, update_config,
-                                       count_bond, wall_time, iter_wl, record_dists, &dist, &dist_writer);
-
+                                       count_bond, iter_wl, record_dists, &dist, &dist_writer);
       if (state == 0) {
         s_bias[native_ind] -= gamma;
       } else {
         s_bias[native_ind] += gamma;
       }
-    }
 
-        iter_wl += 1;
-        gamma = 1.0 / double(iter_wl);
+      // update the iteration counter
+      iter_wl += 1;
     }
+    // normalized gamma updated
+    gamma = double(nstates) / double(iter_wl);
+  }
 }
 
 void from_json(const nlohmann::json &json, Param &p) {
@@ -388,11 +549,13 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.nsteps_wl = json["nsteps_wl"];
     p.del_t_wl = json["del_t_wl"];
     p.gamma = json["gamma"];
+    p.gamma_f_screening = json["gamma_f_screening"];
     p.gamma_f = json["gamma_f"];
     p.write_step = json["write_step"];
     p.seeds = json["seeds"].get<std::vector<unsigned int>>();
     p.temp = json["temp"];
     p.mc_moves = json["mc_moves"];
+    p.total_iter_initial = json["total_iter_initial"];
     p.total_iter = json["total_iter"];
     p.total_iter_eq = json["total_iter_eq"];
     p.pos_scale = json["pos_scale"];
@@ -403,4 +566,8 @@ void from_json(const nlohmann::json &json, Param &p) {
     p.flip_req = json["flip_req"];
     p.fail_max = json["fail_max"];
     p.req_dists = json["req_dists"];
+    p.nsteps_max = json["nsteps_max"];
+    p.useEnsemble = json["useEnsemble"];
+    p.ensembleSize = json["ensembleSize"];
+    p.ensemble_write_step = json["ensemble_write_step"];
 }

@@ -11,9 +11,40 @@
 #include <cstring>
 #include <unistd.h>
 
+void write_ensemble(H5::H5Location &file, const System &sys) {
+
+  std::cout << "  Called new write_ensemble with ensemble size "
+        << sys.nextEnsemble.size() << std::endl;
+  // Write ensemble of structures
+
+  for (size_t i = 0; i < sys.nextEnsemble.size(); ++i) {
+        const std::string dataset_name = "molecule_" + std::to_string(i);
+        auto& molecule = sys.nextEnsemble[i];
+        auto positions = molecule.getPositions();
+        hsize_t dims[2] = {positions.size(), 3};
+
+        H5::DataSpace dataspace(2, dims);
+        H5::DataSet dataset = file.createDataSet(dataset_name,
+                                                  H5::PredType::NATIVE_DOUBLE, dataspace);
+
+        // Allocate memory for all positions
+        std::vector<double> allPositions(positions.size() * positions[0].size());
+        size_t posIndex = 0;
+        for (const auto& position : positions) {
+            for (const auto& coord : position) {
+                allPositions[posIndex++] = coord;
+            }
+        }
+
+        dataset.write(allPositions.data(), H5::PredType::NATIVE_DOUBLE);
+  }
+}
+
+
 void write_snapshot(const std::string snapshot_name,
                     const std::vector<Vec3> &pos,
-                    const std::vector<double> &s_bias, Random &mt,
+                    const std::vector<double> &s_bias,
+                    Random &mt,
                     UpdateConfig &update_config) {
   H5::H5File file(snapshot_name, H5F_ACC_TRUNC);
 

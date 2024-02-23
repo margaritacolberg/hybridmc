@@ -56,6 +56,8 @@ struct Param {
   unsigned int ncell;
   // number of time intervals
   unsigned int nsteps;
+  // upper limit for nsteps
+  unsigned int nsteps_max;
   unsigned int nsteps_eq;
   // step at which to write output to file
   unsigned int write_step;
@@ -71,12 +73,14 @@ struct Param {
   double gamma;
   // final gamma
   double gamma_f;
-
+  // gamma value for quick screening for stair
+  double gamma_f_screening;
   // temperature of the system
   double temp;
   // number of Monte Carlo crankshaft moves
   unsigned int mc_moves;
   // total number of iterations of MD trajectories and MC moves
+  unsigned int total_iter_initial;
   unsigned int total_iter;
   unsigned int total_iter_eq;
   // entropy scaling factors
@@ -95,6 +99,12 @@ struct Param {
   int fail_max;
   // number of distances to store
   int req_dists;
+  //  Flag to use ensemble MC
+  bool useEnsemble;
+  // Number of swap configurations in ensemble
+  int ensembleSize;
+  // step at which to write configuration to ensemble
+  unsigned int ensemble_write_step;
 };
 
 #endif
