@@ -5,8 +5,8 @@ package:
   version: {{ version }}
 
 source:
-  git_url: ../
-  #git_rev: release_hybridmc
+  git_url: https://github.com/Vigne-hub/hybridmc
+  git_rev: release_hybridmc
 
 build:
   number: 0
@@ -35,10 +35,11 @@ requirements:
     - nlopt
     - hybridmc_wang_landau
     - statsmodels
+    - sklearn
 
 test:
   commands:
-    - "python -c 'import py_tools; import py_bin'"
+    - "python -c 'import py_tools; from py_bin import hmc_run'"
 
 about:
   home: https://github.com/Vigne-hub/hybridmc
