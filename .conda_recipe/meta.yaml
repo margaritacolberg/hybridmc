@@ -10,7 +10,7 @@ source:
 
 build:
   number: 0
-  script: "make release && {{ PYTHON }} setup.py install"
+  script: bash $RECIPE_DIR/build.sh
 
 requirements:
   build:
