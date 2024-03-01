@@ -55,9 +55,9 @@ def main(args):
     # note that the last function evaluation during minimization does not
     # necessarily produce the final optimized values in e
     e = minimize.minimize(f_wrapped, e, method=nlopt.GN_DIRECT_L,
-            jac=df_wrapped, ub=ub, lb=lb)
+                          jac=df_wrapped, ub=ub, lb=lb)
     e = minimize.minimize(f_wrapped, e, method=nlopt.LD_LBFGS, jac=df_wrapped,
-            ub=ub, lb=lb)
+                          ub=ub, lb=lb)
 
     P_0 = np.exp(s_bias[0])
     P_native = np.exp(-beta*args.e_native + s_bias[nstates-1])
@@ -108,16 +108,16 @@ def f(src, e, beta, e_unfolded, e_native, s_bias, nstates):
 
         if int_i == 0:
             K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                    e_unfolded, e[int_j-1], s_bias[int_i], s_bias[int_j],
-                    t_ind)
+                                                         e_unfolded, e[int_j-1], s_bias[int_i], s_bias[int_j],
+                                                         t_ind)
         elif int_j == nstates-1:
             K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                    e[int_i-1], e_native, s_bias[int_i], s_bias[int_j],
-                    t_ind)
+                                                         e[int_i-1], e_native, s_bias[int_i], s_bias[int_j],
+                                                         t_ind)
         else:
             K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                    e[int_i-1], e[int_j-1], s_bias[int_i], s_bias[int_j],
-                    t_ind)
+                                                         e[int_i-1], e[int_j-1], s_bias[int_i], s_bias[int_j],
+                                                         t_ind)
 
         K_ji.append(K_elem_ji)
         K_ij.append(K_elem_ij)
@@ -166,25 +166,25 @@ def df(src, e, beta, e_unfolded, e_native, s_bias, nstates):
 
             if int_i == 0:
                 K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                        e_unfolded, e[int_j-1], s_bias[int_i], s_bias[int_j],
-                        t_ind)
+                                                             e_unfolded, e[int_j-1], s_bias[int_i], s_bias[int_j],
+                                                             t_ind)
                 dK_elem_ji, dK_elem_ij = matrix_element.dK_elem(file_path,
-                        beta, e_unfolded, e[int_j-1], s_bias[int_i],
-                        s_bias[int_j], int_i, int_j, k, t_ind)
+                                                                beta, e_unfolded, e[int_j-1], s_bias[int_i],
+                                                                s_bias[int_j], int_i, int_j, k, t_ind)
             elif int_j == nstates-1:
                 K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                        e[int_i-1], e_native, s_bias[int_i], s_bias[int_j],
-                        t_ind)
+                                                             e[int_i-1], e_native, s_bias[int_i], s_bias[int_j],
+                                                             t_ind)
                 dK_elem_ji, dK_elem_ij = matrix_element.dK_elem(file_path,
-                        beta, e[int_i-1], e_native, s_bias[int_i],
-                        s_bias[int_j], int_i, int_j, k, t_ind)
+                                                                beta, e[int_i-1], e_native, s_bias[int_i],
+                                                                s_bias[int_j], int_i, int_j, k, t_ind)
             else:
                 K_elem_ji, K_elem_ij = matrix_element.K_elem(file_path, beta,
-                        e[int_i-1], e[int_j-1], s_bias[int_i], s_bias[int_j],
-                        t_ind)
+                                                             e[int_i-1], e[int_j-1], s_bias[int_i], s_bias[int_j],
+                                                             t_ind)
                 dK_elem_ji, dK_elem_ij = matrix_element.dK_elem(file_path,
-                        beta, e[int_i-1], e[int_j-1], s_bias[int_i],
-                        s_bias[int_j], int_i, int_j, k, t_ind)
+                                                                beta, e[int_i-1], e[int_j-1], s_bias[int_i],
+                                                                s_bias[int_j], int_i, int_j, k, t_ind)
 
             K_ji.append(K_elem_ji)
             K_ij.append(K_elem_ij)

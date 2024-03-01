@@ -1,5 +1,6 @@
 import argparse
-from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt, constructPaths
+from hybridmc.py_tools.post_processing import avg_s_bias
+from hybridmc.py_tools.post_processing import diff_s_bias, constructPaths, mfpt
 
 
 def main():

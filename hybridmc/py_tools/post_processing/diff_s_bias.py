@@ -16,7 +16,7 @@ from multiprocessing import cpu_count
 from collections import OrderedDict
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
-    from py_tools.helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
+    from hybridmc.py_tools.helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
 else:
     from ..helpers.bootstrap_helpers import ConfigEntropyDiffBoot, StairConfigEntropyDiffBoot
 

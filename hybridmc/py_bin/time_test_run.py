@@ -6,8 +6,9 @@ import argparse
 import shutil
 import argparse
 import os
-from py_tools.helpers.run_helpers import init_json
-from py_tools.post_processing import diff_s_bias, avg_s_bias, mfpt
+from hybridmc.py_tools.helpers.run_helpers import init_json
+from hybridmc.py_tools.post_processing import avg_s_bias
+from hybridmc.py_tools.post_processing import diff_s_bias, mfpt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -88,7 +89,7 @@ def hmc(args):
     init_json(init_json_args)
 
     # Move up from the directory with simulation results
-    os.chdir("../")
+    os.chdir("../../")
 
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     shutil.rmtree(tmp_dir_name, ignore_errors=True, onerror=None)

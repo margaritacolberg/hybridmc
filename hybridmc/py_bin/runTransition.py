@@ -7,9 +7,9 @@
 # note that run.py creates a new dir which it enters to generate the output
 
 import argparse
-from py_tools.helpers.data_processing_helpers import *
-from py_tools.helpers.run_layer_helpers import run_sim, run_stairs
-from py_tools.post_processing import diff_s_bias, mfpt, get_error
+from hybridmc.py_tools.helpers.data_processing_helpers import *
+from hybridmc.py_tools.helpers.run_layer_helpers import run_sim, run_stairs
+from hybridmc.py_tools.post_processing import get_error, diff_s_bias, mfpt
 import multiprocessing as mp
 
 
@@ -32,7 +32,7 @@ def run_TransitionProcess(exe_name, data, input_hdf5, output_name, stair_bp, sta
         run_sim(data, input_hdf5, output_name, exe_name)
 
     post_processing()
-    os.chdir('../')
+    os.chdir('../../')
 
 
 def get_transition_data(output_name, input_name, exe_name, data, input_hdf5, stair_bp, stair_rc_list, i):

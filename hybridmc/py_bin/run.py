@@ -24,8 +24,9 @@ import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from py_tools.helpers.run_helpers import init_json
-from py_tools.post_processing import avg_s_bias, diff_s_bias, mfpt, constructPaths
+from hybridmc.py_tools.helpers.run_helpers import init_json
+from hybridmc.py_tools.post_processing import avg_s_bias
+from hybridmc.py_tools.post_processing import diff_s_bias, constructPaths, mfpt
 
 
 def main(run_params):
@@ -62,7 +63,7 @@ def main(run_params):
     post_processing()
 
     # Move up from the directory with simulation results
-    os.chdir("../")
+    os.chdir("../../")
 
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)
