@@ -15,11 +15,6 @@ project(hardspheres LANGUAGES CXX)
 # find needed packages
 find_package(Boost REQUIRED COMPONENTS program_options unit_test_framework)
 find_package(HDF5 REQUIRED COMPONENTS CXX)
-find_package (Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 REQUIRED)
-
-# include python headers
-include_directories(${Python3_INCLUDE_DIRS})
 
 # add required directory to module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
