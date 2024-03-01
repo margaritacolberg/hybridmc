@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 # Define the directory where your executables are located
-scripts_dir = 'py_bin'
+scripts_dir = 'hybridmc/py_bin'
 # List all the Python scripts in that directory
 scripts = [os.path.join(scripts_dir, f) for f in os.listdir(scripts_dir) if f.endswith('.py')]
 
