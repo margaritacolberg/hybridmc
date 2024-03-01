@@ -1,6 +1,11 @@
 import os
 from setuptools import setup, find_packages
 
+# Define the directory where your executables are located
+scripts_dir = 'py_bin'
+# List all the Python scripts in that directory
+scripts = [os.path.join(scripts_dir, f) for f in os.listdir(scripts_dir) if f.endswith('.py')]
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -12,5 +17,6 @@ setup(
     long_description="",
     zip_safe=False,
     python_requires=">=3.11",
-    packages=find_packages()
+    packages=find_packages(),
+    scripts=scripts
 )
