@@ -12,5 +12,5 @@ setup(
     long_description="",
     zip_safe=False,
     python_requires=">=3.8",
-    packages=find_packages())
+    packages=find_packages()
 )
