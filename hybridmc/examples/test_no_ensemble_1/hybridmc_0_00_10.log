@@ -1,0 +1,40 @@
+git commit 1a58d87574a3e84f6380d3fec9d82eecf7949bde-DIRTY
+Reading in input file hybridmc_0_00_10_1.8.h5
+ Starting convergence loop with Sbias values = 3 2.7791 recorded distances = 20000
+ Recording distances since size  = 20000  req_dists = 50000
+entropy of 0 is 0.2034 with count 393
+entropy of 1 is 0 with count 407
+Acceptable uniform test: g_val 0.245013, g_crit 1.3233, p_val 0.620609
+  Too few distances recorded for convergence: number is now 36000
+ In iteration 0 flip rate = 17.1438 done_flip = 1 done_g = 1 done_distances = 0 done_ensemble = 0
+      ensemble size = 43  distances recorded = 36000
+
+ Recording distances since size  = 36000  req_dists = 50000
+entropy of 0 is 0.2159 with count 405
+entropy of 1 is 0 with count 395
+Acceptable uniform test: g_val 0.125003, g_crit 1.3233, p_val 0.72367
+ In iteration 1 flip rate = 17.14 done_flip = 1 done_g = 1 done_distances = 1 done_ensemble = 0
+      ensemble size = 89  distances recorded = 52000
+
+entropy of 0 is 0.233402 with count 407
+entropy of 1 is 0 with count 393
+Acceptable uniform test: g_val 0.245013, g_crit 1.3233, p_val 0.620609
+ In iteration 2 flip rate = 17.375 done_flip = 1 done_g = 1 done_distances = 1 done_ensemble = 1
+      ensemble size = 100  distances recorded = 52000
+
+ Average s_bias is 0.217567  standard deviation = 0.0150705 for 3 values.
+
+ Starting refined sampling with 3200 states to get good statistics with Sbias[0] = 0.217567 time steps per trajectory = 20
+Rejected uniform test: g_val 4.8062, g_crit 1.3233, p_val 0.0283575
+entropy of 0 is 0.178798 with count 1538
+entropy of 1 is 0 with count 1662
+Rejected uniform test: g_val 2.20525, g_crit 1.3233, p_val 0.137541
+entropy of 0 is 0.205054 with count 1642
+entropy of 1 is 0 with count 1558
+Rejected uniform test: g_val 1.90144, g_crit 1.3233, p_val 0.167917
+entropy of 0 is 0.229434 with count 1639
+entropy of 1 is 0 with count 1561
+Acceptable uniform test: g_val 0.781282, g_crit 1.3233, p_val 0.376749
+entropy of 0 is 0.260686 with count 1625
+entropy of 1 is 0 with count 1575
+  Called new write_ensemble with ensemble size 100

@@ -161,10 +161,11 @@ def main(args):
 
 
 if __name__ == '__main__':
+    from shutil import which
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', help='master h5 input file', default='hybridmc_3_0011100000_0011110000.h5')
     parser.add_argument('--json', help='master json input file', default='hybridmc_4_0011110000_0011110010.json')
-    parser.add_argument('--exe', help='hybridmc executable', default="../../release/hybridmc")
+    parser.add_argument('--exe', help='hybridmc executable', default=which("hybridmc.exe"))
 
     parser.add_argument('--n_iterations', help='number of iterations to run the transition for averaging',
                         type=int, default=4)

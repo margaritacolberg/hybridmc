@@ -59,6 +59,9 @@ def process(run_params):
     # create the temporary directory to run the simulations
     if not os.path.isdir(tmp_dir_name):
         os.mkdir(tmp_dir_name)
+
+    # save current base directory containing simulation results directory to return to after simulation completed
+    base_dir = os.getcwd()
     os.chdir(tmp_dir_name)
 
     # Create dictionary that will have arguments passed to init_json
@@ -74,8 +77,8 @@ def process(run_params):
     # Calculate diff sbias, avg sbias and mfpt using simulation results
     post_processing()
 
-    # Move up from the directory with simulation results
-    os.chdir("../../")
+    # Move back to the base directory
+    os.chdir(base_dir)
 
     # Rename the directory -- remove the .tmp tag to show that this simulation has run completely with success
     os.rename(src=tmp_dir_name, dst=dir_name)

@@ -39,7 +39,7 @@
     "req_dists": 50000,
     "rc_target_min_percentile": 0.025,
     "nsteps_max": 1000,
-    "useEnsemble": true,
+    "useEnsemble": false,
     "ensembleSize": 100,
     "ensemble_write_step": 10,
     "nboot": 5
