@@ -144,7 +144,7 @@ def main(run_params):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', help='master json input file', default='test.json')
-    parser.add_argument('--exe', help='hybridmc executable', default="hybridmc.exe")
+    parser.add_argument('--exe', help='hybridmc executable', default=shutil.which("hybridmc.exe"))
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default="1", type=str)
     parser.add_argument('-tov', '--tmp_old_version',
