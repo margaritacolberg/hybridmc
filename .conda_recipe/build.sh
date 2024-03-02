@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Change to the hmc directory and run make
-cd hybridmc
+cd "$SRC_DIR"/hybridmc || exit
 make
 
 # run setup.py
