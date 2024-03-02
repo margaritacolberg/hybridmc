@@ -35,7 +35,7 @@ requirements:
     - nlopt
     - hybridmc_wang_landau
     - statsmodels
-    - sklearn
+    - scikit-learn
 
 test:
   commands:
