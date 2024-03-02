@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Change to the hmc directory and run make
-cd hybridmc
-make
+cd hybridmc || exit
+make release
 
-# run setup.py
+# Enter back to top level directory and run setup.py
+cd ../
 $PYTHON ../setup.py install
