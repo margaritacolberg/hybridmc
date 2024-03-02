@@ -6,4 +6,4 @@ make release
 
 # Enter back to top level directory and run setup.py
 cd ../
-$PYTHON ../setup.py install
+$PYTHON setup.py install
