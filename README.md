@@ -1,7 +1,6 @@
 # HybridMC: Hybrid Monte Carlo Protein Folding
-
-[![build workflow status](https://github.com/margaritacolberg/hybridmc/actions/workflows/build.yml/badge.svg)](https://github.com/margaritacolberg/hybridmc/actions/workflows/build.yml?query=branch:main)
-[![format workflow status](https://github.com/margaritacolberg/hybridmc/actions/workflows/format.yml/badge.svg)](https://github.com/margaritacolberg/hybridmc/actions/workflows/format.yml?query=branch:main)
+![format](https://anaconda.org/vignesh229/hybridmc/badges/version.svg)
+![format](https://anaconda.org/vignesh229/hybridmc/badges/platforms.svg)
 
 HybridMC simulates the event-driven dynamics of coarse-grained protein folding.
 The entropy and mean first passage times (MFPT) of each bond forming or
