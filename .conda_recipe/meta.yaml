@@ -38,8 +38,8 @@ requirements:
     - scikit-learn
 
 test:
-  commands:
-    - "python -c 'import py_tools; from py_bin import hmc_run'"
+  imports:
+    - hybridmc.py_bin.hmc_run
 
 about:
   home: https://github.com/Vigne-hub/hybridmc
