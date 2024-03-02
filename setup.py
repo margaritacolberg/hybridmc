@@ -4,10 +4,8 @@ from setuptools import setup, find_packages
 # Define the directory where your executables are located
 scripts_dir = 'hybridmc/py_bin'
 
-# List all the Python scripts in that directory
-scripts = [os.path.join(scripts_dir, f) for f in os.listdir(scripts_dir) if f.endswith('.py')]
-# Exclude the __init__.py file as its empty
-scripts.remove(os.path.join(scripts_dir, '__init__.py'))
+# List all the Python scripts in that directory except __init__.py which is empty
+scripts = [os.path.join(scripts_dir, f) for f in os.listdir(scripts_dir) if f != '__init__.py' and f.endswith('.py')]
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.

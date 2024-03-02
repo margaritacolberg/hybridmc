@@ -29,7 +29,21 @@ from hybridmc.py_tools.post_processing import avg_s_bias
 from hybridmc.py_tools.post_processing import diff_s_bias, constructPaths, mfpt
 
 
-def main(run_params):
+class RunParams:
+    """
+    Class to hold the parameters of the hybridmc simulation
+    """
+    def __init__(self, json, exe, old_version="1", tmp_old_version=""):
+        self.json = json
+        self.exe = exe
+        self.old_version = old_version
+        self.tmp_old_version = tmp_old_version
+
+
+def process(run_params):
+    """
+    Function to run hybridmc simulation with given RunParams
+    """
     file_name = os.path.basename(run_params.json)
     dir_name = os.path.splitext(file_name)[0]
     tmp_dir_name = f'{dir_name}.tmp'
@@ -49,11 +63,9 @@ def main(run_params):
 
     # Create dictionary that will have arguments passed to init_json
     init_json_args = {"json": run_params.json, "seed_increment": 1, "exe": run_params.exe}
-
     nproc = os.cpu_count()
     if os.getenv('SLURM_CPUS_PER_TASK'):
         nproc = int(os.getenv('SLURM_CPUS_PER_TASK'))
-
     init_json_args["nproc"] = nproc
 
     # run the simulations for the layers
@@ -70,6 +82,12 @@ def main(run_params):
 
 
 def check_dir(dir_name, old_version_code=""):
+    """
+    Checks if the directory exists and do what is specified to do with it:
+    - if old_version_code is not given then default to "" then continue last simulation
+    - if old_version_code is "delete" restart simulation and delete last results
+    - if old_version_code is a number then restart simulation, but tag last results with this number and keep it
+    """
     if os.path.isdir(dir_name):
 
         if old_version_code == "":
@@ -101,6 +119,9 @@ def check_dir(dir_name, old_version_code=""):
 
 
 def post_processing():
+    """
+    Post-processing data analysis routine using hybridmc simulation results.
+    """
     # Obtain the differences in the sbias for each transition
     diff_s_bias.get_diff_sbias(out_csv='diff_s_bias.csv')
     # Obtain the average sbias for each bonding state
@@ -113,10 +134,17 @@ def post_processing():
     constructPaths.diff_sbias_state_function_check(diff_s_bias_csv='diff_s_bias.csv', csv_out="diff_check.csv")
 
 
+def main(run_params):
+    """
+    Run hybridmc from command line arguments
+    """
+    process(run_params)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json', help='master json input file', default='test.json')
-    parser.add_argument('--exe', help='hybridmc executable', default="../release/hybridmc")
+    parser.add_argument('--exe', help='hybridmc executable', default="hybridmc.exe")
     parser.add_argument('-ov', '--old_version', help='set version code for old structure simulation run if needed',
                         default="1", type=str)
     parser.add_argument('-tov', '--tmp_old_version',
@@ -125,4 +153,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(args)
+    # Create an instance of RunParams from argparse arguments and pass to main
+    main(run_params=RunParams(
+        json=args.json, exe=args.exe,
+        old_version=args.old_version, tmp_old_version=args.tmp_old_version
+                   ))

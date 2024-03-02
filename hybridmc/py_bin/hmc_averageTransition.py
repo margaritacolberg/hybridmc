@@ -1,8 +1,9 @@
-
 import glob
 from pandas import read_csv
 import csv
 import numpy as np
+
+
 def compute_averages():
     src_bias, src_mfpt = '*/diff_s_bias.csv', '*/mfpt.csv'
 
@@ -27,16 +28,15 @@ def compute_averages():
         percent_rel_e = 100 * np.sqrt(var) / mean
         output.append([mean, var, percent_rel_e])
 
-
     csv_name = 'summary_data.csv'
     with open(csv_name, 'w') as output_csv:
         writer = csv.writer(output_csv)
         writer.writerows(output)
 
 
-
 def main():
     compute_averages()
+
 
 if __name__ == '__main__':
     main()
