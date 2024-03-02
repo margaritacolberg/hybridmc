@@ -5,4 +5,4 @@ cd "$SRC_DIR"/hybridmc || exit
 make
 
 # run setup.py
-$PYTHON ../setup.py install
+cd ../ && $PYTHON ../setup.py install
