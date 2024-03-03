@@ -35,7 +35,7 @@ complicated.
 
 ## Installing Package
 
-This package can be installed using **`conda install hybridmc -c conda-forge -c vignesh229`** to directly obtain a command called **hmc_run** Which can be used simply as **`hmc_run --json INPUT_JSON_FILE`**. This also installs all the python utilities that can be imported from a python shell.
+This package can be installed using **`conda install hybridmc -c conda-forge -c vignesh229`** to directly obtain a command called **hmc_run** which can be used simply as **`hmc_run --json INPUT_JSON_FILE`**. This also installs all the python utilities that can be imported from a python shell.
 
 ## C++ Program Details for Manual Install
 **NOTE:** This is not the recommended approach, proceeed to use this with caution.
