@@ -149,6 +149,8 @@ have the following parameters:
 
     "gamma_f": 0.001, -- final adjustment factor for wang landau
 
+    "gamma_f_screening": 0.0005, -- wang landau screening adjustment factor
+
     "seeds": [3, 1], -- seeds for random number generator
 
     "temp": 1.0, -- temperature
@@ -159,9 +161,9 @@ have the following parameters:
     
     "total_iter_eq": 100, -- total number of iterations for equilibration
 
-    "pos_scale": 0.5, --
+    "pos_scale": 0.5,
 
-    "neg_scale": 0.1, --
+    "neg_scale": 0.1,
 
     "sig_level": 0.05, -- significance level for the g-test
 
@@ -185,6 +187,13 @@ have the following parameters:
     "D_std_perc": 1 -- Assumed % error in D_mean.
 
     "eps": 3 -- The energy of the bond in kT units. Used to calculate reates and probability.
+
+    "useEnsemble": false -- Experimental feature switch: swapping states during initialization
+    
+    "ensembleSize": 100, -- If use enemble how many states to choose from
+    
+    "ensemble_write_step": 10 -- If use ensemble, steps after which to swap in new state
+
 }
 
 ### Calculate Entropy
@@ -199,6 +208,10 @@ To find which transition gives smallest entropy difference, use
 `min_diff_s_bias.py`. To get percent error for the entropy of one transition,
 use `get_error_s_bias.py`.
 
+In addition, an output for a state function check if provided for the diff_s_bias (diff_check.csv)
+with information about if the direct path value is significantly different
+than an average value using multiple paths for the same transition.
+
 ### Calculate MFPT
 
 To calculate MFPT for a single transition manually, use `mfpt.py`. To calculate MFPT for
@@ -207,12 +220,6 @@ step of staircase into a single MFPT for the transition, use
 `mfpt_for_stair.py`.
 
 Again, as with the entropy, this is done automatically when run.py is executed.
-
-### Rerun Files
-
-To move JSON and HDF5 files needed for rerunning transitions to rerun dir, use
-`get_rerun_files.py`. To rerun files that were moved to rerun dir, use
-`rerun.py`.
 
 ### Calculate Energy and Folding Time
 

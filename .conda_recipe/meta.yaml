@@ -41,6 +41,10 @@ test:
   imports:
     - hybridmc.py_bin.hmc_run
 
+exclude:
+  - hybridmc/examples*
+  - .git*
+
 about:
   home: https://github.com/Vigne-hub/hybridmc
   license: MIT
