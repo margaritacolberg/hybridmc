@@ -59,10 +59,10 @@ This package can be installed using `conda install vignesh229::hybridmc` to dire
 
 All of these can be obtained through the conda environment yaml file: hybridmc.yaml
 
-To create the conda environment, run
+You can get these within a conda environment by running:
 
 ```
-conda env create -f hybridmc.yaml
+conda install cmake hdf5 ninja cxx-compiler boost -c conda-forge
 ```
 
 ### Commands for Compiling
