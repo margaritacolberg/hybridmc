@@ -1,4 +1,5 @@
 # HybridMC: Hybrid Monte Carlo Protein Folding
+
 ![format](https://anaconda.org/vignesh229/hybridmc/badges/version.svg)
 ![format](https://anaconda.org/vignesh229/hybridmc/badges/platforms.svg)
 
@@ -29,7 +30,12 @@ complicated.
 
   * `crambin_s_bias_mfpt`: biased entropy and MPFT results for crambin
 
-## C++ Program Details
+## Installing Package
+
+This package can be installed using `conda install vignesh229::hybridmc` to directly obtain a command called **hmc_run** WHich can be used simply as `hmc_run --json INPUT_JSON_FILE`. This also installs all the python utilities that can be imported from a python shell.
+
+## C++ Program Details for Manual Install
+**NOTE:** This is not the recommended approach, proceeed to use this with caution.
 
 ### Prerequisite Software
 
