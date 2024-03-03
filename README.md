@@ -176,20 +176,20 @@ have the following parameters:
 
     "fail_max": 5, -- maximum number of times to fail to find a valid configuration before increasing the numebr of iterations
 
-    "WL_sbias": 6.0 -- the sbias value for a wang landau simulation result beyond which a configuration is deemed to need staircasing 
+    "WL_sbias": 6.0, -- the sbias value for a wang landau simulation result beyond which a configuration is deemed to need staircasing 
 
-    "req_dists": 50000 -- minimum distances used for MFPT. Enforced in the hybridmc c++ source: it is a convergence criterion.
+    "req_dists": 50000, -- minimum distances used for MFPT. Enforced in the hybridmc c++ source: it is a convergence criterion.
 
-    "rc_target_min_percentile": 0.025 -- Determines the lcoation of rc for the stair. Look at 2.5 percentile rc value from the rc explored
+    "rc_target_min_percentile": 0.025, -- Determines the lcoation of rc for the stair. Look at 2.5 percentile rc value from the rc explored
                                             during simulation.
 
-    "D_mean": 0.046 -- Estimated diffusion coefficent mean value. Used for rate calculation.
+    "D_mean": 0.046, -- Estimated diffusion coefficent mean value. Used for rate calculation.
     
-    "D_std_perc": 1 -- Assumed % error in D_mean.
+    "D_std_perc": 1, -- Assumed % error in D_mean.
 
-    "eps": 3 -- The energy of the bond in kT units. Used to calculate reates and probability.
+    "eps": 3, -- The energy of the bond in kT units. Used to calculate reates and probability.
 
-    "useEnsemble": false -- Experimental feature switch: swapping states during initialization
+    "useEnsemble": false, -- Experimental feature switch: swapping states during initialization
     
     "ensembleSize": 100, -- If use enemble how many states to choose from
     
