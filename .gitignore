@@ -1,13 +1,1 @@
-/hybridmc/examples/crambin/
-/hybridmc/examples/simple_stair_1_v1/
-/hybridmc/examples/simple_stair_0.tmp/
-/hybridmc/examples/test/
-/hybridmc/examples/test.valid/
-/hybridmc/examples/test_4bond/
-/hybridmc/examples/test_4bond_1/
-/hybridmc/examples/test_st/
-/hybridmc/examples/test_st_lessstair/
-/hybridmc/examples/test_st_morestair/
-/hybridmc/examples/test_st_morestair_old/
-/hybridmc/examples/test_st_morestair_old_2/
-/hybridmc/examples/test_st_normal/
+/hybridmc/examples/*/
