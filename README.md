@@ -2,6 +2,7 @@
 
 [![Anaconda-Server Badge](https://anaconda.org/vignesh229/hybridmc/badges/version.svg)](https://anaconda.org/vignesh229/hybridmc)
 [![Anaconda-Server Badge](https://anaconda.org/vignesh229/hybridmc/badges/platforms.svg)](https://anaconda.org/vignesh229/hybridmc)
+[![Publish Conda Package on Linux](https://github.com/Vigne-hub/hybridmc/actions/workflows/conda_publish_linux.yml/badge.svg)](https://github.com/Vigne-hub/hybridmc/actions/workflows/conda_publish_linux.yml)
 
 HybridMC simulates the event-driven dynamics of coarse-grained protein folding.
 The entropy and mean first passage times (MFPT) of each bond forming or
