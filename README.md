@@ -23,8 +23,10 @@ complicated.
   * `examples`: JSON inputs which specify protein configuration and Bash
     scripts for running HybridMC
 
-  * `tools`: Python scripts for running HybridMC and extracting data such as
+  * `py_tools`: Python module with some utilituy functions to automate running HybridMC and extracting data such as
     the MFPT
+
+  * `py_bin`: Python scripts for running HybridMC
 
   * `tree`: C++ and Bash scripts for generating tree plots
 
