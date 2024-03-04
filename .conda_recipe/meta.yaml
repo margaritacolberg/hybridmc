@@ -16,16 +16,16 @@ requirements:
     - {{ compiler('cxx') }}  # Needed for compiling C++ code
     - cmake  # For running CMake scripts
     - ninja  # Build system used by CMake for faster builds
-    - python >=3.11  # Python is needed for running setup.py
+    - python
     - setuptools  # setuptools is required for setup.py
 
   host:
     - boost  # Your project links against Boost, so it needs to be in the host to be found by CMake
     - hdf5  # Similarly, HDF5 needs to be in the host to link against it
-    - python >=3.11  # Ensure Python version matches for ABI compatibility
+    - python
 
   run:
-    - python >=3.11  # Python is obviously needed at runtime
+    - python
     - numpy  # Assuming your package uses NumPy at runtime
     - pandas
     - h5py
