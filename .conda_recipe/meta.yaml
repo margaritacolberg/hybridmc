@@ -36,6 +36,7 @@ requirements:
     - hybridmc_wang_landau
     - statsmodels
     - scikit-learn
+    - boost
 
 test:
   imports:
