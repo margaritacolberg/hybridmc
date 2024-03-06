@@ -1,0 +1,34 @@
+git commit 1a58d87574a3e84f6380d3fec9d82eecf7949bde-DIRTY
+Reading in input file hybridmc_0_00_01.h5
+ Starting convergence loop with Sbias values = 3 1.5324 recorded distances = 20000
+ Recording distances since size  = 20000  req_dists = 50000
+entropy of 0 is 1.53772 with count 428
+entropy of 1 is 0 with count 372
+Rejected uniform test: g_val 3.92321, g_crit 1.3233, p_val 0.0476239
+  Too few distances recorded for convergence: number is now 36000
+ In iteration 0 flip rate = 1.82875 done_flip = 1 done_g = 0 done_distances = 0 done_ensemble = 0
+      ensemble size = 41  distances recorded = 36000
+
+ Recording distances since size  = 36000  req_dists = 50000
+entropy of 0 is 1.62796 with count 436
+entropy of 1 is 0 with count 364
+Rejected uniform test: g_val 6.48878, g_crit 1.3233, p_val 0.0108558
+ In iteration 1 flip rate = 1.73625 done_flip = 1 done_g = 0 done_distances = 1 done_ensemble = 0
+      ensemble size = 78  distances recorded = 52000
+
+entropy of 0 is 1.63046 with count 401
+entropy of 1 is 0 with count 399
+Acceptable uniform test: g_val 0.00500001, g_crit 1.3233, p_val 0.943628
+ In iteration 2 flip rate = 1.675 done_flip = 1 done_g = 1 done_distances = 1 done_ensemble = 1
+      ensemble size = 100  distances recorded = 52000
+
+ Average s_bias is 1.63046  standard deviation = 0 for 1 values.
+
+ Starting refined sampling with 3200 states to get good statistics with Sbias[0] = 1.63046 time steps per trajectory = 20
+Rejected uniform test: g_val 6.84744, g_crit 1.3233, p_val 0.00887683
+entropy of 0 is 1.58418 with count 1526
+entropy of 1 is 0 with count 1674
+Acceptable uniform test: g_val 0.245003, g_crit 1.3233, p_val 0.620616
+entropy of 0 is 1.56668 with count 1586
+entropy of 1 is 0 with count 1614
+  Called new write_ensemble with ensemble size 100

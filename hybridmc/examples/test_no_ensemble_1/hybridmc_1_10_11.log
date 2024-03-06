@@ -1,0 +1,43 @@
+git commit 1a58d87574a3e84f6380d3fec9d82eecf7949bde-DIRTY
+Reading in input file hybridmc_0_00_10.h5
+ Starting convergence loop with Sbias values = 3 0.510808 recorded distances = 20000
+ Recording distances since size  = 20000  req_dists = 50000
+entropy of 0 is 2.3838 with count 358
+entropy of 1 is 0 with count 442
+Rejected uniform test: g_val 8.83628, g_crit 1.3233, p_val 0.00295301
+  Too few distances recorded for convergence: number is now 36000
+ In iteration 0 flip rate = 1.76 done_flip = 1 done_g = 0 done_distances = 0 done_ensemble = 0
+      ensemble size = 40  distances recorded = 36000
+
+ Recording distances since size  = 36000  req_dists = 50000
+entropy of 0 is 2.3738 with count 396
+entropy of 1 is 0 with count 404
+Acceptable uniform test: g_val 0.0800013, g_crit 1.3233, p_val 0.777296
+ In iteration 1 flip rate = 1.74625 done_flip = 1 done_g = 1 done_distances = 1 done_ensemble = 0
+      ensemble size = 78  distances recorded = 52000
+
+entropy of 0 is 2.29615 with count 369
+entropy of 1 is 0 with count 431
+Rejected uniform test: g_val 4.80982, g_crit 1.3233, p_val 0.028298
+ In iteration 2 flip rate = 1.8625 done_flip = 1 done_g = 0 done_distances = 1 done_ensemble = 1
+      ensemble size = 100  distances recorded = 52000
+
+entropy of 0 is 2.3487 with count 421
+entropy of 1 is 0 with count 379
+Rejected uniform test: g_val 2.20601, g_crit 1.3233, p_val 0.137473
+ In iteration 3 flip rate = 1.69 done_flip = 1 done_g = 0 done_distances = 1 done_ensemble = 1
+      ensemble size = 100  distances recorded = 52000
+
+entropy of 0 is 2.3637 with count 406
+entropy of 1 is 0 with count 394
+Acceptable uniform test: g_val 0.180007, g_crit 1.3233, p_val 0.671367
+ In iteration 4 flip rate = 1.79 done_flip = 1 done_g = 1 done_distances = 1 done_ensemble = 1
+      ensemble size = 100  distances recorded = 52000
+
+ Average s_bias is 2.36875  standard deviation = 0.00714622 for 2 values.
+
+ Starting refined sampling with 3200 states to get good statistics with Sbias[0] = 2.36875 time steps per trajectory = 20
+Acceptable uniform test: g_val 0.361257, g_crit 1.3233, p_val 0.547809
+entropy of 0 is 2.3475 with count 1583
+entropy of 1 is 0 with count 1617
+  Called new write_ensemble with ensemble size 100

@@ -1,8 +1,1 @@
-/debug/
-/release/
-/experiments/
-/pdb/
-__pycache__
-*.h5
-.*.swp
-*.png
+/hybridmc/examples/*/

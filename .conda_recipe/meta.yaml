@@ -1,0 +1,52 @@
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.1.0').strip('v') %}
+
+package:
+  name: hybridmc
+  version: {{ version }}
+
+source:
+  git_url: https://github.com/Vigne-hub/hybridmc
+  git_rev: main
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}  # Needed for compiling C++ code
+    - cmake  # For running CMake scripts
+    - ninja  # Build system used by CMake for faster builds
+    - python {{ python }}
+    - setuptools  # setuptools is required for setup.py
+
+  host:
+    - boost  # Your project links against Boost, so it needs to be in the host to be found by CMake
+    - hdf5  # Similarly, HDF5 needs to be in the host to link against it
+    - python {{ python }}
+
+  run:
+    - python {{ python }}
+    - numpy  # Assuming your package uses NumPy at runtime
+    - pandas
+    - h5py
+    - scipy
+    - matplotlib
+    - seaborn
+    - nlopt
+    - hybridmc_wang_landau
+    - statsmodels
+    - scikit-learn
+    - boost
+
+test:
+  imports:
+    - hybridmc.py_bin.hmc_run
+
+exclude:
+  - hybridmc/examples*
+  - .git*
+
+about:
+  home: https://github.com/Vigne-hub/hybridmc
+  license: MIT
+  summary: 'Hybrid Monte Carlo simulations with C++ core and Python tools wang landau process utility.'
