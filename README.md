@@ -38,7 +38,7 @@ complicated.
 This package can be installed using **`conda install hybridmc -c conda-forge -c vignesh229`** to directly obtain a command called **hmc_run** which can be used simply as **`hmc_run --json INPUT_JSON_FILE`**. This also installs all the python utilities that can be imported from a python shell.
 
 ## C++ Program Details for Manual Install
-**NOTE:** This is not the recommended approach, proceeed to use this with caution.
+**NOTE:** This is not the recommended approach if you plan on just using the package, it is for development purposes.
 
 ### Prerequisite Software
 
@@ -104,7 +104,7 @@ have the following parameters:
 
     "m": 1.0, -- mass of each bead
 
-    "sigma_bb": 1.0, -- 
+    "sigma_bb": 1.0, -- diameter of each bead
 
     "near_min": 1.0, -- shortest bond dist between nearest neighbors
 
@@ -124,9 +124,9 @@ have the following parameters:
     
     "permanent_bonds": [], -- list of permanent beads
     
-    "config_in": 0, 
+    "config_in": 0, int form of binary input bonding pattern. 0 ==> 000 (no bonds in the nonlocal bonds list turned on), 1 ==> 001 (the last index is on) etc.
 
-    "config_out": 7,
+    "config_out": 7, int form of binary output bonding pattern.
 
     "nbeads": 20, -- number of beads in the protein
 
@@ -162,9 +162,9 @@ have the following parameters:
     
     "total_iter_eq": 100, -- total number of iterations for equilibration
 
-    "pos_scale": 0.5,
+    "pos_scale": 0.5, -- entropy scaling factor
 
-    "neg_scale": 0.1,
+    "neg_scale": 0.1, -- entropy scaling factor
 
     "sig_level": 0.05, -- significance level for the g-test
 
