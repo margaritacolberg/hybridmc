@@ -27,7 +27,7 @@ jobs:
       - run: git diff --exit-code > clang-format.diff
 
       - if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           # apply to local repository with:
           # patch -p1 < clang-format.diff
