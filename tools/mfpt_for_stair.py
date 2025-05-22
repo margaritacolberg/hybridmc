@@ -136,7 +136,7 @@ def main(args):
                 subprocess.run(command, check=True, stdout=output_log,
                         stderr=subprocess.STDOUT)
 
-            mfpt.fpt_write(json_name, hdf5_name, 0, csv_name)
+            mfpt.fpt_write(json_name, hdf5_name, 0, csv_name, True)
 
     for i in range(len(output)):
         layer = str(output[i][0]).count('1')
